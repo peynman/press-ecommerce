@@ -2,6 +2,10 @@
 
 namespace Larapress\ECommerce\Providers;
 
+use Illuminate\Support\ServiceProvider;
+use Larapress\ECommerce\Repositories\IProductRepository;
+use Larapress\ECommerce\Repositories\ProductRepository;
+
 class PackageServiceProvider extends ServiceProvider
 {
     /**
@@ -11,7 +15,7 @@ class PackageServiceProvider extends ServiceProvider
      */
     public function register()
     {
-
+        $this->app->bind(IProductRepository::class, ProductRepository::class);
     }
 
     /**
@@ -21,6 +25,7 @@ class PackageServiceProvider extends ServiceProvider
      */
     public function boot()
     {
+        $this->loadTranslationsFrom(__DIR__.'/../../resources/lang', 'larapress');
         $this->loadMigrationsFrom(__DIR__.'/../../migrations');
 
         $this->publishes(
