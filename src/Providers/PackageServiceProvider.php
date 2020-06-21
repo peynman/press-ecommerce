@@ -5,6 +5,8 @@ namespace Larapress\ECommerce\Providers;
 use Illuminate\Support\ServiceProvider;
 use Larapress\ECommerce\Repositories\IProductRepository;
 use Larapress\ECommerce\Repositories\ProductRepository;
+use Larapress\ECommerce\Services\BankingService;
+use Larapress\ECommerce\Services\IBankingService;
 
 class PackageServiceProvider extends ServiceProvider
 {
@@ -16,6 +18,7 @@ class PackageServiceProvider extends ServiceProvider
     public function register()
     {
         $this->app->bind(IProductRepository::class, ProductRepository::class);
+        $this->app->bind(IBankingService::class, BankingService::class);
     }
 
     /**

@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Larapress\ECommerce\Models\Cart;
 use Larapress\ECommerce\Models\BankGatewayTransaction;
+use Larapress\Profiles\IProfileUser;
+use Larapress\Profiles\Models\Domain;
 
 interface IBankingService
 {
@@ -52,7 +54,7 @@ interface IBankingService
      * @param ICartItem $cartItem
      * @return Cart
      */
-    public function addItemToPurchasingCart(Request $request, $cartItem);
+    public function addItemToPurchasingCart(Request $request, ICartItem  $cartItem);
 
 
     /**
@@ -62,5 +64,57 @@ interface IBankingService
      * @param ICartItem $cartItem
      * @return Cart
      */
-    public function removeItemFromPurchasingCart(Request $request, $cartItem);
+    public function removeItemFromPurchasingCart(Request $request, ICartItem  $cartItem);
+
+
+    /**
+     * Undocumented function
+     *
+     * @param IProfileUser $user
+     * @param Domain $domain
+     * @param integer $currency
+     * @return void
+     */
+    public function getPurchasingCart(IProfileUser $user, Domain $domain, int $currency);
+
+    /**
+     * Undocumented function
+     *
+     * @param Request $request
+     * @param IProfileUser $user
+     * @param Domain $domain
+     * @param integer $currency
+     * @return ICartItem[]
+     */
+    public function getPurchasingCartItems(IProfileUser $user, Domain $domain, int $currency);
+
+    /**
+     * Undocumented function
+     *
+     * @param IProfileUser $user
+     * @param Domain $domain
+     * @param integer $currency
+     * @return void
+     */
+    public function getUserBalance(IProfileUser $user, Domain $domain, int $currency);
+
+
+    /**
+     * Undocumented function
+     *
+     * @param IProfileUser $user
+     * @param Domain $domain
+     * @return array
+     */
+    public function getPurchasedItemIds(IProfileUser $user, Domain $domain);
+
+
+    /**
+     * Undocumented function
+     *
+     * @param IProfileUser $user
+     * @param Domain $domain
+     * @return array
+     */
+    public function getPurchasedCarts(IProfileUser $user, Domain $domain);
 }

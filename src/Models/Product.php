@@ -4,6 +4,8 @@ namespace Larapress\ECommerce\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Auth;
+use Larapress\ECommerce\Services\IBankingService;
 use Larapress\ECommerce\Services\ICartItem;
 use Larapress\Profiles\IProfileUser;
 
@@ -94,7 +96,6 @@ class Product extends Model implements ICartItem
 	public function children() {
 		return $this->hasMany(Product::class,'parent_id');
     }
-
 
         /**
      * Undocumented function

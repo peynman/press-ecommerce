@@ -25,6 +25,7 @@ class Cart extends Model
     const STATUS_UNVERIFIED = 1;
     const STATUS_ACCESS_GRANTED = 2;
     const STATUS_ACCESS_COMPLETE = 3;
+    const STATUS_ACCESS_PERIOD = 4;
 
     const FLAG_USER_CART = 1;
     const FLAG_INCREASE_WALLET = 2;
@@ -73,23 +74,9 @@ class Cart extends Model
     public function products() {
         return $this->belongsToMany(
             Product::class,
-            'cart_items',
-            'item_id',
-            'cart_id'
-        );
-    }
-
-    /**
-     * Undocumented function
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
-     */
-    public function nested_carts() {
-        return $this->belongsToMany(
-            Cart::class,
-            'cart_items',
-            'item_id',
-            'cart_id'
+            'carts_products_pivot',
+            'cart_id',
+            'product_id'
         );
     }
 

@@ -19,11 +19,14 @@ class CreateProductsTable extends Migration
 	        $table->bigInteger('parent_id', false, true)->nullable();
             $table->string('name');
             $table->json('data')->nullable();
+            $table->integer('priority')->default(0);
             $table->integer('flags', false, true)->default(0);
             $table->dateTime('publish_at')->nullable();
             $table->dateTime('expires_at')->nullable();
             $table->timestamps();
             $table->softDeletes();
+
+            $table->index(['publish_at', 'expires_at', 'priority']);
 
 	        $table->foreign('author_id')->references('id')->on('users');
 	        $table->foreign('parent_id')->references('id')->on('products');

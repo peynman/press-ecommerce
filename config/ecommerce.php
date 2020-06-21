@@ -63,6 +63,11 @@ return [
     'banking' => [
         'ports' => [
             'zarinpal' => Larapress\ECommerce\Services\Ports\Zarrinpal\ZarrinPalPortInterface::class
+        ],
+
+        'currency' => [
+            'id' => 1,
+            'title' => 'تومان'
         ]
     ]
 ];
