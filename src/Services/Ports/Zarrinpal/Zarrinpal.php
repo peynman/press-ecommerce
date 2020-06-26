@@ -12,7 +12,7 @@
 
 namespace Larapress\ECommerce\Services\Ports\Zarrinpal;
 
-class Zarinpal
+class Zarrinpal
 {
 	private function curl_check()
 	{

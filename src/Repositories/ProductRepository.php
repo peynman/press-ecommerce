@@ -84,6 +84,8 @@ class ProductRepository implements IProductRepository {
             });
         }
 
+        $query->orderBy('priority', 'desc');
+
         $resultset = $query->paginate($limit);
         if (!is_null($user)) {
             /** @var IBankingService */

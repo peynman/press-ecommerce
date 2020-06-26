@@ -13,6 +13,7 @@ use Larapress\Profiles\IProfileUser;
  * @property int                  $id
  * @property string               $name
  * @property int                  $flags
+ * @property int                  $priority
  * @property int                  $parent_id
  * @property int                  $author_id
  * @property IProfileUser         $author
@@ -39,7 +40,8 @@ class Product extends Model implements ICartItem
 	    'parent_id',
     	'name',
 	    'data',
-	    'flags',
+        'flags',
+        'priority',
 	    'publish_at',
 	    'expires_at',
     ];

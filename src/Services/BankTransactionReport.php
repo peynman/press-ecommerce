@@ -4,7 +4,7 @@ namespace Larapress\ECommerce\Services;
 
 use Larapress\Reports\Services\IReportsService;
 
-class SigninReport {
+class BankTransactionReport {
     /** @var IReportsService */
     private $reports;
     public function __construct(IReportsService $reports)

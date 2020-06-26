@@ -27,6 +27,7 @@ class ProductCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         'parent_id' => 'nullable|numeric|exists:products,id',
     	'name' => 'required|string|unique:products,name',
 	    'data.title' => 'required',
+        'priority' => 'nullable|numeric',
 	    'flags' => 'nullable|numeric',
 	    'publish_at' => 'nullable|datetime_zoned',
         'expires_at' => 'nullable|datetime_zoned',
@@ -36,7 +37,8 @@ class ProductCRUDProvider implements ICRUDProvider, IPermissionsMetadata
     ];
     public $updateValidations = [
         'parent_id' => 'nullable|numeric|exists:products,id',
-    	'name' => 'required|string|unique:products,name',
+        'name' => 'required|string|unique:products,name',
+        'priority' => 'nullable|numeric',
 	    'data.title' => 'required',
 	    'flags' => 'nullable|numeric',
 	    'publish_at' => 'nullable|datetime_zoned',
