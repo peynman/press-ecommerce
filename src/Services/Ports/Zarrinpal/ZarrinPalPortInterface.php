@@ -7,6 +7,7 @@ use Exception;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\View\View;
 use Larapress\CRUD\Exceptions\ValidationException;
@@ -24,7 +25,7 @@ class ZarrinPalPortInterface implements IBankPortInterface
         'email' => 'nullable|email',
         'mobile' => 'nullable|string',
     ];
-    /** @var Zarinpal */
+    /** @var Zarrinpal */
     private $zarinpal;
 
     /** @var BankGateway */
@@ -72,11 +73,11 @@ class ZarrinPalPortInterface implements IBankPortInterface
     public function redirect(Request $request, BankGatewayTransaction $transaction, string $callback_url)
     {
         $this->validate($transaction);
-        $config = $transaction->bank_gateway->data['gateway'];
-        $zarinpal = new Zarinpal();
+        $config = $transaction->bank_gateway->data;
+        $zarinpal = new Zarrinpal();
         $result = $zarinpal->request(
             $config['merchant_id'],
-            $config['amount'],
+            $transaction->amount,
             $transaction->data['description'],
             $config['email'],
             $config['mobile'],
@@ -84,9 +85,11 @@ class ZarrinPalPortInterface implements IBankPortInterface
             $config['isSandbox'],
             $config['isZarinGate']
         );
-
         if (isset($result["Status"]) && $result["Status"] == 100)
         {
+            unset($transaction['bank_gateway']);
+            unset($transaction->bank_gateway);
+            unset($transaction->domain);
             // Success and redirect to pay
             $transaction->update([
                 'status' => BankGatewayTransaction::STATUS_FORWARDED,
@@ -95,7 +98,8 @@ class ZarrinPalPortInterface implements IBankPortInterface
             return $zarinpal->redirect($result["StartPay"]);
         }
 
-        throw new Exception("could not contact bank gateway zarrinpal: " . json_encode($result));
+        Log::critical('ZarrinPal error: '.json_encode($result));
+        throw new Exception("could not contact bank gateway zarrinpal");
     }
 
     /**
@@ -107,8 +111,8 @@ class ZarrinPalPortInterface implements IBankPortInterface
     public function verify(Request $request, BankGatewayTransaction $transaction)
     {
         $this->validate($transaction);
-        $config = $transaction->bank_gateway->data['gateway'];
-        $zp = new Zarinpal();
+        $config = $transaction->bank_gateway->data;
+        $zp = new Zarrinpal();
 
         $transaction->update([
             'status' => BankGatewayTransaction::STATUS_RECEIVED,
@@ -147,7 +151,7 @@ class ZarrinPalPortInterface implements IBankPortInterface
      */
     protected function validate(BankGatewayTransaction $transaction)
     {
-        $validate = Validator::make($transaction->bank_gateway->data['gateway'], $this->configRules);
+        $validate = Validator::make($transaction->bank_gateway->data, $this->configRules);
         if ($validate->fails()) {
             throw new ValidationException($validate->errors());
         }

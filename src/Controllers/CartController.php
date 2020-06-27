@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Route;
 use Larapress\CRUD\CRUDControllers\BaseCRUDController;
 use Larapress\ECommerce\CRUD\CartCRUDProvider;
 use Larapress\ECommerce\Services\CartModifyRequest;
+use Larapress\ECommerce\Services\CartUpdateRequest;
 use Larapress\ECommerce\Services\IBankingService;
 
 class CartController extends BaseCRUDController
@@ -28,6 +29,23 @@ class CartController extends BaseCRUDController
             '/me/current-cart/remove',
             '\\'.self::class.'@removeFromPurchasingCart'
         )->name(config('larapress.ecommerce.routes.carts.name').'.any.purchasing.remove');
+
+        Route::post(
+            '/me/current-cart/update',
+            '\\'.self::class.'@updatePurchasingCart'
+        )->name(config('larapress.ecommerce.routes.carts.name').'.any.purchasing.update');
+    }
+
+
+
+    /**
+     * Undocumented function
+     *
+     * @param Request $request
+     * @return Response
+     */
+    public function updatePurchasingCart(IBankingService $service, CartUpdateRequest $request) {
+        return $service->updatePurchasingCart($request, $request->getCurrency());
     }
 
 

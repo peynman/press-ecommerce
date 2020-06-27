@@ -14,18 +14,20 @@ class BankGatewayController extends BaseCRUDController
 {
     public static function registerRoutes()
     {
-        Route::any(config('larapress.ecommerce.routes.bank_gateways.name').'/{gateway_id}/redirect/increase/{amount}/currency/{currency}', '\\' . self::class . '@redirectToBankForIncreaseAmount')
-            ->name(config('larapress.ecommerce.routes.bank_gateways.name').'.any.redirect.increase');
-        Route::any(config('larapress.ecommerce.routes.bank_gateways.name').'/{gateway_id}/redirect/{cart_id}', '\\' . self::class . '@redirectToBankForCart')
-            ->name(config('larapress.ecommerce.routes.bank_gateways.name').'.any.redirect.cart');
-        Route::any(config('larapress.ecommerce.routes.bank_gateways.name').'/callback/{tr_id}', '\\' . self::class . '@callbackFromBank')
-            ->name(config('larapress.ecommerce.routes.bank_gateways.name').'.any.callback');
-
         parent::registerCrudRoutes(
             config('larapress.ecommerce.routes.bank_gateways.name'),
             self::class,
             BankGatewayCRUDProvider::class
         );
+    }
+
+    public static function registerWebRoutes() {
+        Route::any(config('larapress.ecommerce.routes.bank_gateways.name') . '/{gateway_id}/redirect/increase/{amount}/currency/{currency}', '\\' . self::class . '@redirectToBankForIncreaseAmount')
+            ->name(config('larapress.ecommerce.routes.bank_gateways.name') . '.any.redirect.increase');
+        Route::any(config('larapress.ecommerce.routes.bank_gateways.name') . '/{gateway_id}/redirect/{cart_id}', '\\' . self::class . '@redirectToBankForCart')
+            ->name(config('larapress.ecommerce.routes.bank_gateways.name') . '.any.redirect.cart');
+        Route::any(config('larapress.ecommerce.routes.bank_gateways.name') . '/callback/{tr_id}', '\\' . self::class . '@callbackFromBank')
+            ->name(config('larapress.ecommerce.routes.bank_gateways.name') . '.any.callback');
     }
 
     /**
@@ -74,20 +76,19 @@ class BankGatewayController extends BaseCRUDController
      * @param int $transaction_id
      * @return void
      */
-    public function callbackFromBank(IBankingService $service, Request $request, $gatewayName, $transaction_id)
+    public function callbackFromBank(IBankingService $service, Request $request, $transaction_id)
     {
         return $service->verifyBankRequest(
             $request,
-            $gatewayName,
             $transaction_id,
             function($request, Cart $cart, BankGatewayTransaction $transaction) {
-
+                return response()->redirectTo(config('larapress.ecommerce.banking.redirect.already'));
 			},
 			function($request, Cart $cart, BankGatewayTransaction $transaction) {
-
+                return response()->redirectTo(config('larapress.ecommerce.banking.redirect.success'));
 			},
 			function($request, Cart $cart, $e) {
-
+                return response()->redirectTo(config('larapress.ecommerce.banking.redirect.failed'));
 			}
         );
     }

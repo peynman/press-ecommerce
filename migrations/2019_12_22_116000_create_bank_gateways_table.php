@@ -16,7 +16,7 @@ class CreateBankGatewaysTable extends Migration
         Schema::create('bank_gateways', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->bigInteger('author_id', false, true);
-            $table->integer('type', false, true);
+            $table->string('type');
             $table->json('data')->nullable();
             $table->integer('flags', false, true)->default(0);
             $table->timestamps();

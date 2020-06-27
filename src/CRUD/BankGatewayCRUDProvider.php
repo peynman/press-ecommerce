@@ -25,22 +25,22 @@ class BankGatewayCRUDProvider implements ICRUDProvider, IPermissionsMetadata
     ];
     public $model = BankGateway::class;
     public $createValidations = [
-        'name' => 'required|string|unique:bank_gateways,name',
-        'data' => 'nullable|json',
+        'type' => 'required|string',
+        'data' => 'nullable',
         'flags' => 'nullable|numeric',
     ];
     public $updateValidations = [
-        'name' => 'required|string|unique:bank_gateways,name',
-        'data' => 'nullable|json',
+        'type' => 'required|string',
+        'data' => 'nullable',
         'flags' => 'nullable|numeric',
     ];
     public $searchColumns = [
-        'name',
+        'type',
         'data',
     ];
     public $validSortColumns = [
         'id',
-        'name',
+        'author_id',
         'created_at',
         'updated_at',
         'flags',
@@ -50,17 +50,6 @@ class BankGatewayCRUDProvider implements ICRUDProvider, IPermissionsMetadata
     ];
     public $defaultShowRelations = [
     ];
-
-    /**
-     * Exclude current id in name unique request
-     *
-     * @param Request $request
-     * @return void
-     */
-    public function getUpdateRules(Request $request) {
-        $this->updateValidations['name'] .= ',' . $request->route('id');
-        return $this->updateValidations;
-    }
 
     /**
      * @param Builder $query

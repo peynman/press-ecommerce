@@ -64,7 +64,7 @@ class ProductRepository implements IProductRepository {
      * @param [type] $page
      * @return void
      */
-    public function getProductsPaginated($user, $page = 0, $limit = 10, $categories = [], $types = []) {
+    public function getProductsPaginated($user, $page = 0, $limit = 50, $categories = [], $types = []) {
         Paginator::currentPageResolver(
             function () use ($page) {
                 return $page;
@@ -95,7 +95,7 @@ class ProductRepository implements IProductRepository {
             $domain = $domainRepo->getCurrentRequestDomain();
 
             $items = $resultset->items();
-        $purchases = $service->getPurchasedItemIds($user, $domain);
+            $purchases = $service->getPurchasedItemIds($user, $domain);
             foreach ($items as $item) {
                 $item['available'] = in_array($item['id'], $purchases);
             }

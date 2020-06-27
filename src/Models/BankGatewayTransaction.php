@@ -55,7 +55,7 @@ class BankGatewayTransaction extends Model
 	];
 
 	protected $casts = [
-		'details' => 'array',
+		'data' => 'array',
 	];
 
 

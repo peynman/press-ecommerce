@@ -59,6 +59,7 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
     ];
     public $validRelations = [
         'customer',
+        'domain',
         'products',
         'nested_carts',
     ];

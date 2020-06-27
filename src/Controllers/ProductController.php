@@ -33,7 +33,7 @@ class ProductController extends BaseCRUDController
         return $repo->getProductsPaginated(
             Auth::user(),
             $request->get('page', 1),
-            $request->get('limit', 10),
+            $request->get('limit', config('larapress.ecommerce.repository.per_page', 50)),
             $request->get('categories', []),
             $request->get('types', [])
         );

@@ -46,6 +46,14 @@ interface IBankingService
      */
     public function redirectToBankForAmount(Request $request, $gateway_id, $amount, $currency, $onFailed);
 
+    /**
+     * Undocumented function
+     *
+     * @param Request $request
+     * @param int $cart_id
+     * @return Response
+     */
+    public function updatePurchasingCart(Request $request, int $currency);
 
     /**
      * Undocumented function
@@ -73,7 +81,7 @@ interface IBankingService
      * @param IProfileUser $user
      * @param Domain $domain
      * @param integer $currency
-     * @return void
+     * @return Cart
      */
     public function getPurchasingCart(IProfileUser $user, Domain $domain, int $currency);
 
@@ -94,7 +102,7 @@ interface IBankingService
      * @param IProfileUser $user
      * @param Domain $domain
      * @param integer $currency
-     * @return void
+     * @return float
      */
     public function getUserBalance(IProfileUser $user, Domain $domain, int $currency);
 

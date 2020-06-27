@@ -3,7 +3,7 @@
 return [
     'banking' => [
         'messages' => [
-            'bank-forwared' => 'request for cart id :cart_id for amount :amount :currency',
+            'bank-forwared' => 'درخواست خرید سبد با شماره :cart_id',
         ]
     ],
 

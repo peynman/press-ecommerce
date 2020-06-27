@@ -29,6 +29,8 @@ class Cart extends Model
 
     const FLAG_USER_CART = 1;
     const FLAG_INCREASE_WALLET = 2;
+    const FLAGS_EVALUATED = 4;
+    const FLAGS_HAS_PERIODS = 8;
 
     use SoftDeletes;
 

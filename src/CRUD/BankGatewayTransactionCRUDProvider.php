@@ -61,9 +61,15 @@ class BankGatewayTransactionCRUDProvider implements ICRUDProvider, IPermissionsM
         'flags',
     ];
     public $validRelations = [
-        'author',
+        'customer',
+        'domain',
+        'cart',
+        'bank_gateway'
     ];
     public $defaultShowRelations = [
+        'customer',
+        'domain',
+        'cart',
     ];
 
     /**

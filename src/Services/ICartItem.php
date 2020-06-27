@@ -17,6 +17,20 @@ interface ICartItem
     /**
      * Undocumented function
      *
+     * @return float
+     */
+    public function pricePeriodic();
+
+        /**
+     * Undocumented function
+     *
+     * @return float
+     */
+    public function pricePeriods();
+
+    /**
+     * Undocumented function
+     *
      * @return int
      */
     public function currency();
