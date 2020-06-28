@@ -108,9 +108,14 @@ class Product extends Model implements ICartItem
         if ($this->data['pricing']) {
             $prices = $this->data['pricing'];
             $prior = $prices[0];
+            if (!isset($prior['priority'])) {
+                $prior['priority'] = 0;
+            }
             foreach ($prices as $price) {
-                if ($price['priority'] > $prior['priority']) {
-                    $prior = $price;
+                if (isset($price['priority'])) {
+                    if ($price['priority'] > $prior['priority']) {
+                        $prior = $price;
+                    }
                 }
             }
 
@@ -130,9 +135,14 @@ class Product extends Model implements ICartItem
         if ($this->data['price_periodic']) {
             $prices = $this->data['price_periodic'];
             $prior = $prices[0];
+            if (!isset($prior['priority'])) {
+                $prior['priority'] = 0;
+            }
             foreach ($prices as $price) {
-                if ($price['priority'] > $prior['priority']) {
-                    $prior = $price;
+                if (isset($price['priority'])) {
+                    if ($price['priority'] > $prior['priority']) {
+                        $prior = $price;
+                    }
                 }
             }
 
