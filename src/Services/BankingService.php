@@ -9,9 +9,11 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Larapress\CRUD\Exceptions\AppException;
+use Larapress\CRUD\Extend\Helpers;
 use Larapress\ECommerce\Models\BankGateway;
 use Larapress\ECommerce\Models\BankGatewayTransaction;
 use Larapress\ECommerce\Models\Cart;
+use Larapress\ECommerce\Models\Product;
 use Larapress\ECommerce\Models\WalletTransaction;
 use Larapress\Profiles\IProfileUser;
 use Larapress\Profiles\Models\Domain;
@@ -102,7 +104,7 @@ class BankingService implements IBankingService
             'domain_id' => $domain->id,
             'status' => BankGatewayTransaction::STATUS_CREATED,
             'data' => [
-                'description' => 'درخواست خرید سبد با شماره '.$cart->id,
+                'description' => 'درخواست خرید سبد با شماره ' . $cart->id,
             ]
         ]);
         $callback = route(config('larapress.ecommerce.routes.bank_gateways.name') . '.any.callback', [
@@ -303,32 +305,33 @@ class BankingService implements IBankingService
      */
     public function getPurchasingCart(IProfileUser $user, Domain $domain, int $currency)
     {
-        $cacheName = 'larapress.ecommerce.user.' . $user->id . '.purchase-cart';
-        $cart = Cache::get($cacheName);
-        if (is_null($cart)) {
-            $cart = Cart::query()
-                ->where('customer_id', $user->id)
-                ->where('domain_id', $domain->id)
-                ->where('currency', $currency)
-                ->where('flags', '&', Cart::FLAG_USER_CART)
-                ->where('status', '=', Cart::STATUS_UNVERIFIED)
-                ->first();
-        }
-        if (is_null($cart)) {
-            $cart = Cart::create([
-                'amount' => 0,
-                'currency' => $currency,
-                'customer_id' => $user->id,
-                'domain_id' => $domain->id,
-                'flags' => Cart::FLAG_USER_CART,
-                'status' => Cart::STATUS_UNVERIFIED,
-                'data' => []
-            ]);
+        return Helpers::getCachedValue(
+            'larapress.ecommerce.user.' . $user->id . '.purchase-cart',
+            function () use ($user, $domain, $currency) {
+                $cart = Cart::query()
+                    ->where('customer_id', $user->id)
+                    ->where('domain_id', $domain->id)
+                    ->where('currency', $currency)
+                    ->where('flags', '&', Cart::FLAG_USER_CART)
+                    ->where('status', '=', Cart::STATUS_UNVERIFIED)
+                    ->first();
 
-            Cache::put($cacheName, $cart);
-        }
-
-        return $cart;
+                if (is_null($cart)) {
+                    $cart = Cart::create([
+                        'amount' => 0,
+                        'currency' => $currency,
+                        'customer_id' => $user->id,
+                        'domain_id' => $domain->id,
+                        'flags' => Cart::FLAG_USER_CART,
+                        'status' => Cart::STATUS_UNVERIFIED,
+                        'data' => []
+                    ]);
+                }
+                return $cart;
+            },
+            ['user:' . $user->id, 'purchasing-cart:' . $user->id],
+            null
+        );
     }
 
     /**
@@ -342,21 +345,21 @@ class BankingService implements IBankingService
      */
     public function getPurchasingCartItems(IProfileUser $user, Domain $domain, int $currency)
     {
-        $cacheName = 'larapress.ecommerce.user.' . $user->id . '.purchase-cart-items';
-        $items = Cache::get($cacheName);
-        if (is_null($items)) {
-            $cart = $this->getPurchasingCart($user, $domain, $currency);
-            /** ICartItem[] */
-            $items = $cart->products;
-            $cacheItems = [];
-            foreach ($items as $item) {
-                $cacheItems[] = $item->model();
-            }
-            Cache::put($cacheName, $items);
-            $items = $cacheItems;
-        }
-
-        return $items;
+        return Helpers::getCachedValue(
+            'larapress.ecommerce.user.' . $user->id . '.purchase-cart-items',
+            function () use ($user, $domain, $currency) {
+                $cart = $this->getPurchasingCart($user, $domain, $currency);
+                /** ICartItem[] */
+                $items = $cart->products;
+                $cacheItems = [];
+                foreach ($items as $item) {
+                    $cacheItems[] = $item->model();
+                }
+                return $cacheItems;
+            },
+            ['user:' . $user->id, 'purchasing-cart:' . $user->id],
+            null
+        );
     }
 
     /**
@@ -368,20 +371,19 @@ class BankingService implements IBankingService
      */
     public function getPurchasedCarts(IProfileUser $user, Domain $domain)
     {
-        $cacheName = 'larapress.ecommerce.user.' . $user->id . '.purchased-cart';
-        $carts = Cache::get($cacheName);
-        if (is_null($carts)) {
-            $carts = Cart::query()
-                ->with(['products'])
-                ->where('customer_id', $user->id)
-                ->where('domain_id', $domain->id)
-                ->whereIn('status', [Cart::STATUS_ACCESS_COMPLETE, Cart::STATUS_ACCESS_GRANTED, Cart::STATUS_ACCESS_PERIOD])
-                ->get();
-
-            Cache::put($cacheName, $carts);
-        }
-
-        return $carts;
+        return Helpers::getCachedValue(
+            'larapress.ecommerce.user.' . $user->id . '.purchased-cart',
+            function () use ($user, $domain) {
+                return  Cart::query()
+                    ->with(['products'])
+                    ->where('customer_id', $user->id)
+                    ->where('domain_id', $domain->id)
+                    ->whereIn('status', [Cart::STATUS_ACCESS_COMPLETE, Cart::STATUS_ACCESS_GRANTED, Cart::STATUS_ACCESS_PERIOD])
+                    ->get();
+            },
+            ['user:' . $user->id, 'purchased-cart:' . $user->id],
+            null,
+        );
     }
 
     /**
@@ -393,22 +395,21 @@ class BankingService implements IBankingService
      */
     public function getPurchasedItemIds(IProfileUser $user, Domain $domain)
     {
-        $cacheName = 'larapress.ecommerce.user.' . $user->id . '.purchased-cart-items';
-        $ids = Cache::get($cacheName);
-        if (is_null($ids)) {
-
-            $carts = $this->getPurchasedCarts($user, $domain);
-            $ids = [];
-            foreach ($carts as $cart) {
-                foreach ($cart->products as $item) {
-                    $ids[] = $item['id'];
+        return Helpers::getCachedValue(
+            'larapress.ecommerce.user.' . $user->id . '.purchased-cart-items',
+            function () use ($user, $domain) {
+                $carts = $this->getPurchasedCarts($user, $domain);
+                $ids = [];
+                foreach ($carts as $cart) {
+                    foreach ($cart->products as $item) {
+                        $ids[] = $item['id'];
+                    }
                 }
-            }
-
-            Cache::put($cacheName, $ids);
-        }
-
-        return $ids;
+                return $ids;
+            },
+            ['user:' . $user->id, 'purchased-cart:' . $user->id],
+            null
+        );
     }
 
 
@@ -422,19 +423,18 @@ class BankingService implements IBankingService
      */
     public function getUserBalance(IProfileUser $user, Domain $domain, int $currency)
     {
-        $cacheName = 'larapress.ecommerce.user.' . $user->id . '.balance';
-        $balance = Cache::get($cacheName);
-        if (is_null($balance)) {
-            $balance = WalletTransaction::query()
-                ->where('user_id', $user->id)
-                ->where('domain_id', $domain->id)
-                ->where('currency', $currency)
-                ->sum('amount');
-
-            Cache::put($cacheName, $balance);
-        }
-
-        return $balance;
+        return Helpers::getCachedValue(
+            'larapress.ecommerce.user.' . $user->id . '.balance',
+            function () use ($user, $domain, $currency) {
+                return WalletTransaction::query()
+                    ->where('user_id', $user->id)
+                    ->where('domain_id', $domain->id)
+                    ->where('currency', $currency)
+                    ->sum('amount');
+            },
+            ['user:' . $user->id, 'wallet:' . $user->id],
+            null
+        );
     }
 
     /**
@@ -442,13 +442,34 @@ class BankingService implements IBankingService
      *
      * @param IProfileUser $user
      * @param Domain $domain
-     * @param integer $productId
+     * @param integer|Product $product
      * @return boolean
      */
-    public function isProductOnPurchasedList(IProfileUser $user, Domain $domain, int $productId)
+    public function isProductOnPurchasedList(IProfileUser $user, Domain $domain, $product)
     {
+        if (is_numeric($product)) {
+            $product = Product::find($product);
+        }
+        if (is_null($product)) {
+            return false;
+        }
+
         $ids = $this->getPurchasedItemIds($user, $domain);
-        return in_array($productId, $ids);
+
+        if (!is_null($product->parent_id)) {
+            $ancestors = $this->getProductAncestors($product);
+        } else {
+            $ancestors = [];
+        }
+        $ancestors[] = $product->id;
+
+        foreach ($ancestors as $parent) {
+            if (in_array($parent, $ids)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -460,14 +481,7 @@ class BankingService implements IBankingService
      */
     protected function resetPurchasingCache(IProfileUser $user, Domain $domain)
     {
-        $cacheNames =  [
-            'larapress.ecommerce.user.' . $user->id . '.purchase-cart-items',
-            'larapress.ecommerce.user.' . $user->id . '.purchase-cart'
-        ];
-
-        foreach ($cacheNames as $name) {
-            Cache::forget($name);
-        }
+        Cache::tags(['purchasing-cart:' . $user->id])->flush();
 
         $cart = $this->getPurchasingCart($user, $domain, config('larapress.ecommerce.banking.currency.id'));
         $cart['items'] = $this->getPurchasingCartItems($user, $domain, config('larapress.ecommerce.banking.currency.id'));
@@ -484,17 +498,31 @@ class BankingService implements IBankingService
      */
     protected function resetPurchasedCache(IProfileUser $user, Domain $domain)
     {
-        $cacheNames =  [
-            'larapress.ecommerce.user.' . $user->id . '.purchased-cart-items',
-            'larapress.ecommerce.user.' . $user->id . '.purchased-cart',
-            'larapress.ecommerce.user.' . $user->id . '.purchase-cart-items',
-            'larapress.ecommerce.user.' . $user->id . '.purchase-cart',
-        ];
+        Cache::tags(['purchasing-cart:' . $user->id])->flush();
+    }
 
-        foreach ($cacheNames as $name) {
-            Cache::forget($name);
-        }
-        // $this->getPurchasedCarts($user, $domain, config('larapress.ecommerce.banking.currency.id'));
-        // $this->getPurchasedItemIds($user, $domain, config('larapress.ecommerce.banking.currency.id'));
+
+    /**
+     * Undocumented function
+     *
+     * @param Product $product
+     * @return array
+     */
+    protected function getProductAncestors($product)
+    {
+        return Helpers::getCachedValue(
+            'larapress.ecommerce.product-ancestors.' . $product->id,
+            function () use ($product) {
+                $ancestors = [];
+                $parent = $product->parent;
+                while (!is_null($parent)) {
+                    $ancestors[] = $parent;
+                    $parent = $parent->parent;
+                }
+                return $ancestors;
+            },
+            ['products', 'product:' . $product->id],
+            null
+        );
     }
 }

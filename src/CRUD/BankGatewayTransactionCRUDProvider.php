@@ -23,6 +23,7 @@ class BankGatewayTransactionCRUDProvider implements ICRUDProvider, IPermissionsM
         self::CREATE,
         self::EDIT,
         self::DELETE,
+        self::REPORTS,
     ];
     public $model = BankGatewayTransaction::class;
     public $createValidations = [

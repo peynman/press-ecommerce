@@ -53,7 +53,7 @@ class ProductCategoryCRUDProvider implements ICRUDProvider, IPermissionsMetadata
     ];
     public $validFilters = [];
     public $defaultShowRelations = [];
-    public $excludeFromUpdate = [];
+    public $excludeIfNull = [];
     public $filterFields = [];
     public $filterDefaults = [];
 

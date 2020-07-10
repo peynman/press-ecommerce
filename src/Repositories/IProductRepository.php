@@ -39,5 +39,24 @@ interface IProductRepository {
      * @param [type] $categories
      * @return void
      */
-    public function getProductsPaginated($user, $page = 0, $limit = 30);
+    public function getProductsPaginated($user, $page = 0, $limit = 30, $categories = [], $types = []);
+
+
+    /**
+     * Undocumented function
+     *
+     * @param [type] $user
+     * @param [type] $categories
+     * @return void
+     */
+    public function getPurchasedProductsPaginated($user, $page = 0, $limit = 30, $categories = [], $types = []);
+
+    /**
+     * Undocumented function
+     *
+     * @param [type] $user
+     * @param [type] $product_id
+     * @return void
+     */
+    public function getProductDetails($user, $product_id);
 }

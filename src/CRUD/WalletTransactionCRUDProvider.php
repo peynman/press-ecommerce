@@ -21,6 +21,7 @@ class WalletTransactionCRUDProvider implements ICRUDProvider, IPermissionsMetada
         self::CREATE,
         self::EDIT,
         self::DELETE,
+        self::REPORTS,
     ];
     public $model = WalletTransaction::class;
     public $createValidations = [
@@ -59,7 +60,7 @@ class WalletTransactionCRUDProvider implements ICRUDProvider, IPermissionsMetada
     ];
     public $validFilters = [];
     public $defaultShowRelations = [];
-    public $excludeFromUpdate = [];
+    public $excludeIfNull = [];
     public $filterFields = [];
     public $filterDefaults = [];
 

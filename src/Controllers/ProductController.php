@@ -21,6 +21,13 @@ class ProductController extends BaseCRUDController
         );
     }
 
+    public static function registerPublicApiRoutes() {
+        Route::post(
+            config('larapress.ecommerce.routes.products.name') . '/repository',
+            '\\' . self::class . '@queryRepository'
+        )->name(config('larapress.ecommerce.routes.products.name') . 'any.repository');
+    }
+
     /**
      * Undocumented function
      *
@@ -30,6 +37,17 @@ class ProductController extends BaseCRUDController
     public function queryRepository(Request $request) {
         /** @var IProductRepository */
         $repo = app(IProductRepository::class);
+
+        if ($request->get('purchased', false)) {
+            return $repo->getPurchasedProductsPaginated(
+                Auth::user(),
+                $request->get('page', 1),
+                $request->get('limit', config('larapress.ecommerce.repository.per_page', 50)),
+                $request->get('categories', []),
+                $request->get('types', [])
+            );
+        }
+
         return $repo->getProductsPaginated(
             Auth::user(),
             $request->get('page', 1),

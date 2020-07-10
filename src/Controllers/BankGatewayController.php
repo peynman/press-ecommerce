@@ -21,7 +21,7 @@ class BankGatewayController extends BaseCRUDController
         );
     }
 
-    public static function registerWebRoutes() {
+    public static function registerPublicWebRoutes() {
         Route::any(config('larapress.ecommerce.routes.bank_gateways.name') . '/{gateway_id}/redirect/increase/{amount}/currency/{currency}', '\\' . self::class . '@redirectToBankForIncreaseAmount')
             ->name(config('larapress.ecommerce.routes.bank_gateways.name') . '.any.redirect.increase');
         Route::any(config('larapress.ecommerce.routes.bank_gateways.name') . '/{gateway_id}/redirect/{cart_id}', '\\' . self::class . '@redirectToBankForCart')

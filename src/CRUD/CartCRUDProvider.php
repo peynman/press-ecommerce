@@ -23,6 +23,7 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         self::CREATE,
         self::EDIT,
         self::DELETE,
+        self::REPORTS,
     ];
     public $model = Cart::class;
     public $createValidations = [

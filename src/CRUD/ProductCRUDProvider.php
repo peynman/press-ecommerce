@@ -10,6 +10,7 @@ use Larapress\CRUD\Base\ICRUDProvider;
 use Larapress\CRUD\Base\IPermissionsMetadata;
 use Larapress\ECommerce\Models\Product;
 use Larapress\Pages\Models\Page;
+use Larapress\Reports\Services\IReportsService;
 
 class ProductCRUDProvider implements ICRUDProvider, IPermissionsMetadata
 {
@@ -21,6 +22,7 @@ class ProductCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         self::CREATE,
         self::EDIT,
         self::DELETE,
+        self::REPORTS,
     ];
     public $model = Product::class;
     public $createValidations = [
@@ -66,14 +68,28 @@ class ProductCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         'parent',
         'children'
     ];
-    public $validFilters = [];
     public $defaultShowRelations = [
         'types',
         'categories'
     ];
-    public $excludeFromUpdate = [];
-    public $filterFields = [];
+    public $excludeIfNull = [];
+    public $filterFields = [
+        'types' => 'has:types',
+        'categories' => 'has:categories',
+    ];
     public $filterDefaults = [];
+
+
+    /**
+     *
+     */
+    public function getReportSources()
+    {
+        /** @var IReportsService */
+        $service = app(IReportsService::class);
+        return [
+        ];
+    }
 
     /**
      * Exclude current id in name unique request

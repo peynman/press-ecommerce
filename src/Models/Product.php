@@ -105,7 +105,11 @@ class Product extends Model implements ICartItem
      * @return float
      */
     public function price() {
-        if ($this->data['pricing']) {
+        if (!isset($this->data['pricing'])) {
+            return $this->pricePeriodic();
+        }
+
+        if (!is_null($this->data['pricing']) && count($this->data['pricing']) > 0) {
             $prices = $this->data['pricing'];
             $prior = $prices[0];
             if (!isset($prior['priority'])) {
@@ -132,7 +136,11 @@ class Product extends Model implements ICartItem
      * @return float
      */
     public function pricePeriodic() {
-        if ($this->data['price_periodic']) {
+        if (!isset($this->data['price_periodic'])) {
+            return 0;
+        }
+
+        if (!is_null($this->data['price_periodic']) && count($this->data['price_periodic']) > 0) {
             $prices = $this->data['price_periodic'];
             $prior = $prices[0];
             if (!isset($prior['priority'])) {

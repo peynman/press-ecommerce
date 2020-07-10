@@ -125,4 +125,15 @@ interface IBankingService
      * @return array
      */
     public function getPurchasedCarts(IProfileUser $user, Domain $domain);
+
+
+    /**
+     * Undocumented function
+     *
+     * @param IProfileUser $user
+     * @param Domain $domain
+     * @param integer|Product $productId
+     * @return boolean
+     */
+    public function isProductOnPurchasedList(IProfileUser $user, Domain $domain, $product);
 }
