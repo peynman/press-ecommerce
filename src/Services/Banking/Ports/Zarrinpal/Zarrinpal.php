@@ -10,7 +10,7 @@
  * website 	: https://miladworkshop.ir
 */
 
-namespace Larapress\ECommerce\Services\Ports\Zarrinpal;
+namespace Larapress\ECommerce\Services\Banking\Ports\Zarrinpal;
 
 class Zarrinpal
 {

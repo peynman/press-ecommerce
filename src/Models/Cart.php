@@ -12,6 +12,8 @@ use Larapress\Profiles\Models\Domain;
  * @property int            $customer_id
  * @property int            $domain_id
  * @property int            $status
+ * @property float          $amount
+ * @property int            $currency
  * @property IProfileUser   $customer
  * @property Domain         $domain
  * @property ICartItem[]    $items
@@ -48,7 +50,6 @@ class Cart extends Model
 
     public $casts = [
         'data' => 'array',
-        'items' => 'array',
     ];
 
     /**

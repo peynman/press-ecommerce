@@ -2,13 +2,15 @@
 
 namespace Larapress\ECommerce\Controllers;
 
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Larapress\CRUD\CRUDControllers\BaseCRUDController;
 use Larapress\ECommerce\CRUD\CartCRUDProvider;
-use Larapress\ECommerce\Services\CartModifyRequest;
-use Larapress\ECommerce\Services\CartUpdateRequest;
-use Larapress\ECommerce\Services\IBankingService;
+use Larapress\ECommerce\Services\Banking\CartGiftCodeRequest;
+use Larapress\ECommerce\Services\Banking\CartModifyRequest;
+use Larapress\ECommerce\Services\Banking\CartUpdateRequest;
+use Larapress\ECommerce\Services\Banking\IBankingService;
 
 class CartController extends BaseCRUDController
 {
@@ -34,9 +36,24 @@ class CartController extends BaseCRUDController
             '/me/current-cart/update',
             '\\'.self::class.'@updatePurchasingCart'
         )->name(config('larapress.ecommerce.routes.carts.name').'.any.purchasing.update');
+
+
+        Route::post(
+            '/me/current-cart/apply/gift-code',
+            '\\'.self::class.'@checkPurchasingCartGiftCode'
+        )->name(config('larapress.ecommerce.routes.carts.name').'.any.purchasing.gift-code');
     }
 
-
+    /**
+     * Undocumented function
+     *
+     * @param Request $request
+     * @param int $cart_id
+     * @return void
+     */
+    public function checkPurchasingCartGiftCode(IBankingService $service, CartGiftCodeRequest $request) {
+        return $service->checkGiftCodeForPurchasingCart($request, $request->getCurrency(), $request->getGiftCode());
+    }
 
     /**
      * Undocumented function

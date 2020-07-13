@@ -1,7 +1,7 @@
 <?php
 
 
-namespace Larapress\ECommerce\Services;
+namespace Larapress\ECommerce\Services\Banking;
 
 use Illuminate\Database\Eloquent\Model;
 

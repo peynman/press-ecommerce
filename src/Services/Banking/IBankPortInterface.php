@@ -1,7 +1,7 @@
 <?php
 
 
-namespace Larapress\ECommerce\Services;
+namespace Larapress\ECommerce\Services\Banking;
 
 
 use Illuminate\Http\RedirectResponse;
@@ -43,7 +43,7 @@ interface IBankPortInterface
 	 * @param Request                $request
 	 * @param BankGatewayTransaction $transaction
 	 *
-	 * @return boolean
+	 * @return BankGatewayTransaction
 	 */
 	public function verify(Request $request, BankGatewayTransaction $transaction);
 }

@@ -1,7 +1,7 @@
 <?php
 
 
-namespace Larapress\ECommerce\Services\Ports\Zarrinpal;
+namespace Larapress\ECommerce\Services\Banking\Ports\Zarrinpal;
 
 use Exception;
 use Illuminate\Http\RedirectResponse;
@@ -13,7 +13,7 @@ use Illuminate\View\View;
 use Larapress\CRUD\Exceptions\ValidationException;
 use Larapress\ECommerce\Models\BankGateway;
 use Larapress\ECommerce\Models\BankGatewayTransaction;
-use Larapress\ECommerce\Services\IBankPortInterface;
+use Larapress\ECommerce\Services\Banking\IBankPortInterface;
 use Larapress\Profiles\IProfileUser;
 
 class ZarrinPalPortInterface implements IBankPortInterface
@@ -106,7 +106,7 @@ class ZarrinPalPortInterface implements IBankPortInterface
      * @param Request                $request
      * @param BankGatewayTransaction $transaction
      *
-     * @return boolean
+     * @return BankGatewayTransaction
      */
     public function verify(Request $request, BankGatewayTransaction $transaction)
     {
@@ -130,7 +130,7 @@ class ZarrinPalPortInterface implements IBankPortInterface
                 'status' => BankGatewayTransaction::STATUS_SUCCESS,
                 'data' => $data,
             ]);
-            return true;
+            return $transaction;
         } else {
             // error
             $data = $transaction->data;
@@ -140,9 +140,9 @@ class ZarrinPalPortInterface implements IBankPortInterface
                 'status' => BankGatewayTransaction::STATUS_FAILED,
                 'data' => $data,
             ]);
-            return false;
+            return $transaction;
         }
-        return false;
+        return $transaction;
     }
 
     /**

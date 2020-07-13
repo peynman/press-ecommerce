@@ -2,14 +2,15 @@
 
 namespace Larapress\ECommerce\CRUD;
 
-use Illuminate\Http\Request;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
 use Larapress\CRUD\Base\BaseCRUDProvider;
 use Larapress\CRUD\Base\ICRUDProvider;
 use Larapress\CRUD\Base\IPermissionsMetadata;
+use Larapress\CRUD\Exceptions\AppException;
 use Larapress\ECommerce\Models\WalletTransaction;
 use Larapress\Pages\Models\Page;
+use Larapress\Profiles\CRUD\UserCRUDProvider;
 
 class WalletTransactionCRUDProvider implements ICRUDProvider, IPermissionsMetadata
 {
@@ -25,20 +26,18 @@ class WalletTransactionCRUDProvider implements ICRUDProvider, IPermissionsMetada
     ];
     public $model = WalletTransaction::class;
     public $createValidations = [
-        'user_id' => 'required|numeric|exists:users,id',
-        'domain_id' => 'required|numeric|exists:domains,id',
+        'target_user' => 'required|numeric|exists:users,id',
         'amount' => 'required|numeric',
         'currency' => 'required|numeric',
-        'type' => 'required|numeric',
-	    'flags' => 'nullable|numeric',
+        'flags' => 'nullable|numeric',
+        'data.description' => 'required|string',
     ];
     public $updateValidations = [
-        'user_id' => 'required|numeric|exists:users,id',
-        'domain_id' => 'required|numeric|exists:domains,id',
+        'target_user' => 'required|numeric|exists:users,id',
         'amount' => 'required|numeric',
         'currency' => 'required|numeric',
-        'type' => 'required|numeric',
 	    'flags' => 'nullable|numeric',
+        'data.description' => 'required|string',
     ];
     public $autoSyncRelations = [];
     public $validSortColumns = [
@@ -58,22 +57,16 @@ class WalletTransactionCRUDProvider implements ICRUDProvider, IPermissionsMetada
         'user',
         'domain'
     ];
-    public $validFilters = [];
     public $defaultShowRelations = [];
     public $excludeIfNull = [];
-    public $filterFields = [];
+    public $filterFields = [
+        'from' => 'after:created_at',
+        'to' => 'before:created_at',
+        'domain' => 'has:domain:id',
+        'type' => 'equals:type',
+        'user_id' => 'equals:user_id',
+    ];
     public $filterDefaults = [];
-
-    /**
-     * Exclude current id in name unique request
-     *
-     * @param Request $request
-     * @return void
-     */
-    public function getUpdateRules(Request $request) {
-        $this->updateValidations['name'] .= ',' . $request->route('id');
-        return $this->updateValidations;
-    }
 
     /**
      * Undocumented function
@@ -83,7 +76,47 @@ class WalletTransactionCRUDProvider implements ICRUDProvider, IPermissionsMetada
      */
     public function onBeforeCreate( $args )
     {
-        $args['author_id'] = Auth::user()->id;
+        /** @var IProfileUser|ICRUDUser */
+        $targetUser = User::find($args['target_user']);
+        $userCrudClass = config('larapress.crud.user.crud-provider');
+        /** @var UserCRUDProvider */
+        $userCrud = new $userCrudClass();
+        if ($userCrud->onBeforeAccess($targetUser)) {
+            $args['user_id'] = $targetUser->id;
+            $args['domain_id'] = $targetUser->getMembershipDomainId();
+        } else {
+            throw new AppException(AppException::ERR_OBJ_ACCESS_DENIED);
+        }
+
+        $args['type'] = WalletTransaction::TYPE_MANUAL_MODIFY;
+
+        return $args;
+    }
+
+
+    /**
+     * Undocumented function
+     *
+     * @param [type] $args
+     * @return void
+     */
+    public function onBeforeUpdate($args)
+    {
+        /** @var IProfileUser|ICRUDUser */
+        $targetUser = User::find($args['target_user']);
+        $userCrudClass = config('larapress.crud.user.crud-provider');
+        /** @var UserCRUDProvider */
+        $userCrud = new $userCrudClass();
+        if ($userCrud->onBeforeAccess($targetUser)) {
+            $args['user_id'] = $targetUser->id;
+            $args['domain_id'] = $targetUser->getMembershipDomainId();
+        } else {
+            throw new AppException(AppException::ERR_OBJ_ACCESS_DENIED);
+        }
+
+        if (isset($args['type'])) {
+            unset($args['type']);
+        }
 
         return $args;
     }
@@ -98,7 +131,7 @@ class WalletTransactionCRUDProvider implements ICRUDProvider, IPermissionsMetada
         /** @var ICRUDUser $user */
         $user = Auth::user();
         if (! $user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
-            $query->where('author_id', $user->id);
+            $query->whereHas('domain', $user->getAffiliateDomainIds());
         }
 
         return $query;
@@ -114,7 +147,7 @@ class WalletTransactionCRUDProvider implements ICRUDProvider, IPermissionsMetada
         /** @var ICRUDUser|IProfileUser $user */
         $user = Auth::user();
         if (! $user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
-            return $user->id === $object->author_id;
+            return in_array($object->domain_id, $user->getAffiliateDomainIds());
         }
 
         return true;

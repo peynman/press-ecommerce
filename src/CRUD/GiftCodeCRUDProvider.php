@@ -10,80 +10,54 @@ use Larapress\CRUD\Base\ICRUDProvider;
 use Larapress\CRUD\Base\IPermissionsMetadata;
 use Larapress\CRUD\ICRUDUser;
 use Larapress\ECommerce\Models\Cart;
+use Larapress\ECommerce\Models\GiftCode;
 use Larapress\Profiles\IProfileUser;
 use Larapress\Profiles\Models\Domain;
 
-class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
+class GiftCodeCRUDProvider implements ICRUDProvider, IPermissionsMetadata
 {
     use BaseCRUDProvider;
 
-    public $name_in_config = 'larapress.ecommerce.routes.carts.name';
+    public $name_in_config = 'larapress.ecommerce.routes.gift_codes.name';
     public $verbs = [
         self::VIEW,
         self::CREATE,
         self::EDIT,
         self::DELETE,
-        self::REPORTS,
     ];
-    public $model = Cart::class;
+    public $model = GiftCode::class;
     public $createValidations = [
-        'customer_id' => 'required|numeric|exists:users,id',
-        'domain_id' => 'required|numeric|exists:domains,id',
         'amount' => 'required|numeric',
         'currency' => 'required|numeric|exists:filters,id',
         'status' => 'required|numeric',
-        'data' => 'nullable',
-        'flags' => 'nullable|numeric',
-        'items.*.id' => 'nullable|numeric|exists:products,id',
+        'code' => 'required|string|min:6|regex:/(^[A-Za-z0-9-_.]+$)+/',
+        'data.type' => 'required|string|in:percent,fixed',
     ];
     public $updateValidations = [
-        'customer_id' => 'required|numeric|exists:users,id',
-        'domain_id' => 'required|numeric|exists:domains,id',
         'amount' => 'required|numeric',
         'currency' => 'required|numeric|exists:filters,id',
         'status' => 'required|numeric',
-        'data' => 'nullable',
-        'flags' => 'nullable|numeric',
-        'items.*.id' => 'nullable|numeric|exists:products,id',
+        'code' => 'required|string|min:6|regex:/(^[A-Za-z0-9-_.]+$)+/',
+        'data.type' => 'required|string|in:percent,fixed',
     ];
     public $searchColumns = [
-        'data'
+        'code'
     ];
     public $validSortColumns = [
         'id',
-        'customer_id',
-        'domain_id',
+        'author_id',
         'amount',
         'currency',
         'status',
         'flags',
     ];
     public $validRelations = [
-        'customer',
-        'domain',
-        'products',
-        'nested_carts',
+        'author',
+        'use_list',
+        'use_list.user',
     ];
     public $defaultShowRelations = [
     ];
-    public $filterFields = [
-        'from' => 'after:created_at',
-        'to' => 'before:created_at',
-        'domain' => 'has:domain:id',
-        'status' => 'equals:status',
-        'customer_id' => 'equals:customer_id',
-    ];
-
-    /**
-     * Exclude current id in name unique request
-     *
-     * @param Request $request
-     * @return void
-     */
-    public function getUpdateRules(Request $request) {
-        $this->updateValidations['name'] .= ',' . $request->route('id');
-        return $this->updateValidations;
-    }
 
     /**
      * @param Builder $query
@@ -95,9 +69,7 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         /** @var IProfileUser|ICRUDUser $user */
         $user = Auth::user();
         if (! $user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
-            $query->whereHas('domains', function($q) use($user) {
-                $q->whereIn('id', $user->getAffiliateDomainIds());
-            });
+            $query->where('author_id', $user->id);
         }
 
         return $query;
@@ -113,9 +85,23 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         /** @var ICRUDUser|IProfileUser $user */
         $user = Auth::user();
         if (! $user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
-            return in_array($object->id, $user->getAffiliateDomainIds());
+            return $object->author_id == $user->id;
         }
 
         return true;
     }
+
+    /**
+     * @param array $args
+     *
+     * @return array
+     */
+    public function onBeforeCreate($args)
+    {
+        /** @var ICRUDUser|IProfileUser $user */
+        $user = Auth::user();
+        $args['author_id'] = $user->id;
+        return $args;
+    }
+
 }

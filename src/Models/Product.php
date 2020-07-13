@@ -5,8 +5,8 @@ namespace Larapress\ECommerce\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
-use Larapress\ECommerce\Services\IBankingService;
-use Larapress\ECommerce\Services\ICartItem;
+use Larapress\ECommerce\Services\Banking\IBankingService;
+use Larapress\ECommerce\Services\Banking\ICartItem;
 use Larapress\Profiles\IProfileUser;
 
 /**

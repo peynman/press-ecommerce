@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Larapress\CRUD\ICRUDUser;
 use Larapress\ECommerce\Models\Product;
-use Larapress\ECommerce\Services\IBankingService;
+use Larapress\ECommerce\Services\Banking\IBankingService;
 use Larapress\Profiles\Repository\Domain\IDomainRepository;
 use Larapress\Profiles\IProfileUser;
 use Illuminate\Support\Str;

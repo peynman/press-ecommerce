@@ -13,7 +13,6 @@ use Larapress\Profiles\Models\Domain;
  * @property int                    $user_id
  * @property int                    $domain_id
  * @property int                    $type
- * @property int                    $status
  * @property int                    $data
  * @property int                    $flags
  * @property int                    $currency
@@ -30,11 +29,6 @@ class WalletTransaction extends Model
     const TYPE_MANUAL_MODIFY = 1;
     const TYPE_BANK_TRANSACTION = 2;
 
-    const STATUS_UNVERIFIED = 1;
-    const STATUS_ACCEPTED = 2;
-    const STATUS_ON_HOLD = 3;
-    const STATUS_VERIFIED = 4;
-
 	use SoftDeletes;
 
 	protected $table = 'wallet_transactions';
@@ -45,7 +39,6 @@ class WalletTransaction extends Model
         'amount',
         'currency',
         'type',
-        'status',
         'data',
         'flags',
     ];

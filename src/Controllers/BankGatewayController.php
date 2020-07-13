@@ -8,7 +8,7 @@ use Larapress\CRUD\CRUDControllers\BaseCRUDController;
 use Larapress\ECommerce\CRUD\BankGatewayCRUDProvider;
 use Larapress\ECommerce\Models\BankGatewayTransaction;
 use Larapress\ECommerce\Models\Cart;
-use Larapress\ECommerce\Services\IBankingService;
+use Larapress\ECommerce\Services\Banking\IBankingService;
 
 class BankGatewayController extends BaseCRUDController
 {
@@ -45,8 +45,13 @@ class BankGatewayController extends BaseCRUDController
             $gateway_id,
             $amount,
             $currency,
-			null
-		);
+			function($request, Cart $cart, $e) {
+                return response()->redirectTo(config('larapress.ecommerce.banking.redirect.increase_failed'));
+			},
+            function($request, Cart $cart) {
+                return response()->redirectTo(config('larapress.ecommerce.banking.redirect.increase_success'));
+            },
+        );
     }
 
     /**
@@ -63,7 +68,12 @@ class BankGatewayController extends BaseCRUDController
 			$request,
 			$cart_id,
 			$gateway_id,
-			null
+			function($request, Cart $cart, $e) {
+                return response()->redirectTo(config('larapress.ecommerce.banking.redirect.failed'));
+			},
+            function($request, Cart $cart) {
+                return response()->redirectTo(config('larapress.ecommerce.banking.redirect.already'));
+			},
 		);
     }
 

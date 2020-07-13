@@ -1,6 +1,6 @@
 <?php
 
-namespace Larapress\ECommerce\Services;
+namespace Larapress\ECommerce\Services\Banking;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Larapress\ECommerce\Models\Product;

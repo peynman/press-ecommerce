@@ -11,7 +11,7 @@ use Larapress\ECommerce\CRUD\ProductCRUDProvider;
 use Larapress\ECommerce\Models\Product;
 use Larapress\ECommerce\Models\ProductCategory;
 use Larapress\ECommerce\Models\ProductType;
-use Larapress\ECommerce\Services\IBankingService;
+use Larapress\ECommerce\Services\Banking\IBankingService;
 use Larapress\Profiles\Repository\Domain\IDomainRepository;
 
 class ProductRepository implements IProductRepository {

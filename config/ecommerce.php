@@ -7,13 +7,16 @@ use Larapress\ECommerce\Controllers\ProductCategoryController;
 use Larapress\ECommerce\Controllers\ProductController;
 use Larapress\ECommerce\Controllers\ProductTypeController;
 use Larapress\ECommerce\Controllers\WalletTransactionController;
+use Larapress\ECommerce\Controllers\FileUploadController;
 use Larapress\ECommerce\CRUD\BankGatewayCRUDProvider;
 use Larapress\ECommerce\CRUD\BankGatewayTransactionCRUDProvider;
 use Larapress\ECommerce\CRUD\CartCRUDProvider;
+use Larapress\ECommerce\CRUD\FileUploadCRUDProvider;
 use Larapress\ECommerce\CRUD\ProductCategoryCRUDProvider;
 use Larapress\ECommerce\CRUD\ProductCRUDProvider;
 use Larapress\ECommerce\CRUD\ProductTypeCRUDProvider;
 use Larapress\ECommerce\CRUD\WalletTransactionCRUDProvider;
+use Larapress\Ecommerce\Services\VOD\VideoFileProcessor;
 
 return [
     'routes' => [
@@ -38,6 +41,12 @@ return [
         'wallet_transactions' => [
             'name' => 'wallet-transactions',
         ],
+        'gift_codes' => [
+            'name' => 'gift-codes',
+        ],
+        'file_uploads' => [
+            'name' => 'file-uploads'
+        ]
     ],
 
     'permissions' => [
@@ -48,6 +57,7 @@ return [
         BankGatewayTransactionCRUDProvider::class,
         WalletTransactionCRUDProvider::class,
         CartCRUDProvider::class,
+        FileUploadCRUDProvider::class,
     ],
 
     'controllers' => [
@@ -58,16 +68,36 @@ return [
         BankGatewayTransactionController::class,
         WalletTransactionController::class,
         CartController::class,
+        FileUploadController::class,
+    ],
+
+    'file-upload-processors' => [
+        VideoFileProcessor::class,
+    ],
+
+    'repository' => [
+        'per_page' => 50
     ],
 
     'banking' => [
         'ports' => [
-            'zarinpal' => Larapress\ECommerce\Services\Ports\Zarrinpal\ZarrinPalPortInterface::class
+            'zarinpal' => Larapress\ECommerce\Services\Banking\Ports\Zarrinpal\ZarrinPalPortInterface::class
         ],
 
         'currency' => [
             'id' => 1,
             'title' => 'تومان'
-        ]
+        ],
+
+        'redirect' => [
+            'already' => '/me/products',
+            'success' => '/me/products',
+            'failed' => '/me/current-cart/',
+
+            'increase_success' => '/me/transactions',
+            'increase_failed' => '/me/transactions',
+        ],
+
+        'default_gateway' => 1,
     ]
 ];

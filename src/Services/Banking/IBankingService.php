@@ -1,7 +1,7 @@
 <?php
 
 
-namespace Larapress\ECommerce\Services;
+namespace Larapress\ECommerce\Services\Banking;
 
 
 use Illuminate\Http\Request;
@@ -21,7 +21,7 @@ interface IBankingService
      *
      * @return Response
      */
-    public function redirectToBankForCart(Request $request, $cart, $gateway_id, $onFailed);
+    public function redirectToBankForCart(Request $request, $cart, $gateway_id, $onFailed, $onAlreadyPurchased);
 
     /**
      * @param Request         $request
@@ -44,7 +44,7 @@ interface IBankingService
      * @param callback|null $onFailed
      * @return Response
      */
-    public function redirectToBankForAmount(Request $request, $gateway_id, $amount, $currency, $onFailed);
+    public function redirectToBankForAmount(Request $request, $gateway_id, $amount, $currency, $onFailed, $onAlreadyPurchased);
 
     /**
      * Undocumented function
@@ -54,6 +54,16 @@ interface IBankingService
      * @return Response
      */
     public function updatePurchasingCart(Request $request, int $currency);
+
+    /**
+     * Undocumented function
+     *
+     * @param Request $request
+     * @param integer $currency
+     * @param string $code
+     * @return void
+     */
+    public function checkGiftCodeForPurchasingCart(Request $request, int $currency, string $code);
 
     /**
      * Undocumented function

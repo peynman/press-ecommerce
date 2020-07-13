@@ -1,11 +1,11 @@
 <?php
 
-namespace Larapress\ECommerce\Services;
+namespace Larapress\ECommerce\Services\Banking;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Larapress\ECommerce\Models\Product;
 
-class CartUpdateRequest extends FormRequest
+class CartGiftCodeRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -27,12 +27,15 @@ class CartUpdateRequest extends FormRequest
     {
         return [
             'currency' => 'required|numeric',
-            'periods' => 'nullable',
-            'gateway' => 'required|exists:bank_gateways,id'
+            'gift_code' => 'required|string|min:6',
         ];
     }
 
     public function getCurrency() {
         return $this->get('currency');
+    }
+
+    public function getGiftCode() {
+        return $this->get('gift_code');
     }
 }
