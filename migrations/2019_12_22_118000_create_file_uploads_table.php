@@ -22,6 +22,7 @@ class CreateFileUploadsTable extends Migration
             $table->string('path');
             $table->string('filename');
             $table->string('access');
+            $table->integer('size', false, true);
             $table->integer('flags', false, true)->default(0);
             $table->timestamps();
             $table->softDeletes();

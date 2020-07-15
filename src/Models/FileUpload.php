@@ -36,7 +36,8 @@ class FileUpload extends Model
     	'storage',
 	    'path',
 	    'filename',
-	    'access',
+        'access',
+        'size',
 	    'flags',
     ];
 

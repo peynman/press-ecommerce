@@ -1,13 +1,13 @@
 <?php
 
-namespace Larapress\Ecommerce\Services\VOD;
+namespace Larapress\ECommerce\Services\VOD;
 
 use Illuminate\Http\Request;
 use Larapress\ECommerce\Models\FileUpload;
-use Larapress\Ecommerce\Services\FileUpload\IFileUploadProcessor;
+use Larapress\ECommerce\Services\FileUpload\IFileUploadProcessor;
 use Larapress\Reports\Models\TaskReport;
-use Larapress\Reports\Services\ITaskReportService;
 use Larapress\Reports\Services\ITaskHandler;
+use Larapress\Reports\Services\ITaskReportService;
 
 class VideoFileProcessor implements IFileUploadProcessor, ITaskHandler {
     /**
@@ -19,7 +19,7 @@ class VideoFileProcessor implements IFileUploadProcessor, ITaskHandler {
     public function postProcessFile(Request $request, FileUpload $upload) {
         /** @var ITaskReportService */
         $taskService = app(ITaskReportService::class);
-        $taskService->scheduleTask(self::class, 'vod-convert', 'VOD Convert', [], $request->get('auto_start', false));
+        $taskService->scheduleTask(self::class, 'convert-'.$upload->id, 'Queued Convert.', ['id' => $upload->id], $request->get('auto_start', false));
     }
 
     /**
@@ -29,9 +29,8 @@ class VideoFileProcessor implements IFileUploadProcessor, ITaskHandler {
      * @return boolean
      */
     public function shouldProcessFile(FileUpload $upload) {
-        return $upload->mime === 'application/video';
+        return \Illuminate\Support\Str::startsWith($upload->mime, 'video/');
     }
-
 
     /**
      * Undocumented function
@@ -40,8 +39,7 @@ class VideoFileProcessor implements IFileUploadProcessor, ITaskHandler {
      * @return void
      */
     public function handle(TaskReport $task) {
-        /** @var ITaskReportService */
-        $taskService = app(ITaskReportService::class);
-
+        $upload = FileUpload::find($task->data['id']);
+        VideoConvertJob::dispatch($upload);
     }
 }

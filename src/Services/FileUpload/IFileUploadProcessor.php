@@ -1,6 +1,6 @@
 <?php
 
-namespace Larapress\Ecommerce\Services\FileUpload;
+namespace Larapress\ECommerce\Services\FileUpload;
 
 use Illuminate\Http\Request;
 use Larapress\ECommerce\Models\FileUpload;

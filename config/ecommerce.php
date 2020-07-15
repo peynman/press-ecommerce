@@ -16,7 +16,7 @@ use Larapress\ECommerce\CRUD\ProductCategoryCRUDProvider;
 use Larapress\ECommerce\CRUD\ProductCRUDProvider;
 use Larapress\ECommerce\CRUD\ProductTypeCRUDProvider;
 use Larapress\ECommerce\CRUD\WalletTransactionCRUDProvider;
-use Larapress\Ecommerce\Services\VOD\VideoFileProcessor;
+use Larapress\ECommerce\Services\VOD\VideoFileProcessor;
 
 return [
     'routes' => [
@@ -71,7 +71,7 @@ return [
         FileUploadController::class,
     ],
 
-    'file-upload-processors' => [
+    'file_upload_processors' => [
         VideoFileProcessor::class,
     ],
 
@@ -97,7 +97,16 @@ return [
             'increase_success' => '/me/transactions',
             'increase_failed' => '/me/transactions',
         ],
-
         'default_gateway' => 1,
+    ],
+
+    'vod' => [
+        'hls_variants' => [
+            264 => [426, 240],
+            878 => [640, 360],
+            1128 => [854, 480],
+            2628 => [1280, 720],
+        ],
+        'queue' => 'jobs'
     ]
 ];

@@ -2,17 +2,18 @@
 
 namespace Larapress\ECommerce\Services\FileUpload;
 
+use Carbon\Carbon;
+use Illuminate\Filesystem\Filesystem;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Larapress\ECommerce\Models\FileUpload;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Facades\Image;
+use Larapress\CRUD\Events\CRUDCreated;
 use Larapress\CRUD\Exceptions\AppException;
 use Larapress\CRUD\Extend\Helpers;
-use Jenky\LaravelPlupload\Facades\Plupload;
-use Larapress\CRUD\Base\ICRUDService;
 
 class FileUploadService implements IFileUploadService {
     /**
@@ -39,48 +40,50 @@ class FileUploadService implements IFileUploadService {
      * Undocumented function
      *
      * @param UploadedFile $file
-     * @return FileUpload
+     * @return FileUpload|null
      */
     public function processUploadedFile(FileUploadRequest $request, UploadedFile $file) {
-        $mime = $file->getMimeType();
+        $mime = $file->getClientOriginalExtension();
         /** @var FileUpload */
         $link = null;
         switch ($mime) {
-            case 'application/image':
-                $link = $this->makeLinkFromImageUpload(
+            case 'png':
+            case 'jpeg':
+            case 'jpg':
+                    $link = $this->makeLinkFromImageUpload(
                     $file,
                     $request->get('title', $file->getFilename()),
-                    $mime,
+                    'image/'.$mime,
                     '/images/',
                     $request->getAccess() === 'public' ? 'public' : 'local',
                     $request->getAccess(),
                 );
             break;
-            case 'application/video':
+            case 'mp4':
                 $link = $this->makeLinkFromMultiPartUpload(
                     $file,
                     $request->get('title', $file->getFilename()),
-                    $mime,
+                    'video/'.$mime,
                     '/videos/',
                     $request->getAccess() === 'public' ? 'public' : 'local',
                     $request->getAccess(),
                 );
             break;
-            case 'application/pdf':
+            case 'pdf':
                 $link = $this->makeLinkFromMultiPartUpload(
                     $file,
                     $request->get('title', $file->getFilename()),
-                    $mime,
+                    'application/'.$mime,
                     '/pdf/',
                     $request->getAccess() === 'public' ? 'public' : 'local',
                     $request->getAccess(),
                 );
             break;
-            case 'application/zip':
+            case 'zip':
                 $link = $this->makeLinkFromMultiPartUpload(
                     $file,
                     $request->get('title', $file->getFilename()),
-                    $mime,
+                    'application/'.$mime,
                     '/zip/',
                     'local',
                     'private',
@@ -91,7 +94,7 @@ class FileUploadService implements IFileUploadService {
              throw new AppException(AppException::ERR_INVALID_FILE_TYPE);
         }
 
-        $processors = config('larapress.ecommerce.file-upload-processors');
+        $processors = config('larapress.ecommerce.file_upload_processors');
         foreach ($processors as $pClass) {
             /** @var IFileUploadProcessor */
             $processor = new $pClass();
@@ -99,6 +102,8 @@ class FileUploadService implements IFileUploadService {
                 $processor->postProcessFile($request, $link);
             }
         }
+
+        return $link;
     }
 
     /**
@@ -109,7 +114,8 @@ class FileUploadService implements IFileUploadService {
      * @return Illuminate\Http\Response
      */
     public function receiveUploaded(FileUploadRequest $request, $onCompleted) {
-        return Plupload::receive('file', function ($file) use($request, $onCompleted) {
+        $uploader = new Plupload($request, app(Filesystem::class));
+        return $uploader->process('file', function ($file) use($request, $onCompleted) {
             return $onCompleted($file);
 		});
     }
@@ -126,20 +132,27 @@ class FileUploadService implements IFileUploadService {
 	 */
 	protected function makeLinkFromImageUpload($upload, $title, $mime, $location, $disk = 'local', $access = 'private') {
 		$image      = $upload;
-		$fileName   = time() . '.' . $image->getClientOriginalExtension();
+		$fileName   = Helpers::randomString(10) . '.' . $image->getClientOriginalExtension();
 		$path = '/'.trim($location, '/').'/'.trim($fileName, '/');
 
 		/** @var Image $img */
 		$img = Image::make($image->getRealPath());
 		$img->stream(); // <-- Key point
 		if (Storage::disk($disk)->put($path, $img, [$disk])) {
-			return FileUpload::create([
+            $fileSize = $upload->getSize();
+			$fileUpload = FileUpload::create([
+                'uploader_id' => Auth::user()->id,
 				'title' => $title,
 				'mime' => $mime,
 				'path' => $path,
 				'filename' => $fileName,
-				'storage' => $disk,
-			]);
+                'storage' => $disk,
+                'access' => $access,
+                'size' => $fileSize,
+            ]);
+
+            CRUDCreated::dispatch($fileUpload, \Larapress\ECommerce\CRUD\FileUploadCRUDProvider::class, Carbon::now());
+            return $fileUpload;
         }
 
         throw new AppException(AppException::ERR_UNEXPECTED_RESULT);
@@ -159,25 +172,22 @@ class FileUploadService implements IFileUploadService {
 	 */
 	protected function makeLinkFromMultiPartUpload($upload, $title, $mime, $location, $disk = 'local', $access = 'private') {
         $filename   = time().'.'.Helpers::randomString(10).'.'.$upload->getClientOriginalExtension();
-        $localPath = config('filesystems.disks.local.root').'/temp';
-        $file = $upload->move($localPath, $filename);
-
-        $stream = Storage::disk('local')->readStream($localPath.'/'.$filename);
+        $stream = Storage::disk('local')->readStream('plupload/'.$upload->getFilename());
 		if (Storage::disk($disk)->put(trim($location, '/').'/'.$filename, $stream)) {
-            $fileSize = $file->getSize();
-            // remove temp file
-            unlink($file->getPathname());
-
-            return FileUpload::create([
+            $fileSize = $upload->getSize();
+            $fileUpload = FileUpload::create([
                 'uploader_id' => Auth::user()->id,
                 'title' => $title,
                 'mime' => $mime,
-                'path' => $location,
+                'path' => trim($location, '/').'/'.$filename,
                 'filename' => $filename,
                 'storage' => $disk,
                 'size' => $fileSize,
                 'access' => $access,
             ]);
+
+            CRUDCreated::dispatch($fileUpload, \Larapress\ECommerce\CRUD\FileUploadCRUDProvider::class, Carbon::now());
+            return $fileUpload;
         }
 
         throw new AppException(AppException::ERR_UNEXPECTED_RESULT);
