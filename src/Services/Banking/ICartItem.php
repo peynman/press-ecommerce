@@ -17,6 +17,13 @@ interface ICartItem
     /**
      * Undocumented function
      *
+     * @return bool
+     */
+    public function isFree();
+
+    /**
+     * Undocumented function
+     *
      * @return float
      */
     public function pricePeriodic();

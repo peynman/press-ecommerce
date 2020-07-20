@@ -8,6 +8,7 @@ use Illuminate\Support\Str;
 use Larapress\CRUD\Base\BaseCRUDProvider;
 use Larapress\CRUD\Base\ICRUDProvider;
 use Larapress\CRUD\Base\IPermissionsMetadata;
+use Larapress\CRUD\Extend\Helpers;
 use Larapress\ECommerce\Models\Product;
 use Larapress\Pages\Models\Page;
 use Larapress\Reports\Services\IReportsService;

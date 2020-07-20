@@ -3,6 +3,7 @@
 namespace Larapress\ECommerce\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Larapress\ECommerce\Commands\ProductCommands;
 use Larapress\ECommerce\Repositories\IProductRepository;
 use Larapress\ECommerce\Repositories\ProductRepository;
 use Larapress\ECommerce\Services\Banking\BankingService;
@@ -11,6 +12,10 @@ use Larapress\ECommerce\Services\FileUpload\FileUploadService;
 use Larapress\Ecommerce\Services\FileUpload\IFileUploadService;
 use Larapress\ECommerce\Services\LiveStream\ILiveStreamService;
 use Larapress\ECommerce\Services\LiveStream\LiveStreamService;
+use Larapress\ECommerce\Services\Product\IProductService;
+use Larapress\ECommerce\Services\Product\ProductService;
+use Larapress\ECommerce\Services\VOD\IVODStreamService;
+use Larapress\ECommerce\Services\VOD\VODStreamService;
 
 class PackageServiceProvider extends ServiceProvider
 {
@@ -25,6 +30,8 @@ class PackageServiceProvider extends ServiceProvider
         $this->app->bind(IBankingService::class, BankingService::class);
         $this->app->bind(ILiveStreamService::class, LiveStreamService::class);
         $this->app->bind(IFileUploadService::class, FileUploadService::class);
+        $this->app->bind(IProductService::class, ProductService::class);
+        $this->app->bind(IVODStreamService::class, VODStreamService::class);
 
         $this->app->register(EventServiceProvider::class);
     }
@@ -45,5 +52,12 @@ class PackageServiceProvider extends ServiceProvider
             ],
             ['config', 'larapress', 'larapress-ecommerce']
         );
+
+
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                ProductCommands::class,
+            ]);
+        }
     }
 }

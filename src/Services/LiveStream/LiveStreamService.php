@@ -35,7 +35,19 @@ class LiveStreamService implements ILiveStreamService
      * @return Response
      */
     public function liveStreamStarted(Request $request) {
-
+        $product = $this->getLiveStreamProduct($request->get('name', null));
+        $data = $product->data;
+        $data['types']['livestream']['status'] = 'live';
+        $product->update([
+            'data' => $data,
+        ]);
+        if ($product->parent) {
+            $data = $product->parent->data;
+            $data['live-streams'] = (isset($data['live-streams']) ? $data['live-streams'] : 0) + 1;
+            $product->parent->update([
+                'data' => $data,
+            ]);
+        }
     }
 
     /**
@@ -45,7 +57,19 @@ class LiveStreamService implements ILiveStreamService
      * @return Response
      */
     public function liveStreamEnded(Request $request) {
-
+        $product = $this->getLiveStreamProduct($request->get('name', null));
+        $data = $product->data;
+        $data['types']['livestream']['status'] = 'ended';
+        $product->update([
+            'data' => $data,
+        ]);
+        if ($product->parent) {
+            $data = $product->parent->data;
+            $data['live-streams'] = (isset($data['live-streams']) ? $data['live-streams'] : 1) - 1;
+            $product->parent->update([
+                'data' => $data,
+            ]);
+        }
     }
 
     /**
@@ -68,7 +92,7 @@ class LiveStreamService implements ILiveStreamService
             return false;
         }
 
-        if ($product->price() === 0 && is_null($product->parent_id)) {
+        if ($product->isFree()) {
             return true;
         }
 

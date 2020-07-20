@@ -8,6 +8,7 @@ use Larapress\ECommerce\Services\Banking\Events\CartPurchasedEvent;
 use Larapress\Reports\Services\BaseReportSource;
 use Larapress\Reports\Services\IReportsService;
 use Larapress\ECommerce\Services\Banking\ICartItem;
+use Larapress\Reports\Services\IMetricsService;
 
 class CartPurchasedReport implements IReportSource
 {
@@ -16,12 +17,16 @@ class CartPurchasedReport implements IReportSource
     /** @var IReportsService */
     private $reports;
 
+    /** @var IMetricsService */
+    private $metrics;
+
     /** @var array */
     private $avReports;
 
-    public function __construct(IReportsService $reports)
+    public function __construct(IReportsService $reports, IMetricsService $metrics)
     {
         $this->reports = $reports;
+        $this->metrics = $metrics;
         $this->avReports = [
             'carts.purchased.total' => function ($user, array $options = []) {
                 [$filters, $fromC, $toC, $groups] = $this->getCommonReportProps($user, $options);
@@ -73,6 +78,25 @@ class CartPurchasedReport implements IReportSource
                 'product' => $item->id,
                 'periodic' => $periodic,
             ];
+
+            $this->metrics->pushMeasurement(
+                $event->domain->id,
+                'product.'.$item->id.'.sales_amount',
+                $periodic ? $item->pricePeriodic() : $item->price()
+            );
+            if ($periodic) {
+                $this->metrics->pushMeasurement(
+                    $event->domain->id,
+                    'product.'.$item->id.'.sales_periodic',
+                    1
+                );
+            } else {
+                $this->metrics->pushMeasurement(
+                    $event->domain->id,
+                    'product.'.$item->id.'.sales_fixed',
+                    1
+                );
+            }
 
             $this->reports->pushMeasurement('carts.purchased.items', 1, $itemTags, [
                 'amount' => $periodic ? $item->pricePeriodic() : $item->price(),

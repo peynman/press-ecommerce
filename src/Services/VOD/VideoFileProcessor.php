@@ -19,7 +19,11 @@ class VideoFileProcessor implements IFileUploadProcessor, ITaskHandler {
     public function postProcessFile(Request $request, FileUpload $upload) {
         /** @var ITaskReportService */
         $taskService = app(ITaskReportService::class);
-        $taskService->scheduleTask(self::class, 'convert-'.$upload->id, 'Queued Convert.', ['id' => $upload->id], $request->get('auto_start', false));
+        $autoStart = $request->get('auto_start', false);
+        if ($autoStart) {
+            $autoStart = $request->get('start_at', true);
+        }
+        $taskService->scheduleTask(self::class, 'convert-'.$upload->id, 'Queued Convert.', ['id' => $upload->id], $autoStart);
     }
 
     /**

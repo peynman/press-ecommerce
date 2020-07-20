@@ -31,6 +31,7 @@ use Larapress\Profiles\IProfileUser;
 class Product extends Model implements ICartItem
 {
     use SoftDeletes;
+    use ProductCartItem;
 
     protected $table = 'products';
 
@@ -54,6 +55,13 @@ class Product extends Model implements ICartItem
 	    'data' => 'array',
     ];
 
+    public $appends = [
+        'sales'
+    ];
+
+    public $hidden = [
+        'sales'
+    ];
 	/**
 	 * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
 	 */
@@ -97,102 +105,5 @@ class Product extends Model implements ICartItem
 	 */
 	public function children() {
 		return $this->hasMany(Product::class,'parent_id');
-    }
-
-        /**
-     * Undocumented function
-     *
-     * @return float
-     */
-    public function price() {
-        if (!isset($this->data['pricing'])) {
-            return $this->pricePeriodic();
-        }
-
-        if (!is_null($this->data['pricing']) && count($this->data['pricing']) > 0) {
-            $prices = $this->data['pricing'];
-            $prior = $prices[0];
-            if (!isset($prior['priority'])) {
-                $prior['priority'] = 0;
-            }
-            foreach ($prices as $price) {
-                if (isset($price['priority'])) {
-                    if ($price['priority'] > $prior['priority']) {
-                        $prior = $price;
-                    }
-                }
-            }
-
-            return $prior['amount'];
-        }
-
-        return 0;
-    }
-
-
-    /**
-     * Undocumented function
-     *
-     * @return float
-     */
-    public function pricePeriodic() {
-        if (!isset($this->data['price_periodic'])) {
-            return 0;
-        }
-
-        if (!is_null($this->data['price_periodic']) && count($this->data['price_periodic']) > 0) {
-            $prices = $this->data['price_periodic'];
-            $prior = $prices[0];
-            if (!isset($prior['priority'])) {
-                $prior['priority'] = 0;
-            }
-            foreach ($prices as $price) {
-                if (isset($price['priority'])) {
-                    if ($price['priority'] > $prior['priority']) {
-                        $prior = $price;
-                    }
-                }
-            }
-
-            return $prior['amount'];
-        }
-
-        return 0;
-    }
-
-        /**
-     * Undocumented function
-     *
-     * @return float
-     */
-    public function pricePeriods() {
-
-    }
-
-    /**
-     * Undocumented function
-     *
-     * @return int
-     */
-    public function currency() {
-        return 1;
-    }
-
-    /**
-     * Undocumented function
-     *
-     * @return String
-     */
-    public function product_uid() {
-        return 'product:'.$this->id;
-    }
-
-    /**
-     * Undocumented function
-     *
-     * @return Model
-     */
-    public function model() {
-        return $this;
     }
 }

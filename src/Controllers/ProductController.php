@@ -9,6 +9,7 @@ use Larapress\CRUD\CRUDControllers\BaseCRUDController;
 use Larapress\ECommerce\CRUD\ProductCRUDProvider;
 use Larapress\ECommerce\Models\Product;
 use Larapress\ECommerce\Repositories\IProductRepository;
+use Larapress\ECommerce\Services\Product\IProductService;
 
 class ProductController extends BaseCRUDController
 {
@@ -17,7 +18,14 @@ class ProductController extends BaseCRUDController
         parent::registerCrudRoutes(
             config('larapress.ecommerce.routes.products.name'),
             self::class,
-            ProductCRUDProvider::class
+            ProductCRUDProvider::class,
+            [
+                'create.duplicate' => [
+                    'methods' => ['POST'],
+                    'uses' => '\\'.self::class.'@duplicateProduct',
+                    'url' => config('larapress.ecommerce.routes.products.name').'/{id}/duplicate',
+                ]
+            ]
         );
     }
 
@@ -32,28 +40,22 @@ class ProductController extends BaseCRUDController
      * Undocumented function
      *
      * @param Request $request
-     * @return void
+     * @return array
      */
-    public function queryRepository(Request $request) {
-        /** @var IProductRepository */
-        $repo = app(IProductRepository::class);
+    public function queryRepository(IProductService $service, Request $request) {
+        return $service->queryProductsFromRequest($request);
+    }
 
-        if ($request->get('purchased', false)) {
-            return $repo->getPurchasedProductsPaginated(
-                Auth::user(),
-                $request->get('page', 1),
-                $request->get('limit', config('larapress.ecommerce.repository.per_page', 50)),
-                $request->get('categories', []),
-                $request->get('types', [])
-            );
-        }
 
-        return $repo->getProductsPaginated(
-            Auth::user(),
-            $request->get('page', 1),
-            $request->get('limit', config('larapress.ecommerce.repository.per_page', 50)),
-            $request->get('categories', []),
-            $request->get('types', [])
-        );
+    /**
+     * Undocumented function
+     *
+     * @param IProductService $service
+     * @param Request $request
+     * @param int $id
+     * @return array
+     */
+    public function duplicateProduct(IProductService $service, Request $request, $id) {
+        return $service->duplicateProductForRequest($request, $id);
     }
 }

@@ -7,6 +7,7 @@ use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Cache;
 use Larapress\CRUD\Base\BaseCRUDService;
 use Larapress\CRUD\Base\ICRUDService;
+use Larapress\CRUD\Exceptions\AppException;
 use Larapress\ECommerce\CRUD\ProductCRUDProvider;
 use Larapress\ECommerce\Models\Product;
 use Larapress\ECommerce\Models\ProductCategory;
@@ -77,7 +78,7 @@ class ProductRepository implements IProductRepository {
      *
      * @param IProfileUser $user
      * @param [type] $page
-     * @return void
+     * @return array
      */
     public function getProductsPaginated($user, $page = 0, $limit = 50, $categories = [], $types = []) {
         $query = $this->getProductsPaginatedQuery($user, $page, $limit, $categories, $types);
@@ -92,7 +93,7 @@ class ProductRepository implements IProductRepository {
             $items = $resultset->items();
             $purchases = $service->getPurchasedItemIds($user, $domain);
             foreach ($items as $item) {
-                $item['available'] = in_array($item['id'], $purchases);
+                $item['available'] = in_array($item['id'], $purchases) || $item->isFree();
             }
         }
 
@@ -106,7 +107,7 @@ class ProductRepository implements IProductRepository {
      *
      * @param [type] $user
      * @param [type] $categories
-     * @return void
+     * @return array
      */
     public function getPurchasedProductsPaginated($user, $page = 0, $limit = 30, $categories = [], $types = []) {
         $query = $this->getProductsPaginatedQuery($user, $page, $limit, $categories, $types);
@@ -136,7 +137,45 @@ class ProductRepository implements IProductRepository {
      * @return void
      */
     public function getProductDetails($user, $product_id) {
+        $product = Product::with([
+            'children' => function($q) {
+                $q->orderBy('priority', 'desc');
+            },
+            'children.children' => function($q) {
+                $q->orderBy('priority', 'desc');
+            },
+            'types',
+            'categories',
+            'children.types',
+            'children.categories',
+            'children.children.types',
+            'children.children.categories',
+        ])->find($product_id);
 
+        if (is_null($product)) {
+            throw new AppException(AppException::ERR_OBJECT_NOT_FOUND);
+        }
+
+        /** @var IBankingService */
+        $service = app(IBankingService::class);
+        /** @var IDomainRepository */
+        $domainRepo = app(IDomainRepository::class);
+        $domain = $domainRepo->getCurrentRequestDomain();
+        $purchases = $service->getPurchasedItemIds($user, $domain);
+
+        $product['available'] = in_array($product->id, $purchases) || $product->isFree();
+        $children = $product['children'];
+        foreach ($children as &$child) {
+            $child['available'] = $product['available'] || in_array($child->id, $purchases) || $child->isFree();
+            if ($child->children) {
+                $inners = $child->children;
+                foreach ($inners as &$inner) {
+                    $inner['available'] = $product['available'] ||  $child['available'] || in_array($inner->id, $purchases) || $inner->isFree();
+                }
+            }
+        }
+
+        return $product;
     }
 
     /**
@@ -147,7 +186,7 @@ class ProductRepository implements IProductRepository {
      * @param integer $limit
      * @param array $categories
      * @param array $types
-     * @return void
+     * @return Builder
      */
     protected function getProductsPaginatedQuery($user, $page = 0, $limit = 50, $categories = [], $types = []) {
         Paginator::currentPageResolver(

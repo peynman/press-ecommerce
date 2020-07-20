@@ -326,15 +326,49 @@ class BankingService implements IBankingService
         /** @var Cart */
         $cart = $this->getPurchasingCart($user, $domain, $cartItem->currency());
 
-        $cart->products()->attach($cartItem->model(), [
-            'amount' => $cartItem->price(),
-            'currency' => $cartItem->currency(),
-        ]);
-        $cart->update([
-            'amount' => $cart->amount + $cartItem->price()
-        ]);
-        $this->resetPurchasingCache($user, $domain);
+        $existingItems = $this->getPurchasingCartItems($user, $domain, $cartItem->currency());
+        $existingItemsIds = [];
+        foreach ($existingItems as $eItem) {
+            $existingItemsIds[] = $eItem->id;
+            if ($eItem->id === $cartItem->id) {
+                // already exists;
+                // @todo: add to quantity if needed!
+                return $cart;
+            }
+        }
 
+        try {
+            DB::beginTransaction();
+            // remove item children if already in the cart
+            if ($cartItem->children) {
+                $childIds = $cartItem->children->pluck('id');
+                $cart->products()->detach($childIds);
+            }
+
+            // check if items parent is already in cart
+            if ($cartItem->parent) {
+                $ancestors = $this->getProductAncestors($cartItem);
+                foreach ($ancestors as $ans) {
+                    if (in_array($ans->id, $existingItemsIds)) {
+                        // parent object already in cart, can not add this item
+                        throw new AppException(AppException::ERR_INVALID_QUERY);
+                    }
+                }
+            }
+
+            $cart->products()->attach($cartItem->model(), [
+                'amount' => $cartItem->price(),
+                'currency' => $cartItem->currency(),
+            ]);
+            $cart->update([
+                'amount' => $cart->amount + $cartItem->price()
+            ]);
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
+        $this->resetPurchasingCache($user, $domain);
         $cart['items'] = $cart->products()->get();
 
         return $cart;
@@ -359,7 +393,7 @@ class BankingService implements IBankingService
 
         $cart->products()->detach($cartItem->model());
 
-        $periodicIds = $cart->data['periodic_product_ids'];
+        $periodicIds = isset($cart->data['periodic_product_ids']) ? $cart->data['periodic_product_ids'] : [];
         if (in_array($cartItem->id, $periodicIds)) {
             $cart->update([
                 'amount' => $cart->amount - $cartItem->pricePeriodic()
@@ -643,6 +677,7 @@ class BankingService implements IBankingService
             'flags' =>
             $cart->flags | Cart::FLAGS_EVALUATED | $periodicFlag,
         ]);
+
         if (BaseFlags::isActive($cart->flags, Cart::FLAG_USER_CART)) {
             $this->markGiftCodeForCart($cart);
             $wallet = WalletTransaction::create([
@@ -657,8 +692,8 @@ class BankingService implements IBankingService
                 ]
             ]);
             WalletTransactionEvent::dispatch($cart->domain, $request->ip(), time(), $wallet);
-            CartPurchasedEvent::dispatch($cart->domain, $request->ip(), time(), $cart);
         }
+        CartPurchasedEvent::dispatch($cart->domain, $request->ip(), time(), $cart);
 
         return $cart;
     }

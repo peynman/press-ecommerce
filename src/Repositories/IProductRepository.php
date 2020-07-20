@@ -28,7 +28,7 @@ interface IProductRepository {
      * Undocumented function
      *
      * @param [type] $user
-     * @return void
+     * @return ProductCategory[]
      */
     public function getRootProductCategories($user);
 
@@ -37,7 +37,7 @@ interface IProductRepository {
      *
      * @param [type] $user
      * @param [type] $categories
-     * @return void
+     * @return array
      */
     public function getProductsPaginated($user, $page = 0, $limit = 30, $categories = [], $types = []);
 
@@ -47,7 +47,7 @@ interface IProductRepository {
      *
      * @param [type] $user
      * @param [type] $categories
-     * @return void
+     * @return array
      */
     public function getPurchasedProductsPaginated($user, $page = 0, $limit = 30, $categories = [], $types = []);
 
@@ -56,7 +56,7 @@ interface IProductRepository {
      *
      * @param [type] $user
      * @param [type] $product_id
-     * @return void
+     * @return Product
      */
     public function getProductDetails($user, $product_id);
 }
