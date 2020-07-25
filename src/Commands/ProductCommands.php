@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Log;
 use Larapress\CRUD\Commands\ActionCommandBase;
 use Larapress\CRUD\Events\CRUDVerbEvent;
 use Larapress\ECommerce\Models\Cart;
+use Larapress\ECommerce\Services\AdobeConnect\IAdobeConnectService;
 use Larapress\Reports\CRUD\TaskReportsCRUDProvider;
 use Larapress\Reports\Models\TaskReport;
 use Larapress\Reports\Services\IMetricsService;
@@ -42,6 +43,16 @@ class ProductCommands extends ActionCommandBase
             'sales:generate' => $this->salesGenerate(),
             'sales:reset' => $this->salesReset(),
         ]);
+    }
+
+    public function test()
+    {
+        return function() {
+            /** @var IAdobeConnectService */
+            $service = app(IAdobeConnectService::class);
+            $service->connect('http://5.56.132.243', 'kiankamrani@gmail.com', '@Takht987#');
+            $service->createMeeting('meetings', 'PeymanTestMeeting');
+        };
     }
 
     /**

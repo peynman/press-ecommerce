@@ -44,7 +44,7 @@ trait ProductCartItem
      */
     public function isFree()
     {
-        return $this->price() == 0 && !is_null($this->data['pricing']) && count($this->data['pricing']) > 0;
+        return $this->price() == 0 && isset($this->data['pricing']) && !is_null($this->data['pricing']) && count($this->data['pricing']) > 0;
     }
     /**
      * Undocumented function
@@ -119,5 +119,17 @@ trait ProductCartItem
             self::$pService = app(IProductService::class);
         }
         return self::$pService->getProductSales($this->id);
+    }
+
+    public function getPriceTagAttribute() {
+        if ($this->isFree()) {
+            return [ 'amount' => 0, 'currency' => $this->currency() ];
+        } else {
+            if ($this->price() === 0 && !is_null($this->parent_id)) {
+                return [ 'amount' => 'Parent', 'currency' => $this->currency() ];
+            }
+
+            return [ 'amount' => $this->price(), 'currency' => $this->currency() ];
+        }
     }
 }

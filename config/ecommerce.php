@@ -108,5 +108,9 @@ return [
             2628 => [1280, 720],
         ],
         'queue' => 'jobs'
+    ],
+
+    'lms' => [
+        'course_file_upload_default_form_id' => 2,
     ]
 ];

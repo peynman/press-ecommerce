@@ -2,15 +2,21 @@
 
 namespace Larapress\ECommerce\Services\Banking;
 
-
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Larapress\CRUD\BaseFlags;
+use Larapress\CRUD\Events\CRUDCreated;
+use Larapress\CRUD\Events\CRUDUpdated;
+use Larapress\CRUD\ServicesFlags;
 use Larapress\CRUD\Exceptions\AppException;
 use Larapress\CRUD\Extend\Helpers;
+use Larapress\ECommerce\CRUD\BankGatewayCRUDProvider;
+use Larapress\ECommerce\CRUD\BankGatewayTransactionCRUDProvider;
+use Larapress\ECommerce\CRUD\CartCRUDProvider;
 use Larapress\ECommerce\Models\BankGateway;
 use Larapress\ECommerce\Models\BankGatewayTransaction;
 use Larapress\ECommerce\Models\Cart;
@@ -45,15 +51,18 @@ class BankingService implements IBankingService
         $domainRepo = app(IDomainRepository::class);
         $domain = $domainRepo->getRequestDomain($request);
         /** @var Cart */
-        $cart = Cart::create([
-            'amount' => $amount,
+        $cart = Cart::firstOrCreate([
             'currency' => $currency,
             'customer_id' => $user->id,
             'domain_id' => $domain->id,
             'flags' => Cart::FLAG_INCREASE_WALLET,
             'status' => Cart::STATUS_UNVERIFIED,
+        ],[
+            'amount' => $amount,
             'data' => []
         ]);
+        CRUDUpdated::dispatch($cart, CartCRUDProvider::class, Carbon::now());
+
 
         return $this->redirectToBankForCart($request, $cart, $gateway_id, $onFailed, $onAlreadyPurchased);
     }
@@ -135,13 +144,15 @@ class BankingService implements IBankingService
         $callback = route(config('larapress.ecommerce.routes.bank_gateways.name') . '.any.callback', [
             'tr_id' => $transaction->id,
         ]);
-
-        BankGatewayTransactionEvent::dispatch($domain, $request->ip(), time(), $transaction);
-
         // reference keeping for redirect
         /// no logic here; just keep objects in memory update and ready
         $transaction->bank_gateway = $gatewayData;
         $transaction->domain = $domain;
+        $transaction->customer = $user;
+
+        BankGatewayTransactionEvent::dispatch($domain, $request->ip(), time(), $transaction);
+        CRUDCreated::dispatch($transaction, BankGatewayTransactionCRUDProvider::class, Carbon::now());
+
 
         return $port->redirect($request, $transaction, $callback);
     }
@@ -194,7 +205,8 @@ class BankingService implements IBankingService
                     'data' => [
                         'cart_id' => $cart->id,
                         'transaction_id' => $transaction->id,
-                        'description' => trans('larapress::ecommerce.banking.messages.wallet-descriptions.cart_increased', ['cart_id' => $cart->id])
+                        'description' => trans('larapress::ecommerce.banking.messages.wallet-descriptions.cart_increased', ['cart_id' => $cart->id]),
+                        'balance' => $this->getUserBalance($cart->customer, $cart->domain, $cart->currency),
                     ]
                 ]);
                 $this->markCartPurchased($request, $cart);
@@ -203,6 +215,8 @@ class BankingService implements IBankingService
                 $this->resetPurchasedCache($cart->customer, $cart->domain);
                 WalletTransactionEvent::dispatch($cart->domain, $request->ip(), time(), $wallet);
                 BankGatewayTransactionEvent::dispatch($cart->domain, $request->ip(), time(), $transaction);
+                CRUDUpdated::dispatch($transaction, BankGatewayTransactionCRUDProvider::class, Carbon::now());
+
                 Cache::tags(['wallet:' . $cart->customer_id])->flush();
                 return $onSuccess($request, $cart, $transaction);
             } else {
@@ -212,6 +226,8 @@ class BankingService implements IBankingService
                 DB::commit();
 
                 BankGatewayTransactionEvent::dispatch($transaction->domain, $request->ip(), time(), $transaction);
+                CRUDUpdated::dispatch($transaction, BankGatewayTransactionCRUDProvider::class, Carbon::now());
+
                 return $onFailed($request, $cart, 'Bank Request Canceled');
             }
         } catch (\Exception $e) {
@@ -223,6 +239,8 @@ class BankingService implements IBankingService
                 'data' => $data,
             ]);
             BankGatewayTransactionEvent::dispatch($transaction->domain, $request->ip(), time(), $transaction);
+            CRUDUpdated::dispatch($transaction, BankGatewayTransactionCRUDProvider::class, Carbon::now());
+
             return $onFailed($request, $cart, $e->getMessage());
         }
     }
@@ -297,6 +315,7 @@ class BankingService implements IBankingService
         $domain = $domainRepo->getRequestDomain($request);
 
         $cart = $this->getPurchasingCart($user, $domain, $currency);
+        // calls for CRUDUpdate on cart inside
         $this->updateCartWithRequest($user, $domain, $cart, $request);
         $balance = $this->getUserBalance($user, $domain, $currency);
 
@@ -370,6 +389,7 @@ class BankingService implements IBankingService
         }
         $this->resetPurchasingCache($user, $domain);
         $cart['items'] = $cart->products()->get();
+        CRUDUpdated::dispatch($cart, CartCRUDProvider::class, Carbon::now());
 
         return $cart;
     }
@@ -406,6 +426,7 @@ class BankingService implements IBankingService
 
         $this->resetPurchasingCache($user, $domain);
         $cart['items'] = $cart->products()->get();
+        CRUDUpdated::dispatch($cart, CartCRUDProvider::class, Carbon::now());
 
         return $cart;
     }
@@ -659,6 +680,8 @@ class BankingService implements IBankingService
             'amount' => $amount,
             'data' => $data,
         ]);
+        CRUDUpdated::dispatch($cart, CartCRUDProvider::class, Carbon::now());
+
         return $cart;
     }
 
@@ -671,7 +694,7 @@ class BankingService implements IBankingService
      */
     protected function markCartPurchased(Request $request, Cart $cart)
     {
-        $periodicFlag = (isset($cart->data['periodic_product_ids']) && count($cart->data['periodic_product_ids']) > 0) ? Cart::FLAGS_HAS_PERIODS : 0;
+        $periodicFlag = isset($cart->data['periodic_product_ids']) && count($cart->data['periodic_product_ids']) > 0 ? Cart::FLAGS_HAS_PERIODS : 0;
         $cart->update([
             'status' => Cart::STATUS_ACCESS_COMPLETE,
             'flags' =>
@@ -680,20 +703,23 @@ class BankingService implements IBankingService
 
         if (BaseFlags::isActive($cart->flags, Cart::FLAG_USER_CART)) {
             $this->markGiftCodeForCart($cart);
+            // decrease wallet amount for cart amount
             $wallet = WalletTransaction::create([
                 'user_id' => $cart->customer_id,
                 'domain_id' => $cart->domain_id,
-                'amount' => -1 * $cart->amount,
+                'amount' => -1 * abs($cart->amount),
                 'currency' => $cart->currency,
                 'type' => WalletTransaction::TYPE_BANK_TRANSACTION,
                 'data' => [
                     'cart_id' => $cart->id,
-                    'description' => trans('larapress::ecommerce.banking.messages.wallet-descriptions.cart_increased', ['cart_id' => $cart->id])
+                    'description' => trans('larapress::ecommerce.banking.messages.wallet-descriptions.cart_increased', ['cart_id' => $cart->id]),
+                    'balance' => $this->getUserBalance($cart->customer, $cart->domain, $cart->currency),
                 ]
             ]);
             WalletTransactionEvent::dispatch($cart->domain, $request->ip(), time(), $wallet);
         }
         CartPurchasedEvent::dispatch($cart->domain, $request->ip(), time(), $cart);
+        CRUDUpdated::dispatch($cart, CartCRUDProvider::class, Carbon::now());
 
         return $cart;
     }

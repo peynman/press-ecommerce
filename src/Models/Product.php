@@ -56,7 +56,8 @@ class Product extends Model implements ICartItem
     ];
 
     public $appends = [
-        'sales'
+        'sales',
+        'price-tag'
     ];
 
     public $hidden = [

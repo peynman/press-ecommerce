@@ -5,9 +5,9 @@ namespace Larapress\ECommerce\CRUD;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Larapress\CRUD\Base\BaseCRUDProvider;
-use Larapress\CRUD\Base\ICRUDProvider;
-use Larapress\CRUD\Base\IPermissionsMetadata;
+use Larapress\CRUD\Services\BaseCRUDProvider;
+use Larapress\CRUD\Services\ICRUDProvider;
+use Larapress\CRUD\Services\IPermissionsMetadata;
 use Larapress\CRUD\ICRUDUser;
 use Larapress\ECommerce\Models\BankGatewayTransaction;
 use Larapress\Profiles\IProfileUser;
@@ -72,6 +72,12 @@ class BankGatewayTransactionCRUDProvider implements ICRUDProvider, IPermissionsM
         'domain',
         'cart',
     ];
+    public $filterFields = [
+        'customer_id' => 'equals:customer_id',
+        'domain' => 'in:domain_id',
+        'status' => 'equals:status',
+    ];
+
 
     /**
      * Exclude current id in name unique request

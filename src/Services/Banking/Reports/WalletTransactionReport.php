@@ -3,7 +3,7 @@
 namespace Larapress\ECommerce\Services\Banking\Reports;
 
 use Illuminate\Support\Facades\Log;
-use Larapress\CRUD\Base\IReportSource;
+use Larapress\CRUD\Services\IReportSource;
 use Larapress\ECommerce\Services\Banking\Events\BankGatewayTransactionEvent;
 use Larapress\ECommerce\Services\Banking\Events\CartPurchasedEvent;
 use Larapress\ECommerce\Services\Banking\Events\WalletTransactionEvent;

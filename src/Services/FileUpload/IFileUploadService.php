@@ -2,8 +2,9 @@
 
 namespace Larapress\Ecommerce\Services\FileUpload;
 
+use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
-use Larapress\CRUD\Base\ICRUDService;
+use Larapress\CRUD\Services\ICRUDService;
 use Larapress\ECommerce\Models\FileUpload;
 
 interface IFileUploadService {
@@ -29,7 +30,7 @@ interface IFileUploadService {
      * @param UploadedFile $file
      * @return FileUpload
      */
-    public function processUploadedFile(FileUploadRequest $request, UploadedFile $file);
+    public function processUploadedFile(FileUploadRequest $request, UploadedFile $file, $existingId = null);
 
     /**
      * Undocumented function
@@ -38,5 +39,14 @@ interface IFileUploadService {
      * @param callable $onCompleted
      * @return Response
      */
-    public function receiveUploaded(FileUploadRequest $request, $onCompleted);
+    public function receiveUploaded(FileUploadRequest $request, $onCompleted, $existingId = null);
+
+    /**
+     * Undocumented function
+     *
+     * @param Request $request
+     * @param int $fileId
+     * @return void
+     */
+    public function serveFile(Request $request, $fileId);
 }

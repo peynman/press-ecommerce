@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Larapress\CRUD\ICRUDUser;
 use Larapress\ECommerce\Models\Product;
 use Larapress\ECommerce\Services\Banking\IBankingService;
@@ -23,10 +24,21 @@ class LiveStreamService implements ILiveStreamService
      * @return boolean
      */
     public function canStartLiveStream(Request $request) {
+        $streamUrl = $request->get('tcurl', null);
+        if (is_null($streamUrl)) {
+            return false;
+        }
+        $url_components = parse_url($streamUrl);
+        $params = [];
+        if (isset($url_components['query'])) {
+            parse_str($url_components['query'], $params);
+        }
         // nginx passes stream name in request name
-        return !is_null($this->getLiveStreamProduct($request->get('name', null)));
+        $product = $this->getLiveStreamProduct($request->get('name'));
+        $secret = isset($params['secret']) ? $params['secret'] : null;
+        $product_secret = $product->data['types']['livestream']['secret'];
+        return $product_secret == $secret;
     }
-
 
     /**
      * Undocumented function
@@ -38,16 +50,19 @@ class LiveStreamService implements ILiveStreamService
         $product = $this->getLiveStreamProduct($request->get('name', null));
         $data = $product->data;
         $data['types']['livestream']['status'] = 'live';
+        $data['types']['livestream']['broadcast_start_at'] = Carbon::now();
         $product->update([
             'data' => $data,
         ]);
         if ($product->parent) {
             $data = $product->parent->data;
-            $data['live-streams'] = (isset($data['live-streams']) ? $data['live-streams'] : 0) + 1;
+            $data['live-streams'] = 1;
             $product->parent->update([
                 'data' => $data,
             ]);
         }
+
+        return response('ok');
     }
 
     /**
@@ -60,16 +75,19 @@ class LiveStreamService implements ILiveStreamService
         $product = $this->getLiveStreamProduct($request->get('name', null));
         $data = $product->data;
         $data['types']['livestream']['status'] = 'ended';
+        $data['types']['livestream']['broadcast_end_at'] = Carbon::now();
         $product->update([
             'data' => $data,
         ]);
         if ($product->parent) {
             $data = $product->parent->data;
-            $data['live-streams'] = (isset($data['live-streams']) ? $data['live-streams'] : 1) - 1;
+            $data['live-streams'] = 0;
             $product->parent->update([
                 'data' => $data,
             ]);
         }
+
+        return response('ok');
     }
 
     /**
@@ -84,9 +102,15 @@ class LiveStreamService implements ILiveStreamService
         $upstreamName = $upstreamNameParts[count($upstreamNameParts)-1];
         if (Str::endsWith($upstreamName, '.m3u8')) {
             $upstreamName = substr($upstreamName, 0, strlen($upstreamName) - strlen('.m3u8'));
+            // inner variant files with format $name_xxxpxxxkbs
+            if ($upstreamName === 'index') {
+                $upstreamName = $upstreamNameParts[count($upstreamNameParts)-2];
+                $upstreamName = substr($upstreamName, 0, strrpos($upstreamName, '_'));
+            }
         }
 
         $product = $this->getLiveStreamProduct($upstreamName);
+
 
         if (is_null($product)) {
             return false;
@@ -95,6 +119,7 @@ class LiveStreamService implements ILiveStreamService
         if ($product->isFree()) {
             return true;
         }
+
 
         /** @var IProfileUser|ICRUDUser */
         $user = Auth::user();

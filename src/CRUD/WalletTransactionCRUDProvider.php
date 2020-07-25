@@ -4,9 +4,9 @@ namespace Larapress\ECommerce\CRUD;
 
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
-use Larapress\CRUD\Base\BaseCRUDProvider;
-use Larapress\CRUD\Base\ICRUDProvider;
-use Larapress\CRUD\Base\IPermissionsMetadata;
+use Larapress\CRUD\Services\BaseCRUDProvider;
+use Larapress\CRUD\Services\ICRUDProvider;
+use Larapress\CRUD\Services\IPermissionsMetadata;
 use Larapress\CRUD\Exceptions\AppException;
 use Larapress\ECommerce\Models\WalletTransaction;
 use Larapress\Pages\Models\Page;

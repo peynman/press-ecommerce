@@ -3,7 +3,7 @@
 namespace Larapress\ECommerce\Services\Banking\Reports;
 
 use Illuminate\Support\Facades\Log;
-use Larapress\CRUD\Base\IReportSource;
+use Larapress\CRUD\Services\IReportSource;
 use Larapress\ECommerce\Services\Banking\Events\CartPurchasedEvent;
 use Larapress\Reports\Services\BaseReportSource;
 use Larapress\Reports\Services\IReportsService;
@@ -69,7 +69,7 @@ class CartPurchasedReport implements IReportSource
 
         /** @var ICartItem[] */
         $items = $event->cart->products;
-        $periodicPurchases = $event->cart->data['periodic_product_ids'];
+        $periodicPurchases = isset($event->cart->data['periodic_product_ids']) ? $event->cart->data['periodic_product_ids'] : [];
         foreach ($items as $item) {
             $periodic = in_array($item->id, $periodicPurchases);
             $itemTags = [

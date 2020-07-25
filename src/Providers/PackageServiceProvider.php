@@ -6,8 +6,14 @@ use Illuminate\Support\ServiceProvider;
 use Larapress\ECommerce\Commands\ProductCommands;
 use Larapress\ECommerce\Repositories\IProductRepository;
 use Larapress\ECommerce\Repositories\ProductRepository;
+use Larapress\ECommerce\Services\AdobeConnect\AdobeConnectService;
+use Larapress\ECommerce\Services\AdobeConnect\IAdobeConnectService;
 use Larapress\ECommerce\Services\Banking\BankingService;
 use Larapress\ECommerce\Services\Banking\IBankingService;
+use Larapress\ECommerce\Services\CourseSession\ICourseSessionFormService;
+use Larapress\ECommerce\Services\CourseSession\CourseSessionFormService;
+use Larapress\ECommerce\Services\CourseSession\CourseSessionRepository;
+use Larapress\ECommerce\Services\CourseSession\ICourseSessionRepository;
 use Larapress\ECommerce\Services\FileUpload\FileUploadService;
 use Larapress\Ecommerce\Services\FileUpload\IFileUploadService;
 use Larapress\ECommerce\Services\LiveStream\ILiveStreamService;
@@ -32,6 +38,9 @@ class PackageServiceProvider extends ServiceProvider
         $this->app->bind(IFileUploadService::class, FileUploadService::class);
         $this->app->bind(IProductService::class, ProductService::class);
         $this->app->bind(IVODStreamService::class, VODStreamService::class);
+        $this->app->bind(ICourseSessionFormService::class, CourseSessionFormService::class);
+        $this->app->bind(IAdobeConnectService::class, AdobeConnectService::class);
+        $this->app->bind(ICourseSessionRepository::class, CourseSessionRepository::class);
 
         $this->app->register(EventServiceProvider::class);
     }

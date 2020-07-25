@@ -27,7 +27,6 @@ class Cart extends Model
     const STATUS_UNVERIFIED = 1;
     const STATUS_ACCESS_GRANTED = 2;
     const STATUS_ACCESS_COMPLETE = 3;
-    const STATUS_ACCESS_PERIOD = 4;
 
     const FLAG_USER_CART = 1;
     const FLAG_INCREASE_WALLET = 2;

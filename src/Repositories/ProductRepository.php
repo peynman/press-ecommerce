@@ -5,8 +5,8 @@ namespace Larapress\ECommerce\Repositories;
 use Carbon\Carbon;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Cache;
-use Larapress\CRUD\Base\BaseCRUDService;
-use Larapress\CRUD\Base\ICRUDService;
+use Larapress\CRUD\Services\BaseCRUDService;
+use Larapress\CRUD\Services\ICRUDService;
 use Larapress\CRUD\Exceptions\AppException;
 use Larapress\ECommerce\CRUD\ProductCRUDProvider;
 use Larapress\ECommerce\Models\Product;
@@ -81,7 +81,7 @@ class ProductRepository implements IProductRepository {
      * @return array
      */
     public function getProductsPaginated($user, $page = 0, $limit = 50, $categories = [], $types = []) {
-        $query = $this->getProductsPaginatedQuery($user, $page, $limit, $categories, $types);
+        $query = $this->getProductsPaginatedQuery($user, $page, $categories, $types);
         $resultset = $query->paginate($limit);
         if (!is_null($user)) {
             /** @var IBankingService */
@@ -110,16 +110,7 @@ class ProductRepository implements IProductRepository {
      * @return array
      */
     public function getPurchasedProductsPaginated($user, $page = 0, $limit = 30, $categories = [], $types = []) {
-        $query = $this->getProductsPaginatedQuery($user, $page, $limit, $categories, $types);
-
-        /** @var IBankingService */
-        $service = app(IBankingService::class);
-        /** @var IDomainRepository */
-        $domainRepo = app(IDomainRepository::class);
-        $domain = $domainRepo->getCurrentRequestDomain();
-        $purchases = $service->getPurchasedItemIds($user, $domain);
-
-        $query->whereIn('id', $purchases);
+        $query = $this->getPurchasedProductsPaginatedQuery($user, $page, $categories, $types);
         $resultset = $query->paginate($limit);
         $items = $resultset->items();
         foreach ($items as $item) {
@@ -188,7 +179,7 @@ class ProductRepository implements IProductRepository {
      * @param array $types
      * @return Builder
      */
-    protected function getProductsPaginatedQuery($user, $page = 0, $limit = 50, $categories = [], $types = []) {
+    protected function getProductsPaginatedQuery($user, $page = 0, $categories = [], $types = []) {
         Paginator::currentPageResolver(
             function () use ($page) {
                 return $page;
@@ -209,6 +200,27 @@ class ProductRepository implements IProductRepository {
         }
 
         $query->orderBy('priority', 'desc');
+        return $query;
+    }
+
+    protected function getPurchasedProductsPaginatedQuery($user, $page = 0, $categories = [], $types = []) {
+        $query = $this->getProductsPaginatedQuery($user, $page, $categories, $types);
+
+        /** @var IBankingService */
+        $service = app(IBankingService::class);
+        /** @var IDomainRepository */
+        $domainRepo = app(IDomainRepository::class);
+        $domain = $domainRepo->getCurrentRequestDomain();
+        $purchases = $service->getPurchasedItemIds($user, $domain);
+
+        $query->where(function ($query) use($purchases) {
+            $query->orWhere(function ($q) use($purchases) {
+                $q->whereIn('id', $purchases);
+            })->orWhere(function ($q) {
+                $q->whereRaw("JSON_EXTRACT(data, '$.pricing[0].amount') = 0");
+            });
+        });
+
         return $query;
     }
 }
