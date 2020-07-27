@@ -90,12 +90,12 @@ return [
         ],
 
         'redirect' => [
-            'already' => '/me/products',
+            'already' => '/me/carts',
             'success' => '/me/products',
             'failed' => '/me/current-cart/',
 
-            'increase_success' => '/me/transactions',
-            'increase_failed' => '/me/transactions',
+            'increase_success' => '/me/carts',
+            'increase_failed' => '/me/carts',
         ],
         'default_gateway' => 1,
     ],

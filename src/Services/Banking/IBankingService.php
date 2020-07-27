@@ -32,7 +32,7 @@ interface IBankingService
      *
      * @return Response
      */
-    public function verifyBankRequest(Request $request, $transaction, $onAlreadyPurchased, $onSuccess, $onFailed);
+    public function verifyBankRequest(Request $request, $transaction, $onAlreadyPurchased, $onSuccess, $onFailed, $onCancel);
 
     /**
      * Undocumented function
@@ -53,7 +53,7 @@ interface IBankingService
      * @param int $cart_id
      * @return Response
      */
-    public function updatePurchasingCart(Request $request, int $currency);
+    public function updatePurchasingCart(Request $request, int $currency, $cart_id = null);
 
     /**
      * Undocumented function
@@ -98,6 +98,15 @@ interface IBankingService
     /**
      * Undocumented function
      *
+     * @param int|Cart $originalCart
+     * @param int|Product $product
+     * @return Cart
+     */
+    public function getInstallmentsForProductInCart(IProfileUser $user, $originalCart, $product);
+
+    /**
+     * Undocumented function
+     *
      * @param Request $request
      * @param IProfileUser $user
      * @param Domain $domain
@@ -135,6 +144,7 @@ interface IBankingService
      * @return array
      */
     public function getPurchasedCarts(IProfileUser $user, Domain $domain);
+
 
 
     /**

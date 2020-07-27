@@ -23,6 +23,16 @@ class CartController extends BaseCRUDController
         );
 
         Route::post(
+            '/me/{cart_id}/installments/{product_id}',
+            '\\'.self::class.'@getCartInstallments'
+        )->name(config('larapress.ecommerce.routes.carts.name').'.any.purchasing.installments');
+
+        Route::post(
+            '/me/{cart_id}/update',
+            '\\'.self::class.'@updatePurchasingCart'
+        )->name(config('larapress.ecommerce.routes.carts.name').'.any.purchasing.update');
+
+        Route::post(
             '/me/current-cart/add',
             '\\'.self::class.'@addToPurchasingCart'
         )->name(config('larapress.ecommerce.routes.carts.name').'.any.purchasing.add');
@@ -33,15 +43,10 @@ class CartController extends BaseCRUDController
         )->name(config('larapress.ecommerce.routes.carts.name').'.any.purchasing.remove');
 
         Route::post(
-            '/me/current-cart/update',
-            '\\'.self::class.'@updatePurchasingCart'
-        )->name(config('larapress.ecommerce.routes.carts.name').'.any.purchasing.update');
-
-
-        Route::post(
             '/me/current-cart/apply/gift-code',
             '\\'.self::class.'@checkPurchasingCartGiftCode'
         )->name(config('larapress.ecommerce.routes.carts.name').'.any.purchasing.gift-code');
+
     }
 
     /**
@@ -61,8 +66,8 @@ class CartController extends BaseCRUDController
      * @param Request $request
      * @return Response
      */
-    public function updatePurchasingCart(IBankingService $service, CartUpdateRequest $request) {
-        return $service->updatePurchasingCart($request, $request->getCurrency());
+    public function updatePurchasingCart(IBankingService $service, CartUpdateRequest $request, $cart_id) {
+        return $service->updatePurchasingCart($request, $request->getCurrency(), $cart_id);
     }
 
 
@@ -85,5 +90,9 @@ class CartController extends BaseCRUDController
      */
     public function removeFromPurchasingCart(IBankingService $service, CartModifyRequest $request) {
         return $service->removeItemFromPurchasingCart($request, $request->getProduct());
+    }
+
+    public function getCartInstallments(IBankingService $service, $cart_id, $product_id) {
+        return $service->getInstallmentsForProductInCart(Auth::user(), $cart_id, $product_id);
     }
 }

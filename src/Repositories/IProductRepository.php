@@ -51,6 +51,25 @@ interface IProductRepository {
      */
     public function getPurchasedProductsPaginated($user, $page = 0, $limit = 30, $categories = [], $types = []);
 
+
+    /**
+     * Undocumented function
+     *
+     * @param [type] $user
+     * @return Cart[]
+     */
+    public function getPurchasedProdutsCarts($user);
+
+
+    /**
+     * Undocumented function
+     *
+     * @param [type] $user
+     * @param [type] $cart_id
+     * @return Cart
+     */
+    public function getCartForUser($user, $cart_id);
+
     /**
      * Undocumented function
      *

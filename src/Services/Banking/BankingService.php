@@ -11,7 +11,6 @@ use Illuminate\Support\Facades\DB;
 use Larapress\CRUD\BaseFlags;
 use Larapress\CRUD\Events\CRUDCreated;
 use Larapress\CRUD\Events\CRUDUpdated;
-use Larapress\CRUD\ServicesFlags;
 use Larapress\CRUD\Exceptions\AppException;
 use Larapress\CRUD\Extend\Helpers;
 use Larapress\ECommerce\CRUD\BankGatewayCRUDProvider;
@@ -51,7 +50,7 @@ class BankingService implements IBankingService
         $domainRepo = app(IDomainRepository::class);
         $domain = $domainRepo->getRequestDomain($request);
         /** @var Cart */
-        $cart = Cart::firstOrCreate([
+        $cart = Cart::updateOrCreate([
             'currency' => $currency,
             'customer_id' => $user->id,
             'domain_id' => $domain->id,
@@ -89,13 +88,7 @@ class BankingService implements IBankingService
         }
 
         if ($cart->isPaid()) {
-            if (!is_null($onFailed)) {
-                return $onFailed($cart, trans('dashboard.errors.cart.already_purchased'));
-            } else {
-                return [
-                    'message' => trans('dashboard.errors.cart.already_purchased')
-                ];
-            }
+            return $onAlreadyPurchased($request, $cart);
         }
 
         $avPorts = config('larapress.ecommerce.banking.ports');
@@ -127,6 +120,13 @@ class BankingService implements IBankingService
         } else if (isset($cart->data['use_balance']) && $cart->data['use_balance'] && $balance < $cart->amount) {
             $portPrice = $portPrice - $balance;
         }
+
+        $return_to = $request->get('return_to', null);
+        $cartData = $cart->data;
+        $cartData['return_to'] = $return_to;
+        $cart->update([
+            'data' => $cartData,
+        ]);
 
         /** @var BankGatewayTransaction */
         $transaction = BankGatewayTransaction::create([
@@ -166,7 +166,7 @@ class BankingService implements IBankingService
      *
      * @return Response
      */
-    public function verifyBankRequest(Request $request, $transaction, $onAlreadyPurchased, $onSuccess, $onFailed)
+    public function verifyBankRequest(Request $request, $transaction, $onAlreadyPurchased, $onSuccess, $onFailed, $onCancel)
     {
         if (is_numeric($transaction)) {
             /** @var Cart $cart */
@@ -228,7 +228,7 @@ class BankingService implements IBankingService
                 BankGatewayTransactionEvent::dispatch($transaction->domain, $request->ip(), time(), $transaction);
                 CRUDUpdated::dispatch($transaction, BankGatewayTransactionCRUDProvider::class, Carbon::now());
 
-                return $onFailed($request, $cart, 'Bank Request Canceled');
+                return $onCancel($request, $cart, 'Bank Request Canceled');
             }
         } catch (\Exception $e) {
             DB::rollBack();
@@ -306,7 +306,7 @@ class BankingService implements IBankingService
      * @param int $cart_id
      * @return Response
      */
-    public function updatePurchasingCart(Request $request, int $currency)
+    public function updatePurchasingCart(Request $request, int $currency, $cart_id = null)
     {
         /** @var IProfileUser */
         $user = Auth::user();
@@ -314,7 +314,11 @@ class BankingService implements IBankingService
         $domainRepo = app(IDomainRepository::class);
         $domain = $domainRepo->getRequestDomain($request);
 
-        $cart = $this->getPurchasingCart($user, $domain, $currency);
+        $cart = is_null($cart_id) ? $this->getPurchasingCart($user, $domain, $currency) : Cart::find($cart_id);
+        if (is_null($cart) || $cart->customer_id !== $user->id) {
+            throw new AppException(AppException::ERR_OBJECT_NOT_FOUND);
+        }
+
         // calls for CRUDUpdate on cart inside
         $this->updateCartWithRequest($user, $domain, $cart, $request);
         $balance = $this->getUserBalance($user, $domain, $currency);
@@ -526,6 +530,72 @@ class BankingService implements IBankingService
     /**
      * Undocumented function
      *
+     * @param int|Cart $originalCart
+     * @param int|Product $product
+     * @return Cart
+     */
+    public function getInstallmentsForProductInCart(IProfileUser $user, $originalCart, $product) {
+        if (is_numeric($originalCart)) {
+            $originalCart = Cart::find($originalCart);
+        }
+
+        if (is_null($originalCart) || $originalCart->customer_id != $user->id) {
+            throw new AppException(AppException::ERR_OBJECT_NOT_FOUND);
+        }
+
+        if (is_numeric($product)) {
+            $product = Product::find($product);
+        }
+
+        if (is_null($product)) {
+            throw new AppException(AppException::ERR_OBJECT_NOT_FOUND);
+        }
+
+        $periodicIds = isset($originalCart->data['periodic_product_ids']) ? $originalCart->data['periodic_product_ids'] : [];
+        if (!in_array($product->id, $periodicIds)) {
+            throw new AppException(AppException::ERR_OBJECT_NOT_FOUND);
+        }
+
+        if (!isset($product->data['calucalte_periodic'])) {
+            throw new AppException(AppException::ERR_OBJ_NOT_READY);
+        }
+
+        $alreadyPaidPeriods = isset($originalCart->data['periodic_payments']) ? $originalCart->data['periodic_payments'] : [];
+        $calc = $product->data['calucalte_periodic'];
+        $count = $calc['period_count'];
+        $alreadyPaidCount = isset($alreadyPaidPeriods[$product->id]) ? count($alreadyPaidPeriods[$product->id]) : 0;
+        if ($alreadyPaidCount >= $count) {
+            return null;
+        }
+
+        /** @var Cart */
+        $cart = Cart::updateOrCreate([
+            'currency' => $originalCart->currency,
+            'customer_id' => $user->id,
+            'domain_id' => $originalCart->domain_id,
+            'flags' => Cart::FLAGS_PERIOD_PAYMENT_CART,
+            'status' => Cart::STATUS_UNVERIFIED,
+        ], [
+            'amount' => $calc['period_amount'],
+            'data' => [
+                'periodic_pay' => [
+                    'index' => $alreadyPaidCount + 1,
+                    'total' => $count,
+                    'product' => [
+                        'id' => $product->id,
+                        'title' => $product->data['title'],
+                    ],
+                    'originalCart' => $originalCart->id,
+                ],
+            ]
+        ]);
+
+        return $cart;
+    }
+
+    /**
+     * Undocumented function
+     *
      * @param IProfileUser $user
      * @param Domain $domain
      * @return array
@@ -548,7 +618,6 @@ class BankingService implements IBankingService
             null
         );
     }
-
 
     /**
      * Undocumented function
@@ -627,25 +696,31 @@ class BankingService implements IBankingService
         $data['periodic_product_ids'] = [];
 
         $amount = 0;
-        $periodIds = [];
-        $periods = $request->get('periods', null);
-        if (!is_null($periods)) {
-            foreach ($periods as $period => $val) {
-                if ($val) {
-                    $periodIds[] = $period;
-                    $data['periodic_product_ids'][] = $period;
+
+        if (BaseFlags::isActive($cart->flags, Cart::FLAGS_PERIOD_PAYMENT_CART)) {
+            $amount = $cart->amount;
+        } else {
+            $periodIds = [];
+            $periods = $request->get('periods', null);
+            if (!is_null($periods)) {
+                foreach ($periods as $period => $val) {
+                    if ($val) {
+                        $periodIds[] = $period;
+                        $data['periodic_product_ids'][] = $period;
+                    }
+                }
+            }
+
+            $items = $this->getPurchasingCartItems($user, $domain, $cart->currency);
+            foreach ($items as $item) {
+                if (in_array($item->id, $periodIds)) {
+                    $amount += $item->pricePeriodic();
+                } else {
+                    $amount += $item->price();
                 }
             }
         }
 
-        $items = $this->getPurchasingCartItems($user, $domain, $cart->currency);
-        foreach ($items as $item) {
-            if (in_array($item->id, $periodIds)) {
-                $amount += $item->pricePeriodic();
-            } else {
-                $amount += $item->price();
-            }
-        }
 
         $data['use_balance'] = $request->get('use_balance', false);
 
@@ -695,14 +770,48 @@ class BankingService implements IBankingService
     protected function markCartPurchased(Request $request, Cart $cart)
     {
         $periodicFlag = isset($cart->data['periodic_product_ids']) && count($cart->data['periodic_product_ids']) > 0 ? Cart::FLAGS_HAS_PERIODS : 0;
+        $data = $cart->data;
+        $data['period_start'] = Carbon::now();
         $cart->update([
             'status' => Cart::STATUS_ACCESS_COMPLETE,
-            'flags' =>
-            $cart->flags | Cart::FLAGS_EVALUATED | $periodicFlag,
+            'flags' => $cart->flags | Cart::FLAGS_EVALUATED | $periodicFlag,
+            'data' => $data,
         ]);
 
         if (BaseFlags::isActive($cart->flags, Cart::FLAG_USER_CART)) {
             $this->markGiftCodeForCart($cart);
+            // decrease wallet amount for cart amount
+            $wallet = WalletTransaction::create([
+                'user_id' => $cart->customer_id,
+                'domain_id' => $cart->domain_id,
+                'amount' => -1 * abs($cart->amount),
+                'currency' => $cart->currency,
+                'type' => WalletTransaction::TYPE_BANK_TRANSACTION,
+                'data' => [
+                    'cart_id' => $cart->id,
+                    'description' => trans('larapress::ecommerce.banking.messages.wallet-descriptions.cart_increased', ['cart_id' => $cart->id]),
+                    'balance' => $this->getUserBalance($cart->customer, $cart->domain, $cart->currency),
+                ]
+            ]);
+            WalletTransactionEvent::dispatch($cart->domain, $request->ip(), time(), $wallet);
+        } elseif (BaseFlags::isActive($cart->flags, Cart::FLAGS_PERIOD_PAYMENT_CART)) {
+            $originalCart = Cart::find($cart->data['periodic_pay']['originalCart']);
+            $origData = $originalCart->data;
+            $originalProductId = $cart->data['periodic_pay']['product']['id'];
+            if (!isset($origData['periodic_payments'])) {
+                $origData['periodic_payments'] = [];
+            }
+            if (!isset($origData['periodic_payments'][$originalProductId])) {
+                $origData['periodic_payments'][$originalProductId] = [];
+            }
+            $origData['periodic_payments'][$originalProductId][] = [
+                'payment_cart' => $cart->id,
+                'payment_date' => Carbon::now(),
+            ];
+
+            $originalCart->update([
+                'data' => $origData,
+            ]);
             // decrease wallet amount for cart amount
             $wallet = WalletTransaction::create([
                 'user_id' => $cart->customer_id,
@@ -759,7 +868,6 @@ class BankingService implements IBankingService
         Cache::tags(['purchasing-cart:' . $user->id])->flush();
     }
 
-
     /**
      * Undocumented function
      *
@@ -771,7 +879,6 @@ class BankingService implements IBankingService
     {
         Cache::tags(['purchased-cart:' . $user->id])->flush();
     }
-
 
     /**
      * Undocumented function

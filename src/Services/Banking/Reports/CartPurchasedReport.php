@@ -3,7 +3,9 @@
 namespace Larapress\ECommerce\Services\Banking\Reports;
 
 use Illuminate\Support\Facades\Log;
+use Larapress\CRUD\BaseFlags;
 use Larapress\CRUD\Services\IReportSource;
+use Larapress\ECommerce\Models\Cart;
 use Larapress\ECommerce\Services\Banking\Events\CartPurchasedEvent;
 use Larapress\Reports\Services\BaseReportSource;
 use Larapress\Reports\Services\IReportsService;
@@ -67,40 +69,66 @@ class CartPurchasedReport implements IReportSource
             'gift' => isset($event->cart->data['gift_code']['amount']) ? $event->cart->data['gift_code']['amount']: 0,
         ], $event->timestamp);
 
-        /** @var ICartItem[] */
-        $items = $event->cart->products;
-        $periodicPurchases = isset($event->cart->data['periodic_product_ids']) ? $event->cart->data['periodic_product_ids'] : [];
-        foreach ($items as $item) {
-            $periodic = in_array($item->id, $periodicPurchases);
+
+        if (BaseFlags::isActive($event->cart->flags, Cart::FLAGS_PERIOD_PAYMENT_CART)) {
+            $originalProductId = $event->cart->data['periodic_pay']['product']['id'];
+            $paymentPeriodIndex = $event->cart->data['periodic_pay']['index'];
+            $amount = floatValue($event->cart->amount);
+            $this->metrics->pushMeasurement(
+                $event->domain->id,
+                'product.'.$originalProductId.'.sales_amount',
+                $amount
+            );
+
             $itemTags = [
                 'domain' => $event->domain->id,
                 'currency' => $event->cart->currency,
-                'product' => $item->id,
-                'periodic' => $periodic,
+                'product' => $originalProductId,
+                'periodic' => true,
+                'period' => $paymentPeriodIndex
             ];
 
-            $this->metrics->pushMeasurement(
-                $event->domain->id,
-                'product.'.$item->id.'.sales_amount',
-                $periodic ? $item->pricePeriodic() : $item->price()
-            );
-            if ($periodic) {
-                $this->metrics->pushMeasurement(
-                    $event->domain->id,
-                    'product.'.$item->id.'.sales_periodic',
-                    1
-                );
-            } else {
-                $this->metrics->pushMeasurement(
-                    $event->domain->id,
-                    'product.'.$item->id.'.sales_fixed',
-                    1
-                );
-            }
-
             $this->reports->pushMeasurement('carts.purchased.items', 1, $itemTags, [
-                'amount' => $periodic ? $item->pricePeriodic() : $item->price(),
+                'amount' => $amount,
             ], $event->timestamp);
+        }
+
+        /** @var ICartItem[] */
+        $items = $event->cart->products;
+        $periodicPurchases = isset($event->cart->data['periodic_product_ids']) ? $event->cart->data['periodic_product_ids'] : [];
+        if (!is_null($items) && count($items) > 0) {
+            foreach ($items as $item) {
+                $periodic = in_array($item->id, $periodicPurchases);
+                $itemTags = [
+                    'domain' => $event->domain->id,
+                    'currency' => $event->cart->currency,
+                    'product' => $item->id,
+                    'periodic' => $periodic,
+                ];
+
+                $this->metrics->pushMeasurement(
+                    $event->domain->id,
+                    'product.'.$item->id.'.sales_amount',
+                    $periodic ? $item->pricePeriodic() : $item->price()
+                );
+                if ($periodic) {
+                    $this->metrics->pushMeasurement(
+                        $event->domain->id,
+                        'product.'.$item->id.'.sales_periodic',
+                        1
+                    );
+                } else {
+                    $this->metrics->pushMeasurement(
+                        $event->domain->id,
+                        'product.'.$item->id.'.sales_fixed',
+                        1
+                    );
+                }
+
+                $this->reports->pushMeasurement('carts.purchased.items', 1, $itemTags, [
+                    'amount' => $periodic ? $item->pricePeriodic() : $item->price(),
+                ], $event->timestamp);
+            }
         }
     }
 }

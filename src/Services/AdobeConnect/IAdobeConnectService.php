@@ -12,6 +12,7 @@ interface IAdobeConnectService {
      */
     public function connect($url, $username, $password);
 
+
     /**
      * Undocumented function
      *
@@ -20,7 +21,7 @@ interface IAdobeConnectService {
      * @param string $displayName
      * @return bool
      */
-    public function syncUserAccount($username, $password, $displayName);
+    public function syncUserAccount($username, $password, $firstname, $lastname);
 
     /**
      * Undocumented function
@@ -50,4 +51,24 @@ interface IAdobeConnectService {
      * @return void
      */
     public function redirectToMeeting($meetingName, $username, $password);
+
+
+    /**
+     * Undocumented function
+     *
+     * @param [type] $user
+     * @param int $product_id
+     * @return Response
+     */
+    public function verifyProductMeeting($user, $product_id);
+
+
+
+    /**
+     * Undocumented function
+     *
+     * @param Product $item
+     * @return void
+     */
+    public function createMeetingForProduct($item);
 }

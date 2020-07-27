@@ -2,12 +2,8 @@
 
 namespace Larapress\ECommerce\Services\AdobeConnect;
 
-use Illuminate\Support\Facades\Log;
-use Larapress\CRUD\Services\IReportSource;
 use Larapress\ECommerce\Services\AdobeConnect\IAdobeConnectService;
 use Larapress\ECommerce\Services\Banking\Events\CartPurchasedEvent;
-use Larapress\Reports\Services\BaseReportSource;
-use Larapress\Reports\Services\IReportsService;
 
 class SyncACMeetingOnCartPurchase
 {

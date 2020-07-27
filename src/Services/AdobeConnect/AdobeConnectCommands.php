@@ -138,6 +138,8 @@ class AdobeConnect extends ActionCommandBase
                                 );
                             }
                         }
+
+
                     }
                 });
         };
