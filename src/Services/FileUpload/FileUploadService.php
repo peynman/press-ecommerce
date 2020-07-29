@@ -148,9 +148,11 @@ class FileUploadService implements IFileUploadService
      * @param int $fileId
      * @return void
      */
-    public function serveFile(Request $request, $fileId) {
-        /** @var FileUpload */
-        $link = FileUpload::find($fileId);
+    public function serveFile(Request $request, $link) {
+        if (is_numeric($link)) {
+            /** @var FileUpload */
+            $link = FileUpload::find($link);
+        }
         if (is_null($link)) {
             throw new AppException(AppException::ERR_OBJECT_NOT_FOUND);
         }

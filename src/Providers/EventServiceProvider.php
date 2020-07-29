@@ -19,8 +19,6 @@ class EventServiceProvider extends ServiceProvider
         'Larapress\ECommerce\Services\Banking\Events\CartPurchasedEvent' => [
             // send general reports
             'Larapress\ECommerce\Services\Banking\Reports\CartPurchasedReport',
-            // sync adobe connect servers
-            'Larapress\ECommerce\Services\AdobeConnect\SyncACMeetingOnCartPurchase',
         ],
         'Larapress\ECommerce\Services\Banking\Events\WalletTransactionEvent' => [
             'Larapress\ECommerce\Services\Banking\Reports\WalletTransactionReport'

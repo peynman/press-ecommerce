@@ -33,6 +33,7 @@ class Cart extends Model
     const FLAGS_EVALUATED = 4;
     const FLAGS_HAS_PERIODS = 8;
     const FLAGS_PERIOD_PAYMENT_CART = 16;
+    const FLAGS_SYSTEM_API = 32;
 
     use SoftDeletes;
 

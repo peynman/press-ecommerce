@@ -59,6 +59,28 @@ interface IBankingService
      * Undocumented function
      *
      * @param Request $request
+     * @param Cart $cart
+     * @return Cart
+     */
+    public function markCartPurchased(Request $request, Cart $cart);
+
+
+    /**
+     * Undocumented function
+     *
+     * @param Request $request
+     * @param IProfileUser $user
+     * @param Domain $domain
+     * @param array $ids
+     * @param int $currency
+     * @return Cart
+     */
+    public function createCartWithProductIDs(Request $request, IProfileUser $user, Domain $domain, array $ids, $currency);
+
+    /**
+     * Undocumented function
+     *
+     * @param Request $request
      * @param integer $currency
      * @param string $code
      * @return void
