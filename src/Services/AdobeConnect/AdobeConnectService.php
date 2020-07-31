@@ -83,7 +83,7 @@ class AdobeConnectService implements IAdobeConnectService
      * @param [type] $meetingName
      * @return SCO
      */
-    public function createMeeting($folderName, $meetingName)
+    public function createOrGetMeeting($folderName, $meetingName)
     {
         $folderId = null;
         $ids = $this->client->scoShortcuts();
@@ -251,6 +251,33 @@ class AdobeConnectService implements IAdobeConnectService
      * Undocumented function
      *
      * @param Product $item
+     * @param callable(meetingFolder, meetingName) $callback
+     * @return void
+     */
+    public function onEachServerForProduct($item, $callback) {
+        $serverIdsList = isset($item->data['types']['ac_meeting']['servers']) ? $item->data['types']['ac_meeting']['servers'] : [];
+        $serverIds = array_map(function ($item) {
+            return $item['id'];
+        }, $serverIdsList);
+        $servers = FilterModel::whereIn('id', $serverIds)->get();
+
+        $meetingName = isset($item->data['types']['ac_meeting']['meeting_name']) && !empty($item->data['types']['ac_meeting']['meeting_name']) ? $item->data['types']['ac_meeting']['meeting_name'] : 'ac-product-' . $item->id;
+        foreach ($servers as $server) {
+            $meetingFolder = isset($server->data['adobe_connect']['meeting_folder']) && !empty($server->data['adobe_connect']['meeting_folder']) ? $server->data['adobe_connect'] : 'meetings';
+
+            $this->connect(
+                $server->data['adobe_connect']['server'],
+                $server->data['adobe_connect']['username'],
+                $server->data['adobe_connect']['password']
+            );
+            $callback($meetingFolder, $meetingName);
+        }
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param Product $item
      * @return void
      */
     public function createMeetingForProduct($item)
@@ -259,28 +286,12 @@ class AdobeConnectService implements IAdobeConnectService
         foreach ($types as $type) {
             // if the product has ac_meeting type
             // its a adobe connect
-            if ($type->name === 'ac_meeting') {
-                $serverIdsList = isset($item->data['types']['ac_meeting']['servers']) ? $item->data['types']['ac_meeting']['servers'] : [];
-                $serverIds = array_map(function ($item) {
-                    return $item['id'];
-                }, $serverIdsList);
-                $servers = FilterModel::whereIn('id', $serverIds)->get();
-
-                $meetingName = isset($item->data['types']['ac_meeting']['meeting_name']) && !empty($item->data['types']['ac_meeting']['meeting_name']) ? $item->data['types']['ac_meeting']['meeting_name'] : 'ac-product-' . $item->id;
-                foreach ($servers as $server) {
-                    $meetingFolder = isset($server->data['adobe_connect']['meeting_folder']) && !empty($server->data['adobe_connect']['meeting_folder']) ? $server->data['adobe_connect'] : 'meetings';
-
-                    $this->connect(
-                        $server->data['adobe_connect']['server'],
-                        $server->data['adobe_connect']['username'],
-                        $server->data['adobe_connect']['password']
-                    );
-                    $this->createMeeting(
-                        $meetingFolder,
-                        $meetingName
-                    );
-                }
-            }
+            $this->onEachServerForProduct($item, function($meetingName, $meetingFolder) {
+                $this->createOrGetMeeting(
+                    $meetingFolder,
+                    $meetingName
+                );
+            });
         }
     }
 }

@@ -30,7 +30,7 @@ interface IAdobeConnectService {
      * @param [type] $meetingName
      * @return void
      */
-    public function createMeeting($folderName, $meetingName);
+    public function createOrGetMeeting($folderName, $meetingName);
 
     /**
      * Undocumented function
@@ -71,4 +71,14 @@ interface IAdobeConnectService {
      * @return void
      */
     public function createMeetingForProduct($item);
+
+
+    /**
+     * Undocumented function
+     *
+     * @param Product $item
+     * @param callable(meetingFolder, meetingName) $callback
+     * @return void
+     */
+    public function onEachServerForProduct($item, $callback);
 }

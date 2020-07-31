@@ -32,7 +32,7 @@ class AdobeConnect extends ActionCommandBase
      *
      * @var string
      */
-    protected $description = 'report events to influx db';
+    protected $description = 'ask for event statuses from adobe connect';
 
     /**
      * Create a new command instance.
@@ -42,119 +42,34 @@ class AdobeConnect extends ActionCommandBase
     public function __construct()
     {
         parent::__construct([
-            'migrate' => $this->migrate(),
+            'sync:lives' => $this->syncLiveEvents(),
         ]);
     }
 
-    public function migrate()
+    public function syncLiveEvents()
     {
         return function () {
             /** @var IAdobeConnectService */
             $service = app(IAdobeConnectService::class);
 
-            $product = Product::with('types')->find($this->option('product'));
-            if (is_null($product)) {
-                throw new AppException(AppException::ERR_OBJECT_NOT_FOUND);
-            }
+            $products =
+                Product::with('types')
+                ->whereHas('types', function ($q) {
+                    $q->where('name', 'ac_meeting');
+                })
+                ->get();
 
-            $types = $product->types;
-            $isAC = false;
-            foreach ($types as $type) {
-                if ($type->name === 'ac_meeting') {
-                    $isAC = true;
+
+            foreach ($products as $product) {
+                if (
+                    isset($product->data['types']['ac_meeting']['status']) &&
+                    $product->data['types']['ac_meeting']['status'] !== 'ended'
+                ) {
+                    $service->onEachServerForProduct($product, function($meetingFolder, $meetingName)  use($service, $product) {
+                        $meeting = $service->createOrGetMeeting($meetingFolder, $meetingName);
+                    });
                 }
             }
-            if (!$isAC) {
-                throw new AppException(AppException::ERR_INVALID_QUERY);
-            }
-
-            $service->connect(
-                $product->data['types']['ac_meeting']['server'],
-                $product->data['types']['ac_meeting']['username'],
-                $product->data['types']['ac_meeting']['password']
-            );
-            $meetingName = isset($product->data['types']['ac_meeting']['meeting_name']) && !empty($product->data['types']['ac_meeting']['meeting_name']) ?
-                $product->data['types']['ac_meeting']['meeting_name'] : 'ac-product-' . $product->id;
-            $meetingFolder = isset($product->data['types']['ac_meeting']['meeting_folder']) && !empty($product->data['types']['ac_meeting']['meeting_folder']) ?
-                $product->data['types']['ac_meeting']['meeting_folder'] : 'meetings';
-
-            $isFree = $product->isFree();
-            if (!$isFree && !is_null($product->parent_id)) {
-                $parent = $product->parent;
-                $isFree = $parent->isFree();
-            }
-            $participants = User::whereHas('carts', function ($q) use ($product) {
-                $q->whereHas('products', function ($q) use ($product) {
-                    $q->where('id', $product->id);
-                });
-            });
-
-            foreach($participants as $participant) {
-
-            }
-        };
-    }
-
-    /**
-     * Undocumented function
-     *
-     * @return void
-     */
-    public function salesGenerate()
-    {
-        return function () {
-            /** @var IMetricsService */
-            $metrics = app(IMetricsService::class);
-            Cart::query()
-                ->with('products')
-                ->where('status', Cart::STATUS_ACCESS_COMPLETE)
-                ->chunk(100, function ($carts) use ($metrics) {
-                    $this->info("Processing carts...");
-                    foreach ($carts as $cart) {
-                        /** @var ICartItem[] */
-                        $items = $cart->products;
-                        $periodicPurchases = isset($cart->data['periodic_product_ids']) ? $cart->data['periodic_product_ids'] : [];
-                        foreach ($items as $item) {
-                            $periodic = in_array($item->id, $periodicPurchases);
-                            $metrics->pushMeasurement(
-                                $cart->domain_id,
-                                'product.' . $item->id . '.sales_amount',
-                                $periodic ? $item->pricePeriodic() : $item->price(),
-                                $cart->updated_at,
-                            );
-                            if ($periodic) {
-                                $metrics->pushMeasurement(
-                                    $cart->domain_id,
-                                    'product.' . $item->id . '.sales_periodic',
-                                    1,
-                                    $cart->updated_at,
-                                );
-                            } else {
-                                $metrics->pushMeasurement(
-                                    $cart->domain_id,
-                                    'product.' . $item->id . '.sales_fixed',
-                                    1,
-                                    $cart->updated_at,
-                                );
-                            }
-                        }
-
-
-                    }
-                });
-        };
-    }
-
-    /**
-     * Undocumented function
-     *
-     * @return void
-     */
-    public function salesReset()
-    {
-        return function () {
-            MetricCounter::where('key', 'LIKE', 'product.%.sales_%')->delete();
-            $this->info("Flushed metric keys LIKE product.%.sales_%");
         };
     }
 }
