@@ -27,6 +27,7 @@ class CourseSessionRepository extends ProductRepository
         $query->whereRaw("DATEDIFF(DATE_FORMAT(JSON_UNQUOTE(JSON_EXTRACT(data, '$.types.session.start_at')), '%Y/%m/%dT%H:%i:%s'), '".Carbon::now()->format('Y/m/d')."') = 0");
 
         $query->with([
+            'parent',
             'children',
             'children.types',
             'children.categories',
