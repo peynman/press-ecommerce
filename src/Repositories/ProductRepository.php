@@ -259,7 +259,8 @@ class ProductRepository implements IProductRepository
 
         $query->where(function ($query) use ($purchases) {
             $query->orWhere(function ($q) use ($purchases) {
-                $q->whereIn('id', $purchases);
+                $q->orWhereIn('id', $purchases);
+                $q->orWhereIn('parent_id', $purchases);
             })->orWhere(function ($q) {
                 $q->whereRaw("JSON_EXTRACT(data, '$.pricing[0].amount') = 0");
             });
