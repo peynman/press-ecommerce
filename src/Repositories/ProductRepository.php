@@ -14,6 +14,8 @@ use Larapress\ECommerce\Models\Product;
 use Larapress\ECommerce\Models\ProductCategory;
 use Larapress\ECommerce\Models\ProductType;
 use Larapress\ECommerce\Services\Banking\IBankingService;
+use Larapress\Profiles\Models\Form;
+use Larapress\Profiles\Models\FormEntry;
 use Larapress\Profiles\Repository\Domain\IDomainRepository;
 
 class ProductRepository implements IProductRepository
@@ -200,6 +202,15 @@ class ProductRepository implements IProductRepository
         $children = $product['children'];
         foreach ($children as &$child) {
             $child['available'] = $product['available'] || in_array($child->id, $purchases) || $child->isFree();
+
+            if (isset($child->data['types']['session']['sendForm']) && isset($child->data['types']['session']['sendForm'])) {
+                $child['sent_forms'] = FormEntry::query()
+                                            ->where('user_id', $user->id)
+                                            ->where('form_id', config('larapress.ecommerce.lms.course_file_upload_default_form_id'))
+                                            ->where('tags', 'course-'.$child->id.'-taklif')
+                                            ->first();
+            }
+
             if ($child->children) {
                 $inners = $child->children;
                 foreach ($inners as &$inner) {

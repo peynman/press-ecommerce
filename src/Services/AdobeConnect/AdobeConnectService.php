@@ -50,12 +50,12 @@ class AdobeConnectService implements IAdobeConnectService
      */
     public function syncUserAccount($username, $password, $firstname, $lastname)
     {
-        $filter = Filter::instance()->equals('login', $username.self::UsernameSuffix);
+        $filter = Filter::instance()->equals('login', $username . self::UsernameSuffix);
         $existing = $this->client->principalList(0, $filter);
         if (count($existing) === 0) {
             $principal = Principal::instance()
                 ->setName($username)
-                ->setLogin($username.self::UsernameSuffix)
+                ->setLogin($username . self::UsernameSuffix)
                 ->setPassword($password)
                 ->setFirstName($firstname)
                 ->setLastName($lastname)
@@ -160,7 +160,7 @@ class AdobeConnectService implements IAdobeConnectService
             $lastname = $profile['lastname'];
         }
         /** @var Principal */
-        $principal = $this->syncUserAccount($user->name, $user->name.'.'.$product_id, $firstname, $lastname);
+        $principal = $this->syncUserAccount($user->name, $user->name . '.' . $product_id, $firstname, $lastname);
 
         $permission = Permission::instance()
             ->setAclId($sco->getScoId())
@@ -168,11 +168,11 @@ class AdobeConnectService implements IAdobeConnectService
             ->setPermissionId(Permission::PRINCIPAL_VIEW);
         $this->client->permissionUpdate($permission);
 
-        $this->client->login($user->name.self::UsernameSuffix, $user->name.'.'.$product_id);
+        $this->client->login($user->name . self::UsernameSuffix, $user->name . '.' . $product_id);
         return [
             'principal' => $principal->getPrincipalId(),
             'session' => $this->client->getSession(),
-            'url' => trim($acServer->data['adobe_connect']['server'], '/').$sco->getUrlPath(),
+            'url' => trim($acServer->data['adobe_connect']['server'], '/') . $sco->getUrlPath(),
         ];
     }
 
@@ -202,6 +202,7 @@ class AdobeConnectService implements IAdobeConnectService
                     $itemData['types']['ac_meeting']['round_robin'] = 0;
                 }
                 $itemData['types']['ac_meeting']['round_robin'] += 1;
+
                 $item->update([
                     'data' => $itemData,
                 ]);
@@ -209,42 +210,57 @@ class AdobeConnectService implements IAdobeConnectService
                 $round_robin_index = $itemData['types']['ac_meeting']['round_robin'];
 
                 $serversCount = $servers->count();
-                $targetIndex = $serversCount > 1 ? $round_robin_index % $serversCount : 0;
+                $startIndex = $serversCount > 1 ? $round_robin_index % $serversCount : 0;
 
-                $server = $servers[$targetIndex];
-                $meetingFolder = isset($server->data['adobe_connect']['meeting_folder']) && !empty($server->data['adobe_connect']['meeting_folder']) ? $server->data['adobe_connect'] : 'meetings';
-                $this->connect(
-                    $server->data['adobe_connect']['server'],
-                    $server->data['adobe_connect']['username'],
-                    $server->data['adobe_connect']['password']
-                );
+                for ($i = $startIndex; $i < $startIndex + $serversCount; $i++) {
+                    $targetIndex = $i % $serversCount;
+                    $server = $servers[$targetIndex];
+                    $meetingFolder = isset($server->data['adobe_connect']['meeting_folder']) && !empty($server->data['adobe_connect']['meeting_folder']) ? $server->data['adobe_connect'] : 'meetings';
+                    $this->connect(
+                        $server->data['adobe_connect']['server'],
+                        $server->data['adobe_connect']['username'],
+                        $server->data['adobe_connect']['password']
+                    );
 
-
-                $folderId = null;
-                $ids = $this->client->scoShortcuts();
-                foreach ($ids as $scoFolder) {
-                    if (isset($scoFolder['type']) && $scoFolder['type'] === $meetingFolder) {
-                        $folderId = $scoFolder['scoId'];
+                    $folderId = null;
+                    $ids = $this->client->scoShortcuts();
+                    foreach ($ids as $scoFolder) {
+                        if (isset($scoFolder['type']) && $scoFolder['type'] === $meetingFolder) {
+                            $folderId = $scoFolder['scoId'];
+                        }
                     }
+
+                    if (is_null($folderId)) {
+                        Log::critical('Adobe Connect folder with typ: ' . $meetingFolder . ' not found');
+                        throw new AppException(AppException::ERR_OBJECT_NOT_FOUND);
+                    }
+
+                    $filter = Filter::instance()->equals('name', $meetingName);
+                    $scos = $this->client->scoContents($folderId, $filter);
+
+                    if (count($scos) === 0) {
+                        throw new AppException(AppException::ERR_OBJECT_NOT_FOUND);
+                    }
+
+                    $serverData = $server->data;
+                    $maxParticipants = isset($server->data['adobe_connect']['max_participants']) ? intval($server->data['adobe_connect']['max_participants']) : 0;
+                    if ($maxParticipants > 0) {
+                        $liveUsers = $this->client->reportMeetingSessions($scos[0]->getScoId());
+                        $sessionData = $liveUsers['reportMeetingSessions'];
+                        if (count($sessionData) > 0) {
+                            $numParticipants = intval($sessionData[0]['numParticipants']);
+                            if ($numParticipants >= $maxParticipants) {
+                                continue;
+                            }
+                        }
+                    }
+
+                    return [$scos[0], $server];
                 }
-
-                if (is_null($folderId)) {
-                    Log::critical('Adobe Connect folder with typ: ' . $meetingFolder . ' not found');
-                    throw new AppException(AppException::ERR_OBJECT_NOT_FOUND);
-                }
-
-                $filter = Filter::instance()->equals('name', $meetingName);
-                $scos = $this->client->scoContents($folderId, $filter);
-
-                if (count($scos) === 0) {
-                    throw new AppException(AppException::ERR_OBJECT_NOT_FOUND);
-                }
-
-
-
-                return [$scos[0], $server];
             }
         }
+
+        return null;
     }
 
     /**
@@ -254,7 +270,8 @@ class AdobeConnectService implements IAdobeConnectService
      * @param callable(meetingFolder, meetingName) $callback
      * @return void
      */
-    public function onEachServerForProduct($item, $callback) {
+    public function onEachServerForProduct($item, $callback)
+    {
         $serverIdsList = isset($item->data['types']['ac_meeting']['servers']) ? $item->data['types']['ac_meeting']['servers'] : [];
         $serverIds = array_map(function ($item) {
             return $item['id'];
@@ -286,7 +303,7 @@ class AdobeConnectService implements IAdobeConnectService
         foreach ($types as $type) {
             // if the product has ac_meeting type
             // its a adobe connect
-            $this->onEachServerForProduct($item, function($meetingName, $meetingFolder) {
+            $this->onEachServerForProduct($item, function ($meetingName, $meetingFolder) {
                 $this->createOrGetMeeting(
                     $meetingFolder,
                     $meetingName
