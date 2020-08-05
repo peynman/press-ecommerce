@@ -4,13 +4,21 @@ namespace Larapress\ECommerce\Services\CourseSession;
 
 interface ICourseSessionRepository
 {
+
     /**
      * Undocumented function
      *
-     * @param SessionFormRequest $request
-     * @param int $sessionId
-     * @param FileUpload|null $upload
-     * @return void
+     * @param IProfileUser $user
+     * @return Product[]
      */
     public function getTodayCourseSessions($user);
+
+
+    /**
+     * Undocumented function
+     *
+     * @param IProfileUser $user
+     * @return Product[]
+     */
+    public function getWeekCourseSessions($user);
 }

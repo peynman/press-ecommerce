@@ -222,6 +222,9 @@ class ProductRepository implements IProductRepository
         return $product;
     }
 
+    protected function postProcessProductsForPresenting($user, $products) {
+    }
+
     /**
      * Undocumented function
      *

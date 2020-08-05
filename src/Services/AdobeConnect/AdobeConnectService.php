@@ -303,7 +303,7 @@ class AdobeConnectService implements IAdobeConnectService
         foreach ($types as $type) {
             // if the product has ac_meeting type
             // its a adobe connect
-            $this->onEachServerForProduct($item, function ($meetingName, $meetingFolder) {
+            $this->onEachServerForProduct($item, function ($meetingFolder, $meetingName) {
                 $this->createOrGetMeeting(
                     $meetingFolder,
                     $meetingName
