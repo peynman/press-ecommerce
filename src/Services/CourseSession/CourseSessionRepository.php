@@ -61,8 +61,10 @@ class CourseSessionRepository extends ProductRepository
      * @return Product[]
      */
     public function getWeekCourseSessions($user) {
-        $weekStart = Carbon::now()->startOfWeek();
-        $weekEnd = Carbon::now()->endOfWeek();
+        // -2d => monday to saturday start day of week
+        $weekStart = Carbon::now()->startOfWeek()->addDays(-2);
+        // -2d => monday to saturday start day of week
+        $weekEnd = Carbon::now()->endOfWeek()->addDays(-2);
         $query = $this->getPurchasedProductsPaginatedQuery(
             $user,
             0,
@@ -98,5 +100,27 @@ class CourseSessionRepository extends ProductRepository
         }
 
         return $items;
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param IProfileUser $user
+     * @return FormEntry[]
+     */
+    public function getIntroducedUsersList($user) {
+        $introduced = FormEntry::query()
+                ->where('form_id', config('larapress.ecommerce.lms.introducer_default_form_id'))
+                ->where('tags', 'introducer-id-'.$user->id)
+                ->get();
+
+        // protect form filler personal info!
+        foreach ($introduced as &$user) {
+            $data = $user->data;
+            $data['ip'] = null;
+            $data['agent'] = null;
+            $user->data = $data;
+        }
+        return $introduced;
     }
 }

@@ -78,4 +78,13 @@ interface IProductRepository {
      * @return Product
      */
     public function getProductDetails($user, $product_id);
+
+
+    /**
+     * Undocumented function
+     *
+     * @param IProfileUser $user
+     * @return WalletTransaction[]
+     */
+    public function getWalletTransactionsForUser($user);
 }

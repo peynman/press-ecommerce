@@ -20,6 +20,8 @@ use Larapress\ECommerce\Services\LiveStream\ILiveStreamService;
 use Larapress\ECommerce\Services\LiveStream\LiveStreamService;
 use Larapress\ECommerce\Services\Product\IProductService;
 use Larapress\ECommerce\Services\Product\ProductService;
+use Larapress\ECommerce\Services\SupportGroup\ISupportGroupService;
+use Larapress\ECommerce\Services\SupportGroup\SupportGroupService;
 use Larapress\ECommerce\Services\VOD\IVODStreamService;
 use Larapress\ECommerce\Services\VOD\VODStreamService;
 
@@ -41,6 +43,7 @@ class PackageServiceProvider extends ServiceProvider
         $this->app->bind(ICourseSessionFormService::class, CourseSessionFormService::class);
         $this->app->bind(IAdobeConnectService::class, AdobeConnectService::class);
         $this->app->bind(ICourseSessionRepository::class, CourseSessionRepository::class);
+        $this->app->bind(ISupportGroupService::class, SupportGroupService::class);
 
         $this->app->register(EventServiceProvider::class);
     }

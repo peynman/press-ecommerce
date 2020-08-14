@@ -112,5 +112,7 @@ return [
 
     'lms' => [
         'course_file_upload_default_form_id' => 2,
+        'support_group_default_form_id' => 4,
+        'course_presense_default_form_id' => 3,
     ]
 ];

@@ -7,6 +7,9 @@ return [
             'wallet-descriptions' => [
                 'cart_increased' => 'افزایش موجودی برای سبد خرید :cart_id',
                 'cart_purchased' => 'خرید محصولات در سبد خرید :cart_id',
+                'introducer_gift_wallet_desc' => 'هدیه ثبت نام با کد معرف :introducer_id',
+                'introducer_gift_purchase_wallet_desc' => 'هدیه ثبت نام و خرید با کد معرف شما',
+                'register_gift_wallet_desc' => 'هدیه ثبت نام',
             ]
         ],
     ],

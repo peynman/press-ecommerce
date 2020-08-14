@@ -13,6 +13,7 @@ use Larapress\ECommerce\Models\Cart;
 use Larapress\ECommerce\Models\Product;
 use Larapress\ECommerce\Models\ProductCategory;
 use Larapress\ECommerce\Models\ProductType;
+use Larapress\ECommerce\Models\WalletTransaction;
 use Larapress\ECommerce\Services\Banking\IBankingService;
 use Larapress\Profiles\Models\Form;
 use Larapress\Profiles\Models\FormEntry;
@@ -70,16 +71,32 @@ class ProductRepository implements IProductRepository
     /**
      * Undocumented function
      *
+     * @param IProfileUser $user
+     * @return WalletTransaction[]
+     */
+    public function getWalletTransactionsForUser($user) {
+        return WalletTransaction::where('user_id', $user->id)->get();
+    }
+
+    /**
+     * Undocumented function
+     *
      * @param [type] $user
      * @return void
      */
-    public function getProductNames($user)
+    public function getProductNames($user, $types = [])
     {
         if (is_null($user)) {
             return [];
         }
+        $query = Product::query()->select('id', 'name');
+        if (count($types) > 0) {
+            $query->whereHas('types', function($q) use($types) {
+                $q->whereIn('name', $types);
+            });
+        }
 
-        return Product::select('id', 'name')->get();
+        return $query->get();
     }
 
     /**
@@ -141,7 +158,7 @@ class ProductRepository implements IProductRepository
             ->with(['products', 'products.types'])
             ->where('customer_id', $user->id)
             ->whereIn('status', [Cart::STATUS_ACCESS_COMPLETE, Cart::STATUS_ACCESS_GRANTED])
-            ->where('flags', '&', Cart::FLAG_USER_CART)
+            ->where('flags', '&', Cart::FLAG_USER_CART|Cart::FLAGS_ADMIN)
             ->orderBy('updated_at', 'desc')
             ->get();
 

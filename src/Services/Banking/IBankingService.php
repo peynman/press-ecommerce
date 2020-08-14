@@ -64,6 +64,15 @@ interface IBankingService
      */
     public function markCartPurchased(Request $request, Cart $cart);
 
+    /**
+     * Undocumented function
+     *
+     * @param Request $request
+     * @param IProfileUser $user
+     * @param Domain $domain
+     * @return [Cart, WalletTransaction]
+     */
+    public function addBalanceForUser(Request $request, IProfileUser $user, $domainId, $amount, $currency, $desc);
 
     /**
      * Undocumented function
@@ -125,6 +134,13 @@ interface IBankingService
      * @return Cart
      */
     public function getInstallmentsForProductInCart(IProfileUser $user, $originalCart, $product);
+
+    /**
+     * Undocumented function
+     *
+     * @return Cart[]
+     */
+    public function getInstallmentsForPeriodicPurchases();
 
     /**
      * Undocumented function

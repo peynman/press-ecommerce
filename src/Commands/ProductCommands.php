@@ -10,6 +10,7 @@ use Larapress\CRUD\Commands\ActionCommandBase;
 use Larapress\CRUD\Events\CRUDVerbEvent;
 use Larapress\ECommerce\Models\Cart;
 use Larapress\ECommerce\Services\AdobeConnect\IAdobeConnectService;
+use Larapress\ECommerce\Services\Banking\IBankingService;
 use Larapress\Reports\CRUD\TaskReportsCRUDProvider;
 use Larapress\Reports\Models\TaskReport;
 use Larapress\Reports\Services\IMetricsService;
@@ -42,17 +43,8 @@ class ProductCommands extends ActionCommandBase
         parent::__construct([
             'sales:generate' => $this->salesGenerate(),
             'sales:reset' => $this->salesReset(),
+            'carts:installments' => $this->cartsInstallments(),
         ]);
-    }
-
-    public function test()
-    {
-        return function() {
-            /** @var IAdobeConnectService */
-            $service = app(IAdobeConnectService::class);
-            $service->connect('http://5.56.132.243', 'kiankamrani@gmail.com', '@Takht987#');
-            $service->createMeeting('meetings', 'PeymanTestMeeting');
-        };
     }
 
     /**
@@ -113,4 +105,18 @@ class ProductCommands extends ActionCommandBase
             $this->info("Flushed metric keys LIKE product.%.sales_%");
         };
     }
+
+    /**
+     * Undocumented function
+     *
+     * @return void
+     */
+    public function cartsInstallments() {
+        return function() {
+            /** @var IBankingService */
+            $service = app(IBankingService::class);
+            $service->getInstallmentsForPeriodicPurchases();
+        };
+    }
+
 }

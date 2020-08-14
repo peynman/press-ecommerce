@@ -8,6 +8,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Larapress\CRUD\BaseFlags;
 use Larapress\CRUD\Events\CRUDCreated;
 use Larapress\CRUD\Events\CRUDUpdated;
@@ -56,7 +57,7 @@ class BankingService implements IBankingService
             'domain_id' => $domain->id,
             'flags' => Cart::FLAG_INCREASE_WALLET,
             'status' => Cart::STATUS_UNVERIFIED,
-        ],[
+        ], [
             'amount' => $amount,
             'data' => []
         ]);
@@ -76,7 +77,8 @@ class BankingService implements IBankingService
      * @param int $currency
      * @return Cart
      */
-    public function createCartWithProductIDs(Request $request, IProfileUser $user, Domain $domain, array $ids, $currency) {
+    public function createCartWithProductIDs(Request $request, IProfileUser $user, Domain $domain, array $ids, $currency)
+    {
         $cart = Cart::create([
             'customer_id' => $user->id,
             'domain_id' => $domain->id,
@@ -151,6 +153,11 @@ class BankingService implements IBankingService
                 DB::commit();
             } catch (\Exception $e) {
                 DB::rollBack();
+                Log::critical('Bank Gateway failed redirect', [
+                    'message' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'stack' => $e->getTraceAsString(),
+                ]);
                 return $onFailed($request, $cart, $e);
             }
 
@@ -272,6 +279,14 @@ class BankingService implements IBankingService
             }
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::critical('Bank Gateway failed verify', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'stack' => $e->getTraceAsString(),
+                'user_id' => $cart->customer_id,
+                'cart_id' => $cart->id,
+            ]);
+
             $data = $transaction->data;
             $data['exception_message'] = $e->getMessage();
             $transaction->update([
@@ -570,11 +585,54 @@ class BankingService implements IBankingService
     /**
      * Undocumented function
      *
+     * @param Request $request
+     * @param IProfileUser $user
+     * @param Domain $domain
+     * @return [Cart, WalletTransaction]
+     */
+    public function addBalanceForUser(Request $request, IProfileUser $user, $domainId, $amount, $currency, $desc)
+    {
+        /** @var Cart */
+        $cart = Cart::create([
+            'currency' => $currency,
+            'customer_id' => $user->id,
+            'domain_id' => $domainId,
+            'flags' => Cart::FLAG_INCREASE_WALLET | Cart::FLAGS_GIFT_CART | Cart::FLAGS_EVALUATED,
+            'status' => Cart::STATUS_ACCESS_COMPLETE,
+            'amount' => $amount,
+            'data' => [
+                'desc' => $desc,
+            ]
+        ]);
+
+        $wallet = WalletTransaction::create([
+            'user_id' => $cart->customer_id,
+            'domain_id' => $cart->domain_id,
+            'amount' => $amount,
+            'currency' => $currency,
+            'type' => WalletTransaction::TYPE_BANK_TRANSACTION,
+            'data' => [
+                'cart_id' => $cart->id,
+                'description' => $desc,
+                'balance' => $this->getUserBalance($cart->customer, $cart->domain, $cart->currency),
+            ]
+        ]);
+
+        CRUDUpdated::dispatch($cart, CartCRUDProvider::class, Carbon::now());
+        WalletTransactionEvent::dispatch($cart->domain, $request->ip(), time(), $wallet);
+
+        return [$cart, $wallet];
+    }
+
+    /**
+     * Undocumented function
+     *
      * @param int|Cart $originalCart
      * @param int|Product $product
      * @return Cart
      */
-    public function getInstallmentsForProductInCart(IProfileUser $user, $originalCart, $product) {
+    public function getInstallmentsForProductInCart(IProfileUser $user, $originalCart, $product)
+    {
         if (is_numeric($originalCart)) {
             $originalCart = Cart::find($originalCart);
         }
@@ -615,6 +673,7 @@ class BankingService implements IBankingService
             'domain_id' => $originalCart->domain_id,
             'flags' => Cart::FLAGS_PERIOD_PAYMENT_CART,
             'status' => Cart::STATUS_UNVERIFIED,
+            'data->periodic_pay->product->id' => $product->id,
         ], [
             'amount' => $calc['period_amount'],
             'data' => [
@@ -631,6 +690,28 @@ class BankingService implements IBankingService
         ]);
 
         return $cart;
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return Cart[]
+     */
+    public function getInstallmentsForPeriodicPurchases()
+    {
+        Cart::query()
+            ->whereIn('status', [Cart::STATUS_ACCESS_GRANTED, Cart::STATUS_ACCESS_COMPLETE])
+            ->where('flags', '&', Cart::FLAGS_HAS_PERIODS)
+            ->whereRaw('(flags & ' . Cart::FLAGS_PERIODIC_COMPLETED . ') = 0')
+            ->chunk(100, function ($carts) {
+                foreach ($carts as $cart) {
+                    if (isset($cart->data['periodic_product_ids'])) {
+                        foreach ($cart->data['periodic_product_ids'] as $pid) {
+                            $this->getInstallmentsForProductInCart($cart->customer, $cart, Product::find($pid));
+                        }
+                    }
+                }
+            });
     }
 
     /**
@@ -748,11 +829,37 @@ class BankingService implements IBankingService
                 'type' => WalletTransaction::TYPE_BANK_TRANSACTION,
                 'data' => [
                     'cart_id' => $cart->id,
-                    'description' => trans('larapress::ecommerce.banking.messages.wallet-descriptions.cart_increased', ['cart_id' => $cart->id]),
+                    'description' => trans('larapress::ecommerce.banking.messages.wallet-descriptions.cart_purchased', ['cart_id' => $cart->id]),
                     'balance' => $this->getUserBalance($cart->customer, $cart->domain, $cart->currency),
                 ]
             ]);
             WalletTransactionEvent::dispatch($cart->domain, $request->ip(), time(), $wallet);
+
+            // give introducer gift, for first purchase only
+                    // if the amount is higher than some value
+            if (floatVal($cart->amount) >= floatVal(config('larapress.ecommerce.lms.introducers.introducer_gift_on.amount'))) {
+                /** @var [IProfileUser, FormEntry] */
+                [$introducer, $entry] = $cart->customer->introducerData;
+                if (!is_null($introducer)) {
+                    if (!isset($entry->data['gifted_at'])) {
+                        $data = $entry->data;
+                        $data['gifted_at'] = Carbon::now();
+                        $data['gifted_amount'] = config('larapress.ecommerce.lms.introducers.introducer_gift.amount');
+                        $data['gifted_currency'] = config('larapress.ecommerce.lms.introducers.introducer_gift.currency');
+                        $entry->update([
+                            'data' => $data,
+                        ]);
+                        $this->addBalanceForUser(
+                            $request,
+                            $introducer,
+                            $introducer->getRegistrationDomainId(),
+                            $data['gifted_amount'],
+                            $data['gifted_currency'],
+                            trans('larapress::ecommerce.banking.messages.wallet-descriptions.introducer_gift_purchase_wallet_desc'),
+                        );
+                    }
+                }
+            }
         } elseif (BaseFlags::isActive($cart->flags, Cart::FLAGS_PERIOD_PAYMENT_CART)) {
             $originalCart = Cart::find($cart->data['periodic_pay']['originalCart']);
             $origData = $originalCart->data;
@@ -767,8 +874,13 @@ class BankingService implements IBankingService
                 'payment_cart' => $cart->id,
                 'payment_date' => Carbon::now(),
             ];
+            $flags = $originalCart->flags;
+            if (count($origData['periodic_payments'][$originalProductId]) >= $cart->data['periodic_pay']['total']) {
+                $flags |= Cart::FLAGS_PERIODIC_COMPLETED;
+            }
 
             $originalCart->update([
+                'flags' => $flags,
                 'data' => $origData,
             ]);
             // decrease wallet amount for cart amount
@@ -780,7 +892,7 @@ class BankingService implements IBankingService
                 'type' => WalletTransaction::TYPE_BANK_TRANSACTION,
                 'data' => [
                     'cart_id' => $cart->id,
-                    'description' => trans('larapress::ecommerce.banking.messages.wallet-descriptions.cart_increased', ['cart_id' => $cart->id]),
+                    'description' => trans('larapress::ecommerce.banking.messages.wallet-descriptions.cart_purchased', ['cart_id' => $cart->id]),
                     'balance' => $this->getUserBalance($cart->customer, $cart->domain, $cart->currency),
                 ]
             ]);

@@ -107,4 +107,17 @@ class Product extends Model implements ICartItem
 	public function children() {
 		return $this->hasMany(Product::class,'parent_id');
     }
+
+    public function carts() {
+        return $this->belongsToMany(
+            Cart::class,
+            'carts_products_pivot',
+            'product_id',
+            'cart_id'
+        );
+    }
+
+    public function purchased_carts() {
+        return $this->carts()->whereIn('status', [Cart::STATUS_ACCESS_GRANTED, Cart::STATUS_ACCESS_COMPLETE]);
+    }
 }

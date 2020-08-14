@@ -131,7 +131,10 @@ class WalletTransactionCRUDProvider implements ICRUDProvider, IPermissionsMetada
         /** @var ICRUDUser $user */
         $user = Auth::user();
         if (! $user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
-            $query->whereHas('domain', $user->getAffiliateDomainIds());
+            $query->orWhereIn('domain_id', $user->getAffiliateDomainIds());
+            $query->orWhereHas('user.form_entries', function($q) use($user) {
+                $q->where('tags', 'support-group-'.$user->id);
+            });
         }
 
         return $query;

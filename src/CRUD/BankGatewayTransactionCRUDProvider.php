@@ -100,8 +100,9 @@ class BankGatewayTransactionCRUDProvider implements ICRUDProvider, IPermissionsM
         /** @var IProfileUser|ICRUDUser $user */
         $user = Auth::user();
         if (! $user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
-            $query->whereHas('domains', function($q) use($user) {
-                $q->whereIn('id', $user->getAffiliateDomainIds());
+            $query->orWhereIn('domain_id', $user->getAffiliateDomainIds());
+            $query->orWhereHas('customer.form_entries', function($q) use($user) {
+                $q->where('tags', 'support-group-'.$user->id);
             });
         }
 

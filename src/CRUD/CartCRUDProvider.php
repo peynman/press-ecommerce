@@ -2,6 +2,7 @@
 
 namespace Larapress\ECommerce\CRUD;
 
+use App\Models\User;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -28,23 +29,21 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
     public $model = Cart::class;
     public $createValidations = [
         'customer_id' => 'required|numeric|exists:users,id',
-        'domain_id' => 'required|numeric|exists:domains,id',
         'amount' => 'required|numeric',
         'currency' => 'required|numeric|exists:filters,id',
         'status' => 'required|numeric',
-        'data' => 'nullable',
         'flags' => 'nullable|numeric',
-        'items.*.id' => 'nullable|numeric|exists:products,id',
+        'products.*.id' => 'required|numeric|exists:products,id',
+        'periodic_product_ids.*.id' => 'nullable|numeric|exists:products,id'
     ];
     public $updateValidations = [
         'customer_id' => 'required|numeric|exists:users,id',
-        'domain_id' => 'required|numeric|exists:domains,id',
         'amount' => 'required|numeric',
         'currency' => 'required|numeric|exists:filters,id',
         'status' => 'required|numeric',
-        'data' => 'nullable',
         'flags' => 'nullable|numeric',
-        'items.*.id' => 'nullable|numeric|exists:products,id',
+        'products.*.id' => 'required|numeric|exists:products,id',
+        'periodic_product_ids.*.id' => 'nullable|numeric|exists:products,id'
     ];
     public $searchColumns = [
         'data'
@@ -72,18 +71,8 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         'domain' => 'has:domain:id',
         'status' => 'equals:status',
         'customer_id' => 'equals:customer_id',
+        'flags' => 'bitwise:flags',
     ];
-
-    /**
-     * Exclude current id in name unique request
-     *
-     * @param Request $request
-     * @return void
-     */
-    public function getUpdateRules(Request $request) {
-        $this->updateValidations['name'] .= ',' . $request->route('id');
-        return $this->updateValidations;
-    }
 
     /**
      * @param Builder $query
@@ -95,8 +84,9 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         /** @var IProfileUser|ICRUDUser $user */
         $user = Auth::user();
         if (! $user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
-            $query->whereHas('domains', function($q) use($user) {
-                $q->whereIn('id', $user->getAffiliateDomainIds());
+            $query->orWhereIn('domain_id', $user->getAffiliateDomainIds());
+            $query->orWhereHas('customer.form_entries', function($q) use($user) {
+                $q->where('tags', 'support-group-'.$user->id);
             });
         }
 
@@ -113,9 +103,51 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         /** @var ICRUDUser|IProfileUser $user */
         $user = Auth::user();
         if (! $user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
-            return in_array($object->id, $user->getAffiliateDomainIds());
+            return in_array($object->id, $user->getAffiliateDomainIds()) ||
+                    $object->customer_id;
         }
 
         return true;
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param [type] $args
+     * @return void
+     */
+    public function onBeforeCreate($args)
+    {
+        $args['flags'] = Cart::FLAGS_ADMIN;
+        $args['data'] = [
+            'periodic_product_ids' => isset($args['periodic_product_ids']) ? array_keys($args['periodic_product_ids']) : [],
+        ];
+
+        $class = config('larapress.crud.user.class');
+        /** @var IProfileUser */
+        $target_user = call_user_func([$class, 'find'], $args['customer_id']);
+        $args['domain_id'] = $target_user->getRegistrationDomainId();
+
+        return $args;
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param Cart $object
+     * @param [type] $input_data
+     * @return void
+     */
+    public function onAfterCreate($object, $input_data)
+    {
+        $product_ids = array_keys($input_data['products']);
+        foreach ($product_ids as $product_id) {
+            $object->products()->attach($product_id, [
+                'amount' => $input_data['amount'],
+                'currency' => $input_data['currency'],
+            ]);
+        }
+
+        return $object;
     }
 }

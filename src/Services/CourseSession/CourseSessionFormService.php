@@ -34,9 +34,13 @@ class CourseSessionFormService implements ICourseSessionFormService {
             $request,
             config('larapress.ecommerce.lms.course_file_upload_default_form_id'),
             $tags,
-            function($request, $inputNames, $form, $entry) use($upload, $sessionId) {
+            function($request, $inputNames, $form, $entry) use($upload, $sessionId, $session) {
                 $newValues = $request->all($inputNames);
                 $newValues['product_id'] = $sessionId;
+                $newValues['product'] = [
+                    'name' => $session->name,
+                    'title' => $session->data['title'],
+                ];
                 if (isset($entry->data['values']['file_ids'])) {
                     $newValues['file_ids'] = $entry->data['values']['file_ids'];
                 } else {
