@@ -46,6 +46,7 @@ class SupportGroupService implements ISupportGroupService {
         foreach ($userIds as $userId) {
             if ($request->shouldRandomizeSupportIds()) {
                 $supportUser = $avSupportUserIds[$indexer % $totalSupUserIds];
+                $supportUserId = $supportUser->id;
                 $supportProfile = !is_null($supportUser->profile) ? $supportUser->profile->data['values'] : [];
             }
 
