@@ -20,8 +20,8 @@ interface ISupportGroupService {
      *
      * @param Request $request
      * @param IProfileUser $user
-     * @param int $supportUserId
+     * @param IProfileUser|int $supportUser
      * @return Response
      */
-    public function updateUserSupportGroup(Request $request, $user, $supportUserId);
+    public function updateUserSupportGroup(Request $request, $user, $supportUser);
 }

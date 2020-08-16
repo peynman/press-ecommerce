@@ -36,7 +36,15 @@ class SupportGroupService implements ISupportGroupService {
             $supportProfile = !is_null($supportUser->profile) ? $supportUser->profile->data['values'] : [];
         }
 
-        $userIds = $request->getUserIds();
+        if ($request->shouldUseAllNoneSupportUsers()) {
+            $userIds = User::whereDoesntHave('form_entries', function($q) {
+                $q->where('tags', 'LIKE', 'support-group-%');
+            })->whereHas('roles', function($q) {
+                $q->where('id', config('larapress.ecommerce.lms.customer_role_id'));
+            })->get();
+        } else {
+            $userIds = $request->getUserIds();
+        }
 
         /** @var IFormEntryService */
         $service = app(IFormEntryService::class);
@@ -50,7 +58,12 @@ class SupportGroupService implements ISupportGroupService {
                 $supportProfile = !is_null($supportUser->profile) ? $supportUser->profile->data['values'] : [];
             }
 
-            $user = call_user_func([$class, 'find'], $userId);
+            if (is_numeric($userId)) {
+                $user = call_user_func([$class, 'find'], $userId);
+            } else {
+                $user = $userId;
+                $userId = $user->id;
+            }
 
             $service->updateUserFormEntryTag(
                 $request,
@@ -72,16 +85,19 @@ class SupportGroupService implements ISupportGroupService {
      *
      * @param Request $request
      * @param IProfileUser $user
-     * @param int $supportUserId
+     * @param IProfileUser|int $supportUser
      * @return Response
      */
-    public function updateUserSupportGroup(Request $request, $user, $supportUserId) {
+    public function updateUserSupportGroup(Request $request, $user, $supportUser) {
         /** @var IFormEntryService */
         $service = app(IFormEntryService::class);
 
         $class = config('larapress.crud.user.class');
-        $supportUser = call_user_func([$class, 'find'], $supportUserId);
-        $supportProfile = $supportUser->profile->data['values'];
+        if (is_numeric($supportUser)) {
+            $supportUser = call_user_func([$class, 'find'], $supportUser);
+        }
+        $supportUserId = $supportUser->id;
+        $supportProfile = is_null($supportUser->profile) ? [] : $supportUser->profile->data['values'];
 
         $service->updateUserFormEntryTag(
             $request,
