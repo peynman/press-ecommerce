@@ -75,7 +75,7 @@ class ProductRepository implements IProductRepository
      * @return WalletTransaction[]
      */
     public function getWalletTransactionsForUser($user) {
-        return WalletTransaction::where('user_id', $user->id)->get();
+        return WalletTransaction::where('user_id', $user->id)->orderBy('id', 'desc')->get();
     }
 
     /**

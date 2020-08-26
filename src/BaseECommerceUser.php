@@ -2,13 +2,43 @@
 
 namespace Larapress\ECommerce;
 
+use Illuminate\Support\Facades\Cache;
 use Larapress\CRUD\Extend\Helpers;
 use Larapress\ECommerce\Models\Cart;
 use Larapress\ECommerce\Models\Product;
 use Larapress\Profiles\Models\FormEntry;
 
 trait BaseECommerceUser {
-
+    /**
+     * Undocumented function
+     *
+     * @return void
+     */
+    public function getSupportUserProfileAttribute() {
+        return Helpers::getCachedValue(
+            'larapress.users.'.$this->id.'.support',
+            function () {
+                $entry = $this->form_entries()
+                                ->where('form_id', config('larapress.profiles.defaults.support-registration-form-id'))
+                                ->first();
+                if (!is_null($entry)) {
+                    $taggedSupportId = explode('-', $entry->tags)[2];
+                    $profile = FormEntry::where('user_id', $taggedSupportId)
+                                ->where('form_id', config('larapress.profiles.defaults.profile-support-form-id'))
+                                ->first();
+                    if (isset($profile->data['values']['firstname']) && isset($profile->data['values']['lastname'])) {
+                        $data = $profile->data;
+                        $data['values']['fullname'] = $profile->data['values']['firstname'].' '.$profile->data['values']['lastname'];
+                        $profile->data = $data;
+                    }
+                    return $profile;
+                }
+                return null;
+            },
+            ['user.support:'.$this->id],
+            null
+        );
+    }
 
     /**
      * Undocumented function
@@ -29,7 +59,7 @@ trait BaseECommerceUser {
                     return [$introducer, $entry];
                 }
             },
-            ['user:'.$this->id, 'forms', 'support'],
+            ['user.introducer:'.$this->id],
             null
         );
     }

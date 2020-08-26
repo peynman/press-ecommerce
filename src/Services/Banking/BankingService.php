@@ -263,8 +263,8 @@ class BankingService implements IBankingService
                 WalletTransactionEvent::dispatch($cart->domain, $request->ip(), time(), $wallet);
                 BankGatewayTransactionEvent::dispatch($cart->domain, $request->ip(), time(), $transaction);
                 CRUDUpdated::dispatch($transaction, BankGatewayTransactionCRUDProvider::class, Carbon::now());
+                $this->resetBalanceCache($cart->customer_id);
 
-                Cache::tags(['wallet:' . $cart->customer_id])->flush();
                 return $onSuccess($request, $cart, $transaction);
             } else {
                 $transaction->update([
@@ -335,20 +335,50 @@ class BankingService implements IBankingService
             case 'percent':
                 $percent = floatval($code->data['value']) / 100.0;
                 if ($percent <= 1) {
-                    $offAmount = $amount * $percent;
-                    $offAmount = min($amount, $offAmount);
+                    if (isset($code->data['products'])) {
+                        $avCodeProducts = array_keys($code->data['products']);
+                        /** @var ICartItem[] */
+                        $cartItems = $cart->products;
+                        $periodIds = isset($data['periodic_product_ids']) ? $data['periodic_product_ids'] : [];
+                        $offAmount = 0;
+                        foreach ($avCodeProducts as $avId) {
+                            foreach ($cartItems as $item) {
+                                if ($item->id === $avId) {
+                                    $itemPrice = in_array($avId, $periodIds) ? $item->pricePeriodic() : $item->price();
+                                    $offAmount += floor($percent * $itemPrice);
+                                }
+                            }
+                        }
+                    } else {
+                        $offAmount = floor($amount * $percent);
+                    }
+                    $offAmount = min($code->amount, $offAmount);
                     return [
                         'amount' => $offAmount,
                         'code' => $code->id,
                     ];
                 }
             case 'amount':
+                if (isset($code->data['products'])) {
+                    $avCodeProducts = array_keys($code->data['products']);
+                    $cartItems = $cart->products;
+                    $offAmount = 0;
+                    foreach ($avCodeProducts as $avId) {
+                        foreach ($cartItems as $item) {
+                            if ($item->id === $avId) {
+                                $offAmount = floatval($code->data['value']);
+                            }
+                        }
+                    }
+                } else {
+                    $offAmount = floatval($code->data['value']);
+                }
+                $offAmount = min($code->amount, $offAmount);
                 return [
                     'amount' => min(floatval($code->data['value']), $code->amount),
                     'code' => $code->id,
                 ];
         }
-
         if (is_null($code)) {
             throw new AppException(AppException::ERR_OBJECT_NOT_FOUND);
         }
@@ -374,11 +404,9 @@ class BankingService implements IBankingService
             throw new AppException(AppException::ERR_OBJECT_NOT_FOUND);
         }
 
-        // calls for CRUDUpdate on cart inside
+        // calls for CRUDUpdate on cart inside and resets cache
         $this->updateCartWithRequest($user, $domain, $cart, $request);
         $balance = $this->getUserBalance($user, $domain, $currency);
-
-        $this->resetPurchasingCache($user, $domain);
         return [
             'cart' => [
                 'amount' => !$cart->data['use_balance'] ?  $cart->amount : max(0, $cart->amount - $balance),
@@ -525,7 +553,7 @@ class BankingService implements IBankingService
                 }
                 return $cart;
             },
-            ['user:' . $user->id, 'purchasing-cart:' . $user->id],
+            ['purchasing-cart:' . $user->id],
             null
         );
     }
@@ -553,7 +581,7 @@ class BankingService implements IBankingService
                 }
                 return $cacheItems;
             },
-            ['user:' . $user->id, 'purchasing-cart:' . $user->id],
+            ['purchasing-cart:' . $user->id],
             null
         );
     }
@@ -577,7 +605,7 @@ class BankingService implements IBankingService
                     ->whereIn('status', [Cart::STATUS_ACCESS_COMPLETE, Cart::STATUS_ACCESS_GRANTED])
                     ->get();
             },
-            ['user:' . $user->id, 'purchased-cart:' . $user->id],
+            ['purchased-cart:' . $user->id],
             null,
         );
     }
@@ -587,39 +615,52 @@ class BankingService implements IBankingService
      *
      * @param Request $request
      * @param IProfileUser $user
-     * @param Domain $domain
+     * @param float $amount
+     * @param integer $currency
+     * @param integer $type
+     * @param integer $flags
+     * @param string $desc
      * @return [Cart, WalletTransaction]
      */
-    public function addBalanceForUser(Request $request, IProfileUser $user, $domainId, $amount, $currency, $desc)
+    public function addBalanceForUser(Request $request, IProfileUser $user, float $amount, int $currency, int $type, int $flags, string $desc)
     {
-        /** @var Cart */
-        $cart = Cart::create([
-            'currency' => $currency,
-            'customer_id' => $user->id,
-            'domain_id' => $domainId,
-            'flags' => Cart::FLAG_INCREASE_WALLET | Cart::FLAGS_GIFT_CART | Cart::FLAGS_EVALUATED,
-            'status' => Cart::STATUS_ACCESS_COMPLETE,
-            'amount' => $amount,
-            'data' => [
-                'desc' => $desc,
-            ]
-        ]);
+        $domain = $user->getRegistrationDomain();
+        $domainId = $domain->id;
+        $cart = null;
+
+        if ($type === WalletTransaction::TYPE_BANK_TRANSACTION) {
+            /** @var Cart */
+            $cart = Cart::create([
+                'currency' => $currency,
+                'customer_id' => $user->id,
+                'domain_id' => $domainId,
+                'flags' => Cart::FLAG_INCREASE_WALLET | Cart::FLAGS_EVALUATED,
+                'status' => Cart::STATUS_ACCESS_COMPLETE,
+                'amount' => $amount,
+                'data' => [
+                    'desc' => $desc,
+                ]
+            ]);
+        }
 
         $wallet = WalletTransaction::create([
-            'user_id' => $cart->customer_id,
-            'domain_id' => $cart->domain_id,
+            'user_id' => $user->id,
+            'domain_id' => $domainId,
             'amount' => $amount,
             'currency' => $currency,
-            'type' => WalletTransaction::TYPE_BANK_TRANSACTION,
+            'type' => $type,
             'data' => [
-                'cart_id' => $cart->id,
+                'cart_id' => !is_null($cart) ? $cart->id : null,
                 'description' => $desc,
-                'balance' => $this->getUserBalance($cart->customer, $cart->domain, $cart->currency),
+                'balance' => $this->getUserBalance($user, $domain, $currency),
             ]
         ]);
 
-        CRUDUpdated::dispatch($cart, CartCRUDProvider::class, Carbon::now());
-        WalletTransactionEvent::dispatch($cart->domain, $request->ip(), time(), $wallet);
+        if (!is_null($cart)) {
+            CRUDUpdated::dispatch($cart, CartCRUDProvider::class, Carbon::now());
+        }
+        WalletTransactionEvent::dispatch($domain, $request->ip(), time(), $wallet);
+        $this->resetBalanceCache($user->id);
 
         return [$cart, $wallet];
     }
@@ -735,7 +776,7 @@ class BankingService implements IBankingService
                 }
                 return $ids;
             },
-            ['user:' . $user->id, 'purchased-cart:' . $user->id],
+            ['purchased-cart:' . $user->id],
             null
         );
     }
@@ -759,7 +800,30 @@ class BankingService implements IBankingService
                     ->where('currency', $currency)
                     ->sum('amount');
             },
-            ['user:' . $user->id, 'wallet:' . $user->id],
+            ['user.wallet:' . $user->id],
+            null
+        );
+    }
+
+
+    /**
+     * Undocumented function
+     *
+     * @param IProfileUser $user
+     * @param integer $currency
+     * @return float
+     */
+    public function getUserTotalGiftBalance(IProfileUser $user, int $currency) {
+        return Helpers::getCachedValue(
+            'larapress.ecommerce.user.' . $user->id . '.balance',
+            function () use ($user, $currency) {
+                return WalletTransaction::query()
+                    ->where('user_id', $user->id)
+                    ->where('currency', $currency)
+                    ->where('flags', '&', WalletTransaction::FLAGS_REGISTRATION_GIFT)
+                    ->sum('amount');
+            },
+            ['user.wallet:' . $user->id],
             null
         );
     }
@@ -836,27 +900,31 @@ class BankingService implements IBankingService
             WalletTransactionEvent::dispatch($cart->domain, $request->ip(), time(), $wallet);
 
             // give introducer gift, for first purchase only
-                    // if the amount is higher than some value
-            if (floatVal($cart->amount) >= floatVal(config('larapress.ecommerce.lms.introducers.introducer_gift_on.amount'))) {
-                /** @var [IProfileUser, FormEntry] */
+            // if the amount is higher than some value
+            if (floatval($cart->amount) >= floatval(config('larapress.ecommerce.lms.introducers.introducer_gift_on.amount'))) {
+                /** @var IProfileUser $introducer */
+                /** @var FormEntry $entry */
                 [$introducer, $entry] = $cart->customer->introducerData;
                 if (!is_null($introducer)) {
-                    if (!isset($entry->data['gifted_at'])) {
-                        $data = $entry->data;
-                        $data['gifted_at'] = Carbon::now();
-                        $data['gifted_amount'] = config('larapress.ecommerce.lms.introducers.introducer_gift.amount');
-                        $data['gifted_currency'] = config('larapress.ecommerce.lms.introducers.introducer_gift.currency');
-                        $entry->update([
-                            'data' => $data,
-                        ]);
-                        $this->addBalanceForUser(
-                            $request,
-                            $introducer,
-                            $introducer->getRegistrationDomainId(),
-                            $data['gifted_amount'],
-                            $data['gifted_currency'],
-                            trans('larapress::ecommerce.banking.messages.wallet-descriptions.introducer_gift_purchase_wallet_desc'),
-                        );
+                    if (!$introducer->hasRole(config('larapress.ecommerce.lms.support_role_id'))) {
+                        if (!isset($entry->data['gifted_at'])) {
+                            $data = $entry->data;
+                            $data['gifted_at'] = Carbon::now();
+                            $data['gifted_amount'] = config('larapress.ecommerce.lms.introducers.introducer_gift.amount');
+                            $data['gifted_currency'] = config('larapress.ecommerce.lms.introducers.introducer_gift.currency');
+                            $entry->update([
+                                'data' => $data,
+                            ]);
+                            $this->addBalanceForUser(
+                                $request,
+                                $introducer,
+                                $data['gifted_amount'],
+                                $data['gifted_currency'],
+                                WalletTransaction::TYPE_MANUAL_MODIFY,
+                                WalletTransaction::FLAGS_REGISTRATION_GIFT,
+                                trans('larapress::ecommerce.banking.messages.wallet-descriptions.introducer_gift_purchase_wallet_desc')
+                            );
+                        }
                     }
                 }
             }
@@ -900,6 +968,9 @@ class BankingService implements IBankingService
         }
         CartPurchasedEvent::dispatch($cart->domain, $request->ip(), time(), $cart);
         CRUDUpdated::dispatch($cart, CartCRUDProvider::class, Carbon::now());
+        $this->resetPurchasedCache($cart->customer, $cart->domain);
+        $this->resetPurchasingCache($cart->customer, $cart->domain);
+        $this->resetBalanceCache($cart->customer_id);
 
         return $cart;
     }
@@ -982,6 +1053,8 @@ class BankingService implements IBankingService
             'data' => $data,
         ]);
         CRUDUpdated::dispatch($cart, CartCRUDProvider::class, Carbon::now());
+        $this->resetPurchasedCache($cart->customer, $cart->domain);
+        $this->resetPurchasingCache($cart->customer, $cart->domain);
 
         return $cart;
     }
@@ -1034,6 +1107,15 @@ class BankingService implements IBankingService
     }
 
     /**
+     * @param int $user_id
+     * @return void
+     */
+    protected function resetBalanceCache($user_id)
+    {
+        Cache::tags(['user.wallet:' . $user_id])->flush();
+    }
+
+    /**
      * Undocumented function
      *
      * @param Product $product
@@ -1052,7 +1134,7 @@ class BankingService implements IBankingService
                 }
                 return $ancestors;
             },
-            ['products', 'product:' . $product->id],
+            ['product.ancestors:' . $product->id],
             null
         );
     }

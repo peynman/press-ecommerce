@@ -23,6 +23,11 @@ class CartController extends BaseCRUDController
         );
 
         Route::post(
+            '/me/all/installments',
+            '\\'.self::class.'@getAllInstallments'
+        )->name(config('larapress.ecommerce.routes.carts.name').'.any.purchasing.installments.all');
+
+        Route::post(
             '/me/{cart_id}/installments/{product_id}',
             '\\'.self::class.'@getCartInstallments'
         )->name(config('larapress.ecommerce.routes.carts.name').'.any.purchasing.installments');
@@ -92,7 +97,29 @@ class CartController extends BaseCRUDController
         return $service->removeItemFromPurchasingCart($request, $request->getProduct());
     }
 
+
+    /**
+     * Undocumented function
+     *
+     * @param IBankingService $service
+     * @param int $cart_id
+     * @param int $product_id
+     * @return Response
+     */
     public function getCartInstallments(IBankingService $service, $cart_id, $product_id) {
         return $service->getInstallmentsForProductInCart(Auth::user(), $cart_id, $product_id);
+    }
+
+
+    /**
+     * Undocumented function
+     *
+     * @param IBankingService $service
+     * @param int $cart_id
+     * @param int $product_id
+     * @return Response
+     */
+    public function getAllInstallments(IBankingService $service) {
+
     }
 }

@@ -3,6 +3,7 @@
 namespace Larapress\ECommerce\CRUD;
 
 use App\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Larapress\CRUD\Services\BaseCRUDProvider;
 use Larapress\CRUD\Services\ICRUDProvider;
@@ -25,13 +26,35 @@ class WalletTransactionCRUDProvider implements ICRUDProvider, IPermissionsMetada
         self::REPORTS,
     ];
     public $model = WalletTransaction::class;
-    public $createValidations = [
-        'target_user' => 'required|numeric|exists:users,id',
-        'amount' => 'required|numeric',
-        'currency' => 'required|numeric',
-        'flags' => 'nullable|numeric',
-        'data.description' => 'required|string',
-    ];
+
+    public function getCreateRules(Request $request)
+    {
+        return [
+            'type' => 'required|numeric|in:'.implode(',', [
+                WalletTransaction::TYPE_BANK_TRANSACTION,
+                WalletTransaction::TYPE_MANUAL_MODIFY,
+            ]),
+            'target_user' => 'required|numeric|exists:users,id',
+            'amount' => 'required|numeric',
+            'currency' => 'required|numeric',
+            'flags' => 'nullable|numeric',
+            'data.description' => 'required|string',
+        ];
+    }
+    public function getUpdateRules(Request $request)
+    {
+        return [
+            'type' => 'required|numeric|in:'.implode(',', [
+                WalletTransaction::TYPE_BANK_TRANSACTION,
+                WalletTransaction::TYPE_MANUAL_MODIFY,
+            ]),
+            'target_user' => 'required|numeric|exists:users,id',
+            'amount' => 'required|numeric',
+            'currency' => 'required|numeric',
+            'flags' => 'nullable|numeric',
+            'data.description' => 'required|string',
+        ];
+    }
     public $updateValidations = [
         'target_user' => 'required|numeric|exists:users,id',
         'amount' => 'required|numeric',
@@ -88,8 +111,6 @@ class WalletTransactionCRUDProvider implements ICRUDProvider, IPermissionsMetada
             throw new AppException(AppException::ERR_OBJ_ACCESS_DENIED);
         }
 
-        $args['type'] = WalletTransaction::TYPE_MANUAL_MODIFY;
-
         return $args;
     }
 
@@ -112,10 +133,6 @@ class WalletTransactionCRUDProvider implements ICRUDProvider, IPermissionsMetada
             $args['domain_id'] = $targetUser->getMembershipDomainId();
         } else {
             throw new AppException(AppException::ERR_OBJ_ACCESS_DENIED);
-        }
-
-        if (isset($args['type'])) {
-            unset($args['type']);
         }
 
         return $args;

@@ -1,6 +1,6 @@
 <?php
 
-namespace Larapress\ECommerce\Commands;
+namespace Larapress\ECommerce\Services\AdobeConnect;
 
 use Larapress\Reports\Models\MetricCounter;
 use App\Models\User;
@@ -12,13 +12,14 @@ use Larapress\CRUD\Exceptions\AppException;
 use Larapress\ECommerce\Models\Cart;
 use Larapress\ECommerce\Models\Product;
 use Larapress\ECommerce\Services\AdobeConnect\IAdobeConnectService;
+use Larapress\ECommerce\Services\CourseSession\ICourseSessionFormService;
 use Larapress\Reports\CRUD\TaskReportsCRUDProvider;
 use Larapress\Reports\Models\TaskReport;
 use Larapress\Reports\Services\IMetricsService;
 use Larapress\Reports\Services\IReportsService;
 use Larapress\Reports\Services\ITaskReportService;
 
-class AdobeConnect extends ActionCommandBase
+class AdobeConnectCommands extends ActionCommandBase
 {
     /**
      * The name and signature of the console command.
@@ -35,7 +36,7 @@ class AdobeConnect extends ActionCommandBase
     protected $description = 'ask for event statuses from adobe connect';
 
     /**
-     * Create a new command instance.
+     * Cr eate a new command instance.
      *
      * @return void
      */
@@ -59,15 +60,74 @@ class AdobeConnect extends ActionCommandBase
                 })
                 ->get();
 
-
             foreach ($products as $product) {
                 if (
                     isset($product->data['types']['ac_meeting']['status']) &&
                     $product->data['types']['ac_meeting']['status'] !== 'ended'
                 ) {
-                    $service->onEachServerForProduct($product, function($meetingFolder, $meetingName)  use($service, $product) {
+                    $fullyEnded = true;
+                    $recordings = [];
+                    $service->onEachServerForProduct($product, function($meetingFolder, $meetingName, $serverData)  use($service, $product, &$fullyEnded, &$recordings) {
                         $meeting = $service->createOrGetMeeting($meetingFolder, $meetingName);
+                        $attendances = $service->getMeetingAttendance($meeting->getScoId());
+                        $serverEnded = true;
+                        foreach($attendances as $attendance) {
+                            if (!isset($attendance['dateEnd'])) {
+                                $fullyEnded = false;
+                                $serverEnded = false;
+                            }
+                        }
+
+                        if ($serverEnded) {
+                            /** @var SCO[] */
+                            $records = $service->getMeetingRecordings($meeting->getScoId());
+                            foreach ($records as $record) {
+                                $recordings[] = trim($serverData['server'], '/').$record->getUrlPath();
+                            }
+                        }
                     });
+
+                    if ($fullyEnded) {
+                        $data = $product->data;
+                        $data['types']['ac_meeting']['status'] = 'ended';
+                        $data['types']['ac_meeting']['recordings'] = $recordings;
+
+                        $product->update([
+                            'data' => $data
+                        ]);
+
+                        /** @var ICourseSessionFormService */
+                        $courseService = app(ICourseSessionFormService::class);
+                        $service->onEachServerForProduct($product, function($meetingFolder, $meetingName)  use($service, $product, $courseService) {
+                            $meeting = $service->createOrGetMeeting($meetingFolder, $meetingName);
+                            $attendances = $service->getMeetingAttendance($meeting->getScoId());
+                            foreach($attendances as $attendance) {
+                                $username = $attendance['login'];
+                                $user = $service->getUserFromACLogin($username);
+                                if (!is_null($user)) {
+                                    $end = Carbon::createFromFormat('Y-m-d\TH:i:s.vO', $attendance['dateEnd']);
+                                    $start = Carbon::createFromFormat('Y-m-d\TH:i:s.vO', $attendance['dateCreated']);
+                                    $duration = $start->diffInSeconds($end);
+                                    $courseService->addCourseSessionPresenceMarkForSession(
+                                        null,
+                                        $user,
+                                        $product->id,
+                                        1,
+                                        $start
+                                    );
+                                    $courseService->addCourseSessionPresenceMarkForSession(
+                                        null,
+                                        $user,
+                                        $product->id,
+                                        $duration,
+                                        $end
+                                    );
+                                }
+                            }
+                        });
+
+                        $this->info("Product with id ".$product->id." is ac_meeting and ended");
+                    }
                 }
             }
         };

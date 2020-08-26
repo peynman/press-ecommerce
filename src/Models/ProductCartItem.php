@@ -71,7 +71,7 @@ trait ProductCartItem
                 }
             }
 
-            return floatVal($prior['amount']);
+            return floatval($prior['amount']);
         }
 
         return 0;

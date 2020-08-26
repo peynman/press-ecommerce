@@ -32,6 +32,7 @@ class CourseSessionFormService implements ICourseSessionFormService {
         $formService = app(IFormEntryService::class);
         $formService->updateFormEntry(
             $request,
+            Auth::user(),
             config('larapress.ecommerce.lms.course_file_upload_default_form_id'),
             $tags,
             function($request, $inputNames, $form, $entry) use($upload, $sessionId, $session) {
@@ -60,6 +61,27 @@ class CourseSessionFormService implements ICourseSessionFormService {
      * @return void
      */
     public function markCourseSessionPresence(CourseSessionPresenceRequest $request, $sessionId) {
+        $duration = intval($request->getDuration());
+        $this->addCourseSessionPresenceMarkForSession(
+            $request,
+            Auth::user(),
+            $sessionId,
+            $duration,
+            Carbon::now()
+        );
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param Request $request
+     * @param IProfileUser $user
+     * @param string $sessionId
+     * @param integer $duration
+     * @param Carbon $at
+     * @return void
+     */
+    public function addCourseSessionPresenceMarkForSession($request, $user, $sessionId, $duration, $at) {
         $session = Product::with('types')->find($sessionId);
         if (is_null($session)) {
             throw new AppException(AppException::ERR_OBJECT_NOT_FOUND);
@@ -70,20 +92,20 @@ class CourseSessionFormService implements ICourseSessionFormService {
         $formService = app(IFormEntryService::class);
         $formService->updateFormEntry(
             $request,
+            $user,
             config('larapress.ecommerce.lms.course_presense_default_form_id'),
             $tags,
-            function($request, $inputNames, $form, $entry) use($sessionId) {
-                $newValues = $request->all($inputNames);
+            function($request, $inputNames, $form, $entry) use($sessionId, $duration, $at) {
+                $newValues = !is_null($request) ? $request->all($inputNames):[];
                 $newValues['product_id'] = $sessionId;
                 if (isset($entry->data['values']['sessions'])) {
                     $newValues['sessions'] = $entry->data['values']['sessions'];
                 } else {
                     $newValues['sessions'] = [];
                 }
-                $duration = intval($request->getDuration());
                 $newValues['duration'] = (isset($entry->data['values']['duration']) ? intval($entry->data['values']['duration']) : 0) +
                                                  $duration;
-                $newValues['sessions'][] = ['at' => Carbon::now(), 'duration' => $duration];
+                $newValues['sessions'][] = ['at' => $at, 'duration' => $duration];
                 return $newValues;
             }
         );

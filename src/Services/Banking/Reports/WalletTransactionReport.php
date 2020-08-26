@@ -8,6 +8,7 @@ use Larapress\ECommerce\Services\Banking\Events\BankGatewayTransactionEvent;
 use Larapress\ECommerce\Services\Banking\Events\CartPurchasedEvent;
 use Larapress\ECommerce\Services\Banking\Events\WalletTransactionEvent;
 use Larapress\Reports\Services\BaseReportSource;
+use Larapress\Reports\Services\IMetricsService;
 use Larapress\Reports\Services\IReportsService;
 
 class WalletTransactionReport implements IReportSource
@@ -17,12 +18,16 @@ class WalletTransactionReport implements IReportSource
     /** @var IReportsService */
     private $reports;
 
+    /** @var IMetricsService */
+    private $metrics;
+
     /** @var array */
     private $avReports;
 
-    public function __construct(IReportsService $reports)
+    public function __construct(IReportsService $reports, IMetricsService $metrics)
     {
         $this->reports = $reports;
+        $this->metrics = $metrics;
         $this->avReports = [
             'user.wallet.total' => function ($user, array $options = []) {
                 [$filters, $fromC, $toC, $groups] = $this->getCommonReportProps($user, $options);
@@ -57,6 +62,7 @@ class WalletTransactionReport implements IReportSource
         $tags = [
             'domain' => $event->domain->id,
             'currency' => $event->transaction->currency,
+            'type' => $event->transaction->type,
             'tr_id' => $event->transaction->id,
         ];
         $this->reports->pushMeasurement('user.wallet', 1, $tags, [

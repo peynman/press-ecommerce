@@ -61,10 +61,8 @@ class CourseSessionRepository extends ProductRepository
      * @return Product[]
      */
     public function getWeekCourseSessions($user) {
-        // -2d => monday to saturday start day of week
-        $weekStart = Carbon::now()->startOfWeek()->addDays(-2);
-        // -2d => monday to saturday start day of week
-        $weekEnd = Carbon::now()->endOfWeek()->addDays(-2);
+        $weekStart = Carbon::now()->startOfWeek(Carbon::SATURDAY);
+        $weekEnd = Carbon::now()->endOfWeek(Carbon::FRIDAY);
         $query = $this->getPurchasedProductsPaginatedQuery(
             $user,
             0,

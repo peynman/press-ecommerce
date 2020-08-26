@@ -6,6 +6,7 @@ use Illuminate\Support\ServiceProvider;
 use Larapress\ECommerce\Commands\ProductCommands;
 use Larapress\ECommerce\Repositories\IProductRepository;
 use Larapress\ECommerce\Repositories\ProductRepository;
+use Larapress\ECommerce\Services\AdobeConnect\AdobeConnectCommands;
 use Larapress\ECommerce\Services\AdobeConnect\AdobeConnectService;
 use Larapress\ECommerce\Services\AdobeConnect\IAdobeConnectService;
 use Larapress\ECommerce\Services\Banking\BankingService;
@@ -69,6 +70,7 @@ class PackageServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 ProductCommands::class,
+                AdobeConnectCommands::class,
             ]);
         }
     }

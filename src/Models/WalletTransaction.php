@@ -29,6 +29,8 @@ class WalletTransaction extends Model
     const TYPE_MANUAL_MODIFY = 1;
     const TYPE_BANK_TRANSACTION = 2;
 
+    const FLAGS_REGISTRATION_GIFT = 1;
+
 	use SoftDeletes;
 
 	protected $table = 'wallet_transactions';
@@ -53,7 +55,6 @@ class WalletTransaction extends Model
 	public function user() {
         return $this->belongsTo(config('larapress.crud.user.class'), 'user_id');
     }
-
 
 	/**
 	 * @return \Illuminate\Database\Eloquent\Relations\BelongsTo

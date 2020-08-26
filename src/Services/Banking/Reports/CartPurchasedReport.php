@@ -69,11 +69,10 @@ class CartPurchasedReport implements IReportSource
             'gift' => isset($event->cart->data['gift_code']['amount']) ? $event->cart->data['gift_code']['amount']: 0,
         ], $event->timestamp);
 
-
         if (BaseFlags::isActive($event->cart->flags, Cart::FLAGS_PERIOD_PAYMENT_CART)) {
             $originalProductId = $event->cart->data['periodic_pay']['product']['id'];
             $paymentPeriodIndex = $event->cart->data['periodic_pay']['index'];
-            $amount = floatValue($event->cart->amount);
+            $amount = floatval($event->cart->amount);
             $this->metrics->pushMeasurement(
                 $event->domain->id,
                 'product.'.$originalProductId.'.sales_amount',

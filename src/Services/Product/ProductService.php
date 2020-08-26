@@ -96,7 +96,7 @@ class ProductService implements IProductService
     public function getProductSales($product_id)
     {
         return Helpers::getCachedValue(
-            'product.' . $product_id . '.sales',
+            'larapress.ecommerce.product.' . $product_id . '.sales',
             function () use ($product_id) {
                 /** @var IMetricsService */
                 $service = app(IMetricsService::class);
@@ -118,7 +118,7 @@ class ProductService implements IProductService
                     'fixed' => $fixed,
                 ];
             },
-            ['sales:' . $product_id],
+            ['product.sales:' . $product_id],
             null
         );
     }

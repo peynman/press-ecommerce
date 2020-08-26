@@ -69,10 +69,14 @@ interface IBankingService
      *
      * @param Request $request
      * @param IProfileUser $user
-     * @param Domain $domain
+     * @param float $amount
+     * @param integer $currency
+     * @param integer $type
+     * @param integer $flags
+     * @param string $desc
      * @return [Cart, WalletTransaction]
      */
-    public function addBalanceForUser(Request $request, IProfileUser $user, $domainId, $amount, $currency, $desc);
+    public function addBalanceForUser(Request $request, IProfileUser $user, float $amount, int $currency, int $type, int $flags, string $desc);
 
     /**
      * Undocumented function
@@ -163,6 +167,15 @@ interface IBankingService
      */
     public function getUserBalance(IProfileUser $user, Domain $domain, int $currency);
 
+    /**
+     * Undocumented function
+     *
+     * @param IProfileUser $user
+     * @param Domain $domain
+     * @param integer $currency
+     * @return float
+     */
+    public function getUserTotalGiftBalance(IProfileUser $user, int $currency);
 
     /**
      * Undocumented function

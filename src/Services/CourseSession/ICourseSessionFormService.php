@@ -23,4 +23,16 @@ interface ICourseSessionFormService
      * @return void
      */
     public function markCourseSessionPresence(CourseSessionPresenceRequest $request, $sessionId);
+
+    /**
+     * Undocumented function
+     *
+     * @param Request $request
+     * @param IProfileUser $user
+     * @param string $sessionId
+     * @param integer $duration
+     * @param Carbon $at
+     * @return void
+     */
+    public function addCourseSessionPresenceMarkForSession($request, $user, $sessionId, $duration, $at);
 }

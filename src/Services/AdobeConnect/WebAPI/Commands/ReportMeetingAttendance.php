@@ -13,7 +13,7 @@ use Larapress\ECommerce\Services\AdobeConnect\WebAPI\Helpers\SetEntityAttributes
  *
  * More info see {@link https://helpx.adobe.com/adobe-connect/webservices/principal-info.html}
  */
-class ReportMeetingSessions extends Command
+class ReportMeetingAttendance extends Command
 {
     /**
      * @var int
@@ -37,9 +37,9 @@ class ReportMeetingSessions extends Command
     {
         $response = Converter::convert(
             $this->client->doGet([
-                'action' => 'report-meeting-sessions',
+                'action' => 'report-meeting-attendance',
                 'sco-id' => $this->scoId,
-                'sort-date-end' => 'asc',
+                'sort-date-created' => 'desc',
                 'session' => $this->client->getSession()
             ])
         );

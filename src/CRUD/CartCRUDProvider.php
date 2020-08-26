@@ -2,9 +2,7 @@
 
 namespace Larapress\ECommerce\CRUD;
 
-use App\Models\User;
 use Illuminate\Database\Query\Builder;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Larapress\CRUD\Services\BaseCRUDProvider;
 use Larapress\CRUD\Services\ICRUDProvider;

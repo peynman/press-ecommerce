@@ -4,6 +4,7 @@ namespace Larapress\ECommerce\CRUD;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Larapress\CRUD\Services\BaseCRUDProvider;
 use Larapress\CRUD\Services\ICRUDProvider;
@@ -73,7 +74,6 @@ class ProductCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         'types',
         'categories'
     ];
-    public $excludeIfNull = [];
     public $filterFields = [
         'types' => 'has:types',
         'categories' => 'has:categories',
@@ -148,10 +148,10 @@ class ProductCRUDProvider implements ICRUDProvider, IPermissionsMetadata
     {
         /** @var ICRUDUser|IProfileUser $user */
         $user = Auth::user();
-        // if (! $user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
-        //     return $user->id === $object->author_id;
-        // }
-        // return true;
+        if (! $user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
+            return $user->id === $object->author_id;
+        }
+        return true;
 
         return $user->hasRole(
             array_merge(
@@ -172,6 +172,11 @@ class ProductCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         if (isset($input_data['categories'])) {
             $this->syncBelongsToManyRelation('categories', $object, $input_data);
         }
+
+        // remove ancestors cache
+        if (!is_null($object->parent_id)) {
+            Cache::tags(['product.ancestors:'.$object->id]);
+        }
     }
 
     /**
@@ -185,6 +190,11 @@ class ProductCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         $this->syncBelongsToManyRelation('types', $object, $input_data);
         if (isset($input_data['categories'])) {
             $this->syncBelongsToManyRelation('categories', $object, $input_data);
+        }
+
+        // remove ancestors cache
+        if (!is_null($object->parent_id)) {
+            Cache::tags(['product.ancestors:'.$object->id]);
         }
     }
 }

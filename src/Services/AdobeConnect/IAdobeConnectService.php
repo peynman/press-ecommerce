@@ -2,16 +2,20 @@
 
 namespace Larapress\ECommerce\Services\AdobeConnect;
 
-interface IAdobeConnectService {
+use Larapress\ECommerce\Services\AdobeConnect\WebAPI\Entities\SCO;
+use Larapress\ECommerce\Services\AdobeConnect\WebAPI\Entities\Principal;
+use Larapress\Profiles\IProfileUser;
 
+interface IAdobeConnectService {
     /**
      * Undocumented function
      *
-     * @param [type] $options
-     * @return void
+     * @param string $url
+     * @param string $username
+     * @param string $password
+     * @return bool
      */
     public function connect($url, $username, $password);
-
 
     /**
      * Undocumented function
@@ -26,52 +30,29 @@ interface IAdobeConnectService {
     /**
      * Undocumented function
      *
-     * @param [type] $folderName
-     * @param [type] $meetingName
-     * @return void
+     * @param string $folderName
+     * @param string $meetingName
+     * @param array $details
+     * @return SCO
      */
-    public function createOrGetMeeting($folderName, $meetingName);
+    public function createOrGetMeeting($folderName, $meetingName, $details = []);
 
     /**
      * Undocumented function
      *
-     * @param [type] $folderName
-     * @param [type] $meetingName
-     * @param [type] $username
-     * @return void
-     */
-    public function addParticipantToMeeting($folderName, $meetingName, $username);
-
-    /**
-     * Undocumented function
-     *
-     * @param [type] $meetingName
-     * @param [type] $username
-     * @param [type] $password
-     * @return void
-     */
-    public function redirectToMeeting($meetingName, $username, $password);
-
-
-    /**
-     * Undocumented function
-     *
-     * @param [type] $user
+     * @param IProfileUser $user
      * @param int $product_id
      * @return Response
      */
     public function verifyProductMeeting($user, $product_id);
 
-
-
     /**
      * Undocumented function
      *
      * @param Product $item
-     * @return void
+     * @return SCO
      */
     public function createMeetingForProduct($item);
-
 
     /**
      * Undocumented function
@@ -81,4 +62,49 @@ interface IAdobeConnectService {
      * @return void
      */
     public function onEachServerForProduct($item, $callback);
+
+    /**
+     * @return Principal
+     */
+    public function getLoggedUserInfo();
+
+    /**
+     * Undocumented function
+     *
+     * @param string $username
+     * @return Principal|null
+     */
+    public function getUserInfo($username);
+
+    /**
+     * Undocumented function
+     *
+     * @param string $meetingId
+     * @return array
+     */
+    public function getMeetingSessions($meetingId);
+
+    /**
+     * Undocumented function
+     *
+     * @param string $meetingId
+     * @return array
+     */
+    public function getMeetingAttendance($meetingId);
+
+    /**
+     * Undocumented function
+     *
+     * @param string $login
+     * @return IProfileUser|null
+     */
+    public function getUserFromACLogin($login);
+
+    /**
+     * Undocumented function
+     *
+     * @param string $meetingId
+     * @return array
+     */
+    public function getMeetingRecordings($meetingId);
 }
