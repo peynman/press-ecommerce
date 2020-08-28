@@ -10,6 +10,7 @@ return [
                 'introducer_gift_wallet_desc' => 'هدیه ثبت نام با کد معرف :introducer_id',
                 'introducer_gift_purchase_wallet_desc' => 'هدیه ثبت نام و خرید با کد معرف شما',
                 'register_gift_wallet_desc' => 'هدیه ثبت نام',
+                'profile_gift_wallet_desc' => 'هدیه تکمیل پروفایل',
             ]
         ],
     ],

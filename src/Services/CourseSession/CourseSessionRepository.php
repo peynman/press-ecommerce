@@ -63,14 +63,20 @@ class CourseSessionRepository extends ProductRepository
     public function getWeekCourseSessions($user) {
         $weekStart = Carbon::now()->startOfWeek(Carbon::SATURDAY);
         $weekEnd = Carbon::now()->endOfWeek(Carbon::FRIDAY);
+        $today = Carbon::now();
+        if ($today->diffInDays($weekEnd) === 0) {
+            $weekStart->addDays(7);
+            $weekEnd->addDays(7);
+        }
+
         $query = $this->getPurchasedProductsPaginatedQuery(
             $user,
             0,
             [],
             ['session']
         );
-        $query->whereRaw("DATEDIFF(DATE_FORMAT(JSON_UNQUOTE(JSON_EXTRACT(data, '$.types.session.start_at')), '%Y/%m/%dT%H:%i:%s'), '".$weekStart->format('Y/m/d')."') >= 0");
-        $query->whereRaw("DATEDIFF(DATE_FORMAT(JSON_UNQUOTE(JSON_EXTRACT(data, '$.types.session.start_at')), '%Y/%m/%dT%H:%i:%s'), '".$weekEnd->format('Y/m/d')."') <= 7");
+        $query->whereRaw("DATEDIFF(DATE_FORMAT(JSON_UNQUOTE(JSON_EXTRACT(data, '$.types.session.start_at')), '%Y/%m/%dT%H:%i:%s'), '".$weekStart->format('Y/m/d\TH:i:s')."') >= 0");
+        $query->whereRaw("DATEDIFF(DATE_FORMAT(JSON_UNQUOTE(JSON_EXTRACT(data, '$.types.session.start_at')), '%Y/%m/%dT%H:%i:%s'), '".$weekEnd->format('Y/m/d\TH:i:s')."') <= 0");
 
         $query->with([
             'parent',
