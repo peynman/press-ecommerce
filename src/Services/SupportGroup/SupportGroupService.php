@@ -16,7 +16,7 @@ use Larapress\CRUD\Extend\Helpers;
 use Larapress\ECommerce\Models\WalletTransaction;
 use Larapress\ECommerce\Services\Banking\IBankingService;
 use Larapress\Profiles\Models\FormEntry;
-use Larapress\Profiles\Services\IFormEntryService;
+use Larapress\Profiles\Services\FormEntry\IFormEntryService;
 use Larapress\Profiles\IProfileUser;
 
 class SupportGroupService implements ISupportGroupService {

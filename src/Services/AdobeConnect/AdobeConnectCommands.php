@@ -102,6 +102,10 @@ class AdobeConnectCommands extends ActionCommandBase
                             $meeting = $service->createOrGetMeeting($meetingFolder, $meetingName);
                             $attendances = $service->getMeetingAttendance($meeting->getScoId());
                             foreach($attendances as $attendance) {
+                                if (!isset($attendance['login'])) {
+                                    continue;
+                                }
+
                                 $username = $attendance['login'];
                                 $user = $service->getUserFromACLogin($username);
                                 if (!is_null($user)) {

@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use Larapress\CRUD\Exceptions\AppException;
 use Larapress\ECommerce\Models\FileUpload;
 use Larapress\ECommerce\Models\Product;
-use Larapress\Profiles\Services\IFormEntryService;
+use Larapress\Profiles\Services\FormEntry\IFormEntryService;
 
 class CourseSessionFormService implements ICourseSessionFormService {
     /**

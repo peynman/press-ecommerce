@@ -92,7 +92,7 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
     }
 
     /**
-     * @param Domain $object
+     * @param Cart $object
      *
      * @return bool
      */
@@ -101,8 +101,7 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         /** @var ICRUDUser|IProfileUser $user */
         $user = Auth::user();
         if (! $user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
-            return in_array($object->id, $user->getAffiliateDomainIds()) ||
-                    $object->customer_id;
+            return in_array($object->domain_id, $user->getAffiliateDomainIds());
         }
 
         return true;
