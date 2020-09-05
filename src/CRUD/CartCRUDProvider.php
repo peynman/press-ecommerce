@@ -3,14 +3,20 @@
 namespace Larapress\ECommerce\CRUD;
 
 use Illuminate\Database\Query\Builder;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Larapress\CRUD\Services\BaseCRUDProvider;
 use Larapress\CRUD\Services\ICRUDProvider;
 use Larapress\CRUD\Services\IPermissionsMetadata;
 use Larapress\CRUD\ICRUDUser;
 use Larapress\ECommerce\Models\Cart;
+use Larapress\ECommerce\Models\WalletTransaction;
+use Larapress\ECommerce\Services\Banking\IBankingService;
+use Larapress\ECommerce\Services\Banking\Reports\CartPurchasedReport;
 use Larapress\Profiles\IProfileUser;
-use Larapress\Profiles\Models\Domain;
+use Larapress\Reports\Services\IMetricsService;
+use Larapress\Reports\Services\IReportsService;
 
 class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
 {
@@ -31,6 +37,7 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         'currency' => 'required|numeric|exists:filters,id',
         'status' => 'required|numeric',
         'flags' => 'nullable|numeric',
+        'description' => 'nullable',
         'products.*.id' => 'required|numeric|exists:products,id',
         'periodic_product_ids.*.id' => 'nullable|numeric|exists:products,id'
     ];
@@ -71,6 +78,21 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         'customer_id' => 'equals:customer_id',
         'flags' => 'bitwise:flags',
     ];
+
+
+    /**
+     *
+     */
+    public function getReportSources()
+    {
+        /** @var IReportsService */
+        $service = app(IReportsService::class);
+        /** @var IMetricsService */
+        $metrics = app(IMetricsService::class);
+        return [
+            new CartPurchasedReport($service, $metrics),
+        ];
+    }
 
     /**
      * @param Builder $query
@@ -118,6 +140,7 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         $args['flags'] = Cart::FLAGS_ADMIN;
         $args['data'] = [
             'periodic_product_ids' => isset($args['periodic_product_ids']) ? array_keys($args['periodic_product_ids']) : [],
+            'description' => isset($args['description']) ? $args['description']: null,
         ];
 
         $class = config('larapress.crud.user.class');
@@ -145,6 +168,40 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
             ]);
         }
 
+        if ($object->status == Cart::STATUS_ACCESS_COMPLETE) {
+            if ($object->amount > 0) {
+                $object->flags |= Cart::FLAG_USER_CART;
+                /** @var IBankingService */
+                $banking = app(IBankingService::class);
+                $banking->markCartPurchased(
+                    Request::createFromGlobals(),
+                    $object
+                );
+            }
+        }
+
         return $object;
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param Cart $object
+     * @return void
+     */
+    public function onAfterDestroy($object)
+    {
+        // remove wallet transaction associated with this cart
+        $wallet = WalletTransaction::query()
+            ->where('user_id', $object->customer_id)
+            ->whereJsonContains('data->cart_id', $object->id)
+            ->where('amount', '<', 0)
+            ->first();
+        if (!is_null($wallet)) {
+            $wallet->delete();
+        }
+
+        // update internal fast cache! for balance
+        $object->customer->updateUserCache('balance');
     }
 }

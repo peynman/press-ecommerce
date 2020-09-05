@@ -30,7 +30,10 @@ class EventServiceProvider extends ServiceProvider
         ],
         'Larapress\CRUD\Events\CRUDCreated' => [
             'Larapress\ECommerce\Services\AdobeConnect\SyncACMeetingOnProductEvent',
-        ]
+        ],
+        'Larapress\Profiles\Services\FormEntry\FormEntryUpdateEvent' => [
+            'Larapress\ECommerce\Services\SupportGroup\SupportGroupFormListener',
+        ],
     ];
 
 

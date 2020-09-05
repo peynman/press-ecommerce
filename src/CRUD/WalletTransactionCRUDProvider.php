@@ -5,11 +5,13 @@ namespace Larapress\ECommerce\CRUD;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Larapress\CRUD\Services\BaseCRUDProvider;
 use Larapress\CRUD\Services\ICRUDProvider;
 use Larapress\CRUD\Services\IPermissionsMetadata;
 use Larapress\CRUD\Exceptions\AppException;
 use Larapress\ECommerce\Models\WalletTransaction;
+use Larapress\ECommerce\Services\Banking\IBankingService;
 use Larapress\Pages\Models\Page;
 use Larapress\Profiles\CRUD\UserCRUDProvider;
 
@@ -171,5 +173,40 @@ class WalletTransactionCRUDProvider implements ICRUDProvider, IPermissionsMetada
         }
 
         return true;
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param WalletTransaction $object
+     * @param array $input_data
+     * @return void
+     */
+    public function onAfterCreate($object, $input_data)
+    {
+        $object->user->updateUserCache('balance');
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param WalletTransaction $object
+     * @param array $input_data
+     * @return void
+     */
+    public function onAfterUpdate($object, $input_data)
+    {
+        $object->user->updateUserCache('balance');
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param WalletTransaction $object
+     * @return void
+     */
+    public function onAfterDestroy($object)
+    {
+        $object->user->updateUserCache('balance');
     }
 }

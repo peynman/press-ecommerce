@@ -10,6 +10,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Larapress\CRUD\Exceptions\AppException;
 use Larapress\CRUD\Extend\Helpers;
@@ -82,6 +83,7 @@ class SupportGroupService implements ISupportGroupService {
                     return $this->getSupportIdsDataForEntry($entry, $supportUserId, $supportProfile);
                 }
             );
+            Cache::tags(['user.support:'.$userId])->flush();
 
             $indexer++;
         }
@@ -122,6 +124,7 @@ class SupportGroupService implements ISupportGroupService {
                 return $this->getSupportIdsDataForEntry($entry, $supportUserId, $supportProfile);
             }
         );
+        Cache::tags(['user.support:'.$user->id])->flush();
     }
 
     /**

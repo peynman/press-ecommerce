@@ -99,16 +99,21 @@ class ProductRepository implements IProductRepository
         return $query->get();
     }
 
+
     /**
      * Undocumented function
      *
      * @param IProfileUser $user
-     * @param [type] $page
+     * @param integer $page
+     * @param integer $limit
+     * @param array $categories
+     * @param array $types
+     * @param boolean $exclude
      * @return array
      */
-    public function getProductsPaginated($user, $page = 0, $limit = 50, $categories = [], $types = [])
+    public function getProductsPaginated($user, $page = 0, $limit = 50, $categories = [], $types = [], $exclude = false)
     {
-        $query = $this->getProductsPaginatedQuery($user, $page, $categories, $types);
+        $query = $this->getProductsPaginatedQuery($user, $page, $categories, $types, $exclude);
         $resultset = $query->paginate($limit);
         if (!is_null($user)) {
             /** @var IBankingService */
@@ -239,44 +244,9 @@ class ProductRepository implements IProductRepository
         return $product;
     }
 
-    protected function postProcessProductsForPresenting($user, $products) {
-    }
-
     /**
-     * Undocumented function
      *
-     * @param [type] $user
-     * @param integer $page
-     * @param integer $limit
-     * @param array $categories
-     * @param array $types
-     * @return Builder
      */
-    protected function getProductsPaginatedQuery($user, $page = 0, $categories = [], $types = [])
-    {
-        Paginator::currentPageResolver(
-            function () use ($page) {
-                return $page;
-            }
-        );
-
-        $query = Product::query()->with(['categories', 'types']);
-        if (count($categories) > 0) {
-            $query->whereHas('categories', function ($q) use ($categories) {
-                $q->whereIn('id', $categories);
-            });
-        }
-
-        if (count($types) > 0) {
-            $query->whereHas('types', function ($q) use ($types) {
-                $q->whereIn('name', $types);
-            });
-        }
-
-        $query->orderBy('priority', 'desc');
-        return $query;
-    }
-
     protected function getPurchasedProductsPaginatedQuery($user, $page = 0, $categories = [], $types = [])
     {
         $query = $this->getProductsPaginatedQuery($user, $page, $categories, $types);
@@ -297,6 +267,52 @@ class ProductRepository implements IProductRepository
             });
         });
 
+        return $query;
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param [type] $user
+     * @param integer $page
+     * @param integer $limit
+     * @param array $categories
+     * @param array $types
+     * @param bool $exclude // exclude categories instead
+     * @return Builder
+     */
+    protected function getProductsPaginatedQuery($user, $page = 0, $categories = [], $types = [], $exclude = false)
+    {
+        Paginator::currentPageResolver(
+            function () use ($page) {
+                return $page;
+            }
+        );
+
+        if (is_numeric($categories)) {
+            $categories = [$categories];
+        }
+
+        $query = Product::query()->with(['categories', 'types']);
+        if (count($categories) > 0) {
+            if ($exclude) {
+                $query->whereDoesntHave('categories', function ($q) use ($categories) {
+                    $q->whereIn('id', $categories);
+                });
+            } else {
+                $query->whereHas('categories', function ($q) use ($categories) {
+                    $q->whereIn('id', $categories);
+                });
+            }
+        }
+
+        if (count($types) > 0) {
+            $query->whereHas('types', function ($q) use ($types) {
+                $q->whereIn('name', $types);
+            });
+        }
+
+        $query->orderBy('priority', 'desc');
         return $query;
     }
 }

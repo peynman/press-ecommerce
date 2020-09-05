@@ -63,7 +63,6 @@ class BankingService implements IBankingService
         ]);
         CRUDUpdated::dispatch($cart, CartCRUDProvider::class, Carbon::now());
 
-
         return $this->redirectToBankForCart($request, $cart, $gateway_id, $onFailed, $onAlreadyPurchased);
     }
 
@@ -662,6 +661,9 @@ class BankingService implements IBankingService
         WalletTransactionEvent::dispatch($domain, $request->ip(), time(), $wallet);
         $this->resetBalanceCache($user->id);
 
+        // update internal fast cache! for balance
+        $cart->customer->updateUserCache('balance');
+
         return [$cart, $wallet];
     }
 
@@ -791,6 +793,11 @@ class BankingService implements IBankingService
      */
     public function getUserBalance(IProfileUser $user, Domain $domain, int $currency)
     {
+        if (isset($user->cache['balance'])) {
+            return $user->cache['balance'];
+        }
+
+        return null;
         return Helpers::getCachedValue(
             'larapress.ecommerce.user.' . $user->id . '.balance',
             function () use ($user, $domain, $currency) {
@@ -972,6 +979,9 @@ class BankingService implements IBankingService
         $this->resetPurchasingCache($cart->customer, $cart->domain);
         $this->resetBalanceCache($cart->customer_id);
 
+        // update internal fast cache! for balance
+        $cart->customer->updateUserCache('balance');
+
         return $cart;
     }
 
@@ -1112,7 +1122,7 @@ class BankingService implements IBankingService
      */
     protected function resetBalanceCache($user_id)
     {
-        Cache::tags(['user.wallet:' . $user_id])->flush();
+        // Cache::tags(['user.wallet:' . $user_id])->flush();
     }
 
     /**

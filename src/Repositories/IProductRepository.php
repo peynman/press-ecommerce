@@ -32,14 +32,19 @@ interface IProductRepository {
      */
     public function getRootProductCategories($user);
 
+
     /**
      * Undocumented function
      *
-     * @param [type] $user
-     * @param [type] $categories
+     * @param IProfileUser $user
+     * @param integer $page
+     * @param integer $limit
+     * @param array $categories
+     * @param array $types
+     * @param boolean $exclude
      * @return array
      */
-    public function getProductsPaginated($user, $page = 0, $limit = 30, $categories = [], $types = []);
+    public function getProductsPaginated($user, $page = 0, $limit = 50, $categories = [], $types = [], $exclude = false);
 
 
     /**
