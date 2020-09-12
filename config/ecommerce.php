@@ -16,6 +16,7 @@ use Larapress\ECommerce\CRUD\ProductCategoryCRUDProvider;
 use Larapress\ECommerce\CRUD\ProductCRUDProvider;
 use Larapress\ECommerce\CRUD\ProductTypeCRUDProvider;
 use Larapress\ECommerce\CRUD\WalletTransactionCRUDProvider;
+use Larapress\ECommerce\Services\Azmoon\AzmoonZipFileProcessor;
 use Larapress\ECommerce\Services\VOD\VideoFileProcessor;
 
 return [
@@ -73,6 +74,7 @@ return [
 
     'file_upload_processors' => [
         VideoFileProcessor::class,
+        AzmoonZipFileProcessor::class,
     ],
 
     'repository' => [

@@ -39,7 +39,7 @@ class SupportGroupService implements ISupportGroupService {
         } else {
             $supportUserId = $request->getSupportUserID();
             $supportUser = call_user_func([$class, 'find'], $supportUserId);
-            $supportProfile = !is_null($supportUser->profile) ? $supportUser->profile->data['values'] : [];
+            $supportProfile = !is_null($supportUser->profile) ? $supportUser->profile['data']['values'] : [];
             if (! $supportUser->hasRole(config('larapress.ecommerce.lms.support_role_id'))) {
                 throw new AppException(AppException::ERR_INVALID_QUERY);
             }
@@ -64,7 +64,7 @@ class SupportGroupService implements ISupportGroupService {
             if ($request->shouldRandomizeSupportIds()) {
                 $supportUser = $avSupportUserIds[$indexer % $totalSupUserIds];
                 $supportUserId = $supportUser->id;
-                $supportProfile = !is_null($supportUser->profile) ? $supportUser->profile->data['values'] : [];
+                $supportProfile = !is_null($supportUser->profile) ? $supportUser->profile['data']['values'] : [];
             }
 
             if (is_numeric($userId)) {
@@ -110,7 +110,7 @@ class SupportGroupService implements ISupportGroupService {
             throw new AppException(AppException::ERR_INVALID_QUERY);
         }
         $supportUserId = $supportUser->id;
-        $supportProfile = is_null($supportUser->profile) ? [] : $supportUser->profile->data['values'];
+        $supportProfile = is_null($supportUser->profile) ? [] : $supportUser->profile['data']['values'];
         if (! $supportUser->hasRole(config('larapress.ecommerce.lms.support_role_id'))) {
             throw new AppException(AppException::ERR_INVALID_QUERY);
         }
@@ -146,7 +146,7 @@ class SupportGroupService implements ISupportGroupService {
             throw new AppException(AppException::ERR_INVALID_QUERY);
         }
         $supportUserId = $supportUser->id;
-        $supportProfile = is_null($supportUser->profile) ? [] : $supportUser->profile->data['values'];
+        $supportProfile = is_null($supportUser->profile) ? [] : $supportUser->profile['data']['values'];
         if (! $supportUser->hasRole(config('larapress.ecommerce.lms.support_role_id'))) {
             throw new AppException(AppException::ERR_INVALID_QUERY);
         }

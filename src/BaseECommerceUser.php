@@ -77,11 +77,6 @@ trait BaseECommerceUser {
      * @return void
      */
     public function getIntroducerDataAttribute() {
-        if (isset($this->cache['introducer'])) {
-            return $this->cache['introducer'];
-        }
-
-        return null;
         return Helpers::getCachedValue(
             'larapress.users.'.$this->id.'.introducer',
             function () {
@@ -217,6 +212,7 @@ trait BaseECommerceUser {
         ];
 
         if (is_null($property)) {
+            $fastCache = [];
             foreach ($fastUpdaters as $name => $updater) {
                 $updater();
             }

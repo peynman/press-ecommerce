@@ -50,6 +50,7 @@ class AdobeConnectCommands extends ActionCommandBase
     public function syncLiveEvents()
     {
         return function () {
+            ini_set('memory_limit', '1G');
             /** @var IAdobeConnectService */
             $service = app(IAdobeConnectService::class);
 

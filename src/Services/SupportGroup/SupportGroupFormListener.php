@@ -11,6 +11,7 @@ use Larapress\Profiles\Services\FormEntry\FormEntryUpdateEvent;
 
 class SupportGroupFormListener {
     public function handle(FormEntryUpdateEvent $event) {
+        Log::debug('reset cache');
         switch ($event->form->id) {
             // user profile updated
             case config('larapress.profiles.defaults.profile-form-id'):

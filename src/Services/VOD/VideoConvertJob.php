@@ -80,7 +80,7 @@ class VideoConvertJob implements ShouldQueue
                     });
                     $mediaHLSExport->setSegmentLength(10);
 
-                    $dir = substr($this->upload->path, 0, strrpos($this->upload->path, '.'));
+                    $dir = substr($this->upload->path, 0, strrpos($this->upload->path, '.', -1));
                     Storage::disk($this->upload->storage)->makeDirectory($dir);
                     $mediaHLSExport->save($dir . '/vod.m3u8');
                     $took = time() - $startTime;

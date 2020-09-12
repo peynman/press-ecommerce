@@ -24,8 +24,11 @@ class CreateFileUploadsTable extends Migration
             $table->string('access');
             $table->integer('size', false, true);
             $table->integer('flags', false, true)->default(0);
+            $table->json('data')->nullable();
             $table->timestamps();
             $table->softDeletes();
+
+            $table->index(['deleted_at', 'created_at', 'flags', 'mime', 'title']);
 
             $table->foreign('uploader_id')->references('id')->on('users');
         });

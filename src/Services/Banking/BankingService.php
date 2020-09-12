@@ -145,7 +145,7 @@ class BankingService implements IBankingService
 
         $balance = $this->getUserBalance($user, $domain, $cart->currency);
 
-        if ((isset($cart->data['use_balance']) && $cart->data['use_balance'] && $balance >= $cart->amount) || $portPrice == 0) {
+        if ((isset($cart->data['use_balance']) && $cart->data['use_balance'] && floatval($balance['amount']) >= floatval($cart->amount)) || $portPrice == 0) {
             try {
                 DB::beginTransaction();
                 $this->markCartPurchased($request, $cart);
@@ -163,8 +163,8 @@ class BankingService implements IBankingService
 
             $this->resetPurchasedCache($cart->customer, $cart->domain);
             return $onAlreadyPurchased($request, $cart);
-        } else if (isset($cart->data['use_balance']) && $cart->data['use_balance'] && $balance < $cart->amount) {
-            $portPrice = $portPrice - $balance;
+        } else if (isset($cart->data['use_balance']) && $cart->data['use_balance'] && floatval($balance['amount']) < $cart->amount) {
+            $portPrice = $portPrice - floatval($balance['amount']);
         }
 
         $return_to = $request->get('return_to', null);
@@ -408,7 +408,7 @@ class BankingService implements IBankingService
         $balance = $this->getUserBalance($user, $domain, $currency);
         return [
             'cart' => [
-                'amount' => !$cart->data['use_balance'] ?  $cart->amount : max(0, $cart->amount - $balance),
+                'amount' => !$cart->data['use_balance'] ?  $cart->amount : max(0, floatval($cart->amount) - floatval($balance['amount'])),
             ],
             'balance' => $balance,
         ];
@@ -661,8 +661,10 @@ class BankingService implements IBankingService
         WalletTransactionEvent::dispatch($domain, $request->ip(), time(), $wallet);
         $this->resetBalanceCache($user->id);
 
-        // update internal fast cache! for balance
-        $cart->customer->updateUserCache('balance');
+        if (!is_null($cart)) {
+            // update internal fast cache! for balance
+            $cart->customer->updateUserCache('balance');
+        }
 
         return [$cart, $wallet];
     }
@@ -797,7 +799,9 @@ class BankingService implements IBankingService
             return $user->cache['balance'];
         }
 
-        return null;
+        return [
+            'amount' => 0,
+        ];
         return Helpers::getCachedValue(
             'larapress.ecommerce.user.' . $user->id . '.balance',
             function () use ($user, $domain, $currency) {

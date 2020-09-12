@@ -16,6 +16,7 @@ use Larapress\Profiles\IProfileUser;
  * @property string         $desc
  * @property string         $filename
  * @property string         $access
+ * @property array          $data
  * @property IProfileUser   $uploader
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
@@ -38,7 +39,12 @@ class FileUpload extends Model
 	    'filename',
         'access',
         'size',
-	    'flags',
+        'flags',
+        'data'
+    ];
+
+    protected $casts = [
+        'data' => 'array'
     ];
 
     /**

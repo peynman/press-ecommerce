@@ -147,12 +147,12 @@ class AdobeConnectService implements IAdobeConnectService
         // grap product meeting and connect to AC server
         [$sco, $acServer] = $this->getMeetingForProduct($product);
 
-        $firstname = Helpers::randomString(5);
-        $lastname = Helpers::randomString(5);
-        if (!is_null($user->profile) && isset($user->profile->data['values'])) {
-            $profile = $user->profile->data['values'];
-            $firstname = $profile['firstname'];
-            $lastname = $profile['lastname'];
+        $firstname = 'بدون پروفایل';
+        $lastname = ' '.$user->id;
+        if (!is_null($user->profile) && isset($user->profile['data']['values'])) {
+            $profile = $user->profile['data']['values'];
+            $firstname = $profile['display_name'];
+            $lastname = ' #'.$user->id;
         }
         /** @var Principal */
         $principal = $this->syncUserAccount($user->name, $user->name . '.' . $product_id, $firstname, $lastname);

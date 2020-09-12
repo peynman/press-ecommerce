@@ -9,6 +9,8 @@ use Larapress\ECommerce\Repositories\ProductRepository;
 use Larapress\ECommerce\Services\AdobeConnect\AdobeConnectCommands;
 use Larapress\ECommerce\Services\AdobeConnect\AdobeConnectService;
 use Larapress\ECommerce\Services\AdobeConnect\IAdobeConnectService;
+use Larapress\ECommerce\Services\Azmoon\AzmoonService;
+use Larapress\ECommerce\Services\Azmoon\IAzmoonService;
 use Larapress\ECommerce\Services\Banking\BankingService;
 use Larapress\ECommerce\Services\Banking\IBankingService;
 use Larapress\ECommerce\Services\CourseSession\ICourseSessionFormService;
@@ -45,6 +47,7 @@ class PackageServiceProvider extends ServiceProvider
         $this->app->bind(IAdobeConnectService::class, AdobeConnectService::class);
         $this->app->bind(ICourseSessionRepository::class, CourseSessionRepository::class);
         $this->app->bind(ISupportGroupService::class, SupportGroupService::class);
+        $this->app->bind(IAzmoonService::class, AzmoonService::class);
 
         $this->app->register(EventServiceProvider::class);
     }
