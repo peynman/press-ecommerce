@@ -44,8 +44,8 @@ class AzmoonController extends Controller {
      * @param int $index
      * @return array
      */
-    public function streamAzmoonQuestionFile(IAzmoonService $service, $productId, $index) {
-        return $service->streamAzmoonFileAtIndex($productId, $index, false);
+    public function streamAzmoonQuestionFile(IAzmoonService $service, Request $request, $productId, $index) {
+        return $service->streamAzmoonFileAtIndex($request, $productId, $index, false);
     }
 
     /**
@@ -56,8 +56,8 @@ class AzmoonController extends Controller {
      * @param int $index
 	 * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
      */
-    public function streamAzmoonAnswerFile(IAzmoonService $service, $productId, $index) {
-        return $service->streamAzmoonFileAtIndex($productId, $index, true);
+    public function streamAzmoonAnswerFile(IAzmoonService $service, Request $request, $productId, $index) {
+        return $service->streamAzmoonFileAtIndex($request, $productId, $index, true);
     }
 
     /**

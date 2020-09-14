@@ -169,15 +169,13 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         }
 
         if ($object->status == Cart::STATUS_ACCESS_COMPLETE) {
-            if ($object->amount > 0) {
-                $object->flags |= Cart::FLAG_USER_CART;
-                /** @var IBankingService */
-                $banking = app(IBankingService::class);
-                $banking->markCartPurchased(
-                    Request::createFromGlobals(),
-                    $object
-                );
-            }
+            $object->flags |= Cart::FLAG_USER_CART;
+            /** @var IBankingService */
+            $banking = app(IBankingService::class);
+            $banking->markCartPurchased(
+                Request::createFromGlobals(),
+                $object
+            );
         }
 
         return $object;

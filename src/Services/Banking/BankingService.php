@@ -661,10 +661,7 @@ class BankingService implements IBankingService
         WalletTransactionEvent::dispatch($domain, $request->ip(), time(), $wallet);
         $this->resetBalanceCache($user->id);
 
-        if (!is_null($cart)) {
-            // update internal fast cache! for balance
-            $cart->customer->updateUserCache('balance');
-        }
+        $user->updateUserCache('balance');
 
         return [$cart, $wallet];
     }

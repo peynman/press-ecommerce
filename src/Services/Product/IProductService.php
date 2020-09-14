@@ -43,4 +43,15 @@ interface IProductService {
      * @return mixed
      */
     public function checkProductLinkAccess(Request $request, $product, $link, $callback);
+
+
+    /**
+     * Undocumented function
+     *
+     * @param Request $request
+     * @param int|Product $product
+     * @param callbable $callback
+     * @return mixed
+     */
+    public function checkProductAccess(Request $request, $product, $callback);
 }

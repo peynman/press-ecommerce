@@ -24,7 +24,7 @@ interface IAzmoonService {
      * @param boolean $answer
 	 * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
      */
-    public function streamAzmoonFileAtIndex($product, $index, $answer = false);
+    public function streamAzmoonFileAtIndex(Request $request, $product, $index, $answer = false);
 
     /**
      * Undocumented function

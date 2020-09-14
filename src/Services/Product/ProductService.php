@@ -177,4 +177,44 @@ class ProductService implements IProductService
 
         return $callback($request, $product, $link);
     }
+
+    /**
+     * Undocumented function
+     *
+     * @param Request $request
+     * @param int|Product $product
+     * @param callbable $callback
+     * @return mixed
+     */
+    public function checkProductAccess(Request $request, $product, $callback) {
+        /** @var IBankingService $service */
+        $service = app()->make(IBankingService::class);
+
+        /** @var IProfileUser */
+        $user = Auth::user();
+
+        /** @var IDomainRepository */
+        $domainRepo = app(IDomainRepository::class);
+        $domain = $domainRepo->getRequestDomain($request);
+
+        if (is_numeric($product)) {
+            /** @var Product $product */
+            $product = Product::with('types')->find($product);
+        }
+
+		if ($product->isFree() || (!is_null($user) && $service->isProductOnPurchasedList($user, $domain, $product))) {
+            /** @var ProductType[] */
+            $typeDatas = $product->data['types'];
+            $file_ids = [];
+			foreach ($typeDatas as $typeData) {
+                if (isset($typeData['file_id'])) {
+                    $file_ids[] = $typeData['file_id'];
+                }
+            }
+		} else {
+			throw new AppException(AppException::ERR_OBJ_ACCESS_DENIED);
+		}
+
+        return $callback($request, $product);
+    }
 }

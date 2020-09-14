@@ -64,7 +64,7 @@ class AdobeConnectCommands extends ActionCommandBase
             foreach ($products as $product) {
                 if (
                     isset($product->data['types']['ac_meeting']['status']) &&
-                    $product->data['types']['ac_meeting']['status'] !== 'ended'
+                    $product->data['types']['ac_meeting']['status'] !== 'live'
                 ) {
                     $fullyEnded = true;
                     $recordings = [];
