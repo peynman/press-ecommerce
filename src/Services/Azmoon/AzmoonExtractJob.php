@@ -7,6 +7,7 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Larapress\ECommerce\Models\FileUpload;
 use Larapress\Reports\Services\ITaskReportService;
@@ -69,6 +70,7 @@ class AzmoonExtractJob implements ShouldQueue
                     if ($res === TRUE) {
                         for( $i = 0; $i < $zip->numFiles; $i++ ){
                             $stat = $zip->statIndex( $i );
+                            Log::debug(json_encode($stat));
                             if (\Illuminate\Support\Str::startsWith($stat['name'], "answers.txt")) {
                                 $resource = $zip->getStream($zip->getNameIndex($i));
                                 if ($resource && $stat['size'] < 16000000) { // 16mg

@@ -11,7 +11,7 @@ use Larapress\CRUD\Services\ICRUDProvider;
 use Larapress\CRUD\Services\IPermissionsMetadata;
 use Larapress\CRUD\Exceptions\AppException;
 use Larapress\ECommerce\Models\WalletTransaction;
-use Larapress\ECommerce\Services\Banking\IBankingService;
+use Larapress\ECommerce\Services\Banking\Events\WalletTransactionEvent;
 use Larapress\Pages\Models\Page;
 use Larapress\Profiles\CRUD\UserCRUDProvider;
 
@@ -58,7 +58,6 @@ class WalletTransactionCRUDProvider implements ICRUDProvider, IPermissionsMetada
         ];
     }
     public $updateValidations = [
-        'target_user' => 'required|numeric|exists:users,id',
         'amount' => 'required|numeric',
         'currency' => 'required|numeric',
 	    'flags' => 'nullable|numeric',
@@ -73,10 +72,7 @@ class WalletTransactionCRUDProvider implements ICRUDProvider, IPermissionsMetada
         'type',
     ];
     public $searchColumns = [
-        'id',
-        'data',
-        'amount',
-        'type',
+        'has:user.phones,number',
     ];
     public $validRelations = [
         'user',
@@ -185,6 +181,8 @@ class WalletTransactionCRUDProvider implements ICRUDProvider, IPermissionsMetada
     public function onAfterCreate($object, $input_data)
     {
         $object->user->updateUserCache('balance');
+
+        WalletTransactionEvent::dispatch($object, time());
     }
 
     /**
@@ -197,6 +195,8 @@ class WalletTransactionCRUDProvider implements ICRUDProvider, IPermissionsMetada
     public function onAfterUpdate($object, $input_data)
     {
         $object->user->updateUserCache('balance');
+
+        WalletTransactionEvent::dispatch($object, time());
     }
 
     /**

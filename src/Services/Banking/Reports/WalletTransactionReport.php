@@ -32,7 +32,7 @@ class WalletTransactionReport implements IReportSource
             'user.wallet.total' => function ($user, array $options = []) {
                 [$filters, $fromC, $toC, $groups] = $this->getCommonReportProps($user, $options);
                 return $this->reports->queryMeasurement(
-                    'bank.gateway',
+                    'user_wallet',
                     $filters,
                     $groups,
                     array_merge(["_value"], $groups),
@@ -45,7 +45,7 @@ class WalletTransactionReport implements IReportSource
                 [$filters, $fromC, $toC, $groups] = $this->getCommonReportProps($user, $options);
                 $window = isset($options['window']) ? $options['window'] : '1h';
                 return $this->reports->queryMeasurement(
-                    'bank.gateway',
+                    'user_wallet',
                     $filters,
                     $groups,
                     array_merge(["_value", "_time"], $groups),
@@ -59,15 +59,32 @@ class WalletTransactionReport implements IReportSource
 
     public function handle(WalletTransactionEvent $event)
     {
+        $supportProfileId = isset($event->transaction->user->supportProfile['id']) ? $event->transaction->user->supportProfile['id']: null;
         $tags = [
-            'domain' => $event->domain->id,
+            'domain' => $event->transaction->domain_id,
             'currency' => $event->transaction->currency,
             'type' => $event->transaction->type,
             'tr_id' => $event->transaction->id,
-        ];
-        $this->reports->pushMeasurement('user.wallet', 1, $tags, [
-            'amount' => $event->transaction->amount,
+            'support' => $supportProfileId,
             'status' => $event->transaction->status,
+        ];
+        $this->reports->pushMeasurement('user_wallet', 1, $tags, [
+            'amount' => floatval($event->transaction->amount),
         ], $event->timestamp);
+        $this->metrics->pushMeasurement(
+            $event->transaction->domain_id,
+            'wallet.'.$event->transaction->type.'.amount',
+            $event->transaction->amount,
+            $event->timestamp
+        );
+
+        if (!is_null($supportProfileId)) {
+            $this->metrics->pushMeasurement(
+                $event->transaction->domain_id,
+                'wallet.'.$event->transaction->type.'.amount.'.$supportProfileId,
+                $event->transaction->amount,
+                $event->timestamp
+            );
+        }
     }
 }

@@ -233,6 +233,14 @@ class ProductRepository implements IProductRepository
                                             ->first();
             }
 
+            if (isset($child->data['types']['azmoon']['is_required'])) {
+                $child['azmoon_result'] = FormEntry::query()
+                                        ->where('user_id', $user->id)
+                                        ->where('form_id', config('larapress.ecommerce.lms.azmoon_result_form_id'))
+                                        ->where('tags', 'azmoon-'.$child->id)
+                                        ->first();
+            }
+
             if ($child->children) {
                 $inners = $child->children;
                 foreach ($inners as &$inner) {

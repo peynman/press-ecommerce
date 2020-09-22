@@ -59,12 +59,13 @@ class AdobeConnectCommands extends ActionCommandBase
                 ->whereHas('types', function ($q) {
                     $q->where('name', 'ac_meeting');
                 })
+                ->where('data->types->ac_meeting->status', 'live')
                 ->get();
 
             foreach ($products as $product) {
                 if (
                     isset($product->data['types']['ac_meeting']['status']) &&
-                    $product->data['types']['ac_meeting']['status'] !== 'live'
+                    $product->data['types']['ac_meeting']['status'] === 'live'
                 ) {
                     $fullyEnded = true;
                     $recordings = [];

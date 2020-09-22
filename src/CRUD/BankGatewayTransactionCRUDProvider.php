@@ -51,8 +51,7 @@ class BankGatewayTransactionCRUDProvider implements ICRUDProvider, IPermissionsM
 		'data' => 'nullable|json',
     ];
     public $searchColumns = [
-        'name',
-        'data',
+        'has:customer.phones,number',
     ];
     public $validSortColumns = [
         'id',

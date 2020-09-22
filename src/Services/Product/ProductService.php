@@ -82,7 +82,7 @@ class ProductService implements IProductService
         $duplicate['types'] = $product->types;
         $duplicate['categories'] = $product->categories;
 
-        CRUDCreated::dispatch($duplicate, ProductCRUDProvider::class, Carbon::now());
+        CRUDCreated::dispatch(Auth::user(), $duplicate, ProductCRUDProvider::class, Carbon::now());
 
         return $duplicate;
     }

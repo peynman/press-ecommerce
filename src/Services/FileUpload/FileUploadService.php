@@ -17,6 +17,7 @@ use Larapress\CRUD\Events\CRUDVerbEvent;
 use Larapress\CRUD\Exceptions\AppException;
 use Larapress\CRUD\Extend\Helpers;
 use Larapress\ECommerce\CRUD\FileUploadCRUDProvider;
+use Illuminate\Support\Str;
 
 class FileUploadService implements IFileUploadService
 {
@@ -140,6 +141,37 @@ class FileUploadService implements IFileUploadService
         });
     }
 
+    /**
+     * Undocumented function
+     *
+     * @param string $encoded
+     * @param string $storage
+     * @param string $folder
+     * @return bool
+     */
+    public function saveBase64Image($encoded, $storage, $folder) {
+        if (Str::startsWith($encoded, 'data:image/png;base64,')) {
+            $base64 = substr($encoded, strlen('data:image\/png;base64,') - 1);
+        } else {
+            $base64 = $encoded;
+        }
+        $imgBin = base64_decode($base64);
+        $img = imagecreatefromstring($imgBin);
+        if (!$img) {
+            return false;
+        }
+        $temp = '/tmp/profile.png';
+        $random = Helpers::randomString(20);
+        $filename = 'images/'.$folder.'/'.$random.'.png';
+        if (imagepng($img, $temp, 0)) {
+            $content = file_get_contents($temp);
+            Storage::disk($storage)->put($filename, $content);
+        }
+        imagedestroy($img);
+
+        return $filename;;
+    }
+
 
     /**
      * Undocumented function
@@ -216,7 +248,7 @@ class FileUploadService implements IFileUploadService
 
             }
 
-            CRUDVerbEvent::dispatch($fileUpload, FileUploadCRUDProvider::class, Carbon::now(), 'upload');
+            CRUDVerbEvent::dispatch(Auth::user(), $fileUpload, FileUploadCRUDProvider::class, Carbon::now(), 'upload');
 
             return $fileUpload;
         }
@@ -268,7 +300,7 @@ class FileUploadService implements IFileUploadService
                 ]);
             }
 
-            CRUDVerbEvent::dispatch($fileUpload, FileUploadCRUDProvider::class, Carbon::now(), 'upload');
+            CRUDVerbEvent::dispatch(Auth::user(), $fileUpload, FileUploadCRUDProvider::class, Carbon::now(), 'upload');
 
             return $fileUpload;
         }

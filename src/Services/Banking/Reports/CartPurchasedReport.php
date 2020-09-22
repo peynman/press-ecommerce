@@ -60,31 +60,52 @@ class CartPurchasedReport implements IReportSource
 
     public function handle(CartPurchasedEvent $event)
     {
+        $supportProfileId = isset($event->cart->customer->supportProfile['id']) ? $event->cart->customer->supportProfile['id']: null;
         $tags = [
-            'domain' => $event->domain->id,
+            'domain' => $event->cart->domain_id,
             'currency' => $event->cart->currency,
+            'support' => $supportProfileId,
+            'type' => $event->cart->status,
+            'support' => $supportProfileId,
         ];
         $this->reports->pushMeasurement('carts.purchased', 1, $tags, [
             'amount' => $event->cart->amount,
             'gift' => isset($event->cart->data['gift_code']['amount']) ? $event->cart->data['gift_code']['amount']: 0,
         ], $event->timestamp);
 
+        if (!is_null($supportProfileId)) {
+            $this->metrics->pushMeasurement(
+                $event->cart->domain_id,
+                'carts.sales_amount.'.$supportProfileId,
+                $event->cart->amount
+            );
+        }
+
+        // add to original product sales if this is a peridic paument
         if (BaseFlags::isActive($event->cart->flags, Cart::FLAGS_PERIOD_PAYMENT_CART)) {
             $originalProductId = $event->cart->data['periodic_pay']['product']['id'];
             $paymentPeriodIndex = $event->cart->data['periodic_pay']['index'];
             $amount = floatval($event->cart->amount);
             $this->metrics->pushMeasurement(
-                $event->domain->id,
+                $event->cart->domain_id,
                 'product.'.$originalProductId.'.sales_amount',
                 $amount
             );
+            if (!is_null($supportProfileId)) {
+                $this->metrics->pushMeasurement(
+                    $event->cart->domain_id,
+                    'product.'.$originalProductId.'.sales_amount.'.$supportProfileId,
+                    $amount
+                );
+            }
 
             $itemTags = [
-                'domain' => $event->domain->id,
+                'domain' => $event->cart->domain_id,
                 'currency' => $event->cart->currency,
                 'product' => $originalProductId,
                 'periodic' => true,
-                'period' => $paymentPeriodIndex
+                'period' => $paymentPeriodIndex,
+                'support' => $supportProfileId,
             ];
 
             $this->reports->pushMeasurement('carts.purchased.items', 1, $itemTags, [
@@ -99,29 +120,51 @@ class CartPurchasedReport implements IReportSource
             foreach ($items as $item) {
                 $periodic = in_array($item->id, $periodicPurchases);
                 $itemTags = [
-                    'domain' => $event->domain->id,
+                    'domain' => $event->cart->domain_id,
                     'currency' => $event->cart->currency,
                     'product' => $item->id,
                     'periodic' => $periodic,
+                    'support' => $supportProfileId,
                 ];
 
                 $this->metrics->pushMeasurement(
-                    $event->domain->id,
+                    $event->cart->domain_id,
                     'product.'.$item->id.'.sales_amount',
                     $periodic ? $item->pricePeriodic() : $item->price()
                 );
+                if (!is_null($supportProfileId)) {
+                    $this->metrics->pushMeasurement(
+                        $event->cart->domain_id,
+                        'product.'.$item->id.'.sales_amount.'.$supportProfileId,
+                        $periodic ? $item->pricePeriodic() : $item->price()
+                    );
+                }
                 if ($periodic) {
                     $this->metrics->pushMeasurement(
-                        $event->domain->id,
+                        $event->cart->domain_id,
                         'product.'.$item->id.'.sales_periodic',
                         1
                     );
+                    if (!is_null($supportProfileId)) {
+                        $this->metrics->pushMeasurement(
+                            $event->cart->domain_id,
+                            'product.'.$item->id.'.sales_periodic.'.$supportProfileId,
+                            1
+                        );
+                    }
                 } else {
                     $this->metrics->pushMeasurement(
-                        $event->domain->id,
+                        $event->cart->domain_id,
                         'product.'.$item->id.'.sales_fixed',
                         1
                     );
+                    if (!is_null($supportProfileId)) {
+                        $this->metrics->pushMeasurement(
+                            $event->cart->domain_id,
+                            'product.'.$item->id.'.sales_fixed.'.$supportProfileId,
+                            1
+                        );
+                    }
                 }
 
                 $this->reports->pushMeasurement('carts.purchased.items', 1, $itemTags, [

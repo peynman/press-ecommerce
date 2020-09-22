@@ -12,6 +12,7 @@ use Larapress\CRUD\Services\IPermissionsMetadata;
 use Larapress\CRUD\ICRUDUser;
 use Larapress\ECommerce\Models\Cart;
 use Larapress\ECommerce\Models\WalletTransaction;
+use Larapress\ECommerce\Services\Banking\Events\CartPurchasedEvent;
 use Larapress\ECommerce\Services\Banking\IBankingService;
 use Larapress\ECommerce\Services\Banking\Reports\CartPurchasedReport;
 use Larapress\Profiles\IProfileUser;
@@ -51,7 +52,7 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         'periodic_product_ids.*.id' => 'nullable|numeric|exists:products,id'
     ];
     public $searchColumns = [
-        'data'
+        'has:customer.phones,number',
     ];
     public $validSortColumns = [
         'id',
@@ -67,6 +68,7 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         'domain',
         'products',
         'nested_carts',
+        'customer.phones',
     ];
     public $defaultShowRelations = [
     ];
@@ -76,6 +78,7 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         'domain' => 'has:domain:id',
         'status' => 'equals:status',
         'customer_id' => 'equals:customer_id',
+        'product_ids' => 'has:products:id',
         'flags' => 'bitwise:flags',
     ];
 
@@ -176,6 +179,16 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
                 Request::createFromGlobals(),
                 $object
             );
+        } else {
+            // update internal fast cache! for balance
+            $object->customer->updateUserCache();
+            Cache::tags(['purchasing-cart:' . $object->customer->id])->flush();
+            Cache::tags(['purchased-cart:' . $object->customer->id])->flush();
+            Cache::tags(['user.wallet:' . $object->customer->id])->flush();
+
+            if ($object->status == Cart::STATUS_ACCESS_GRANTED) {
+                CartPurchasedEvent::dispatch($object, time());
+            }
         }
 
         return $object;
@@ -201,5 +214,9 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
 
         // update internal fast cache! for balance
         $object->customer->updateUserCache('balance');
+
+        Cache::tags(['purchasing-cart:' . $object->customer->id])->flush();
+        Cache::tags(['purchased-cart:' . $object->customer->id])->flush();
+        Cache::tags(['user.wallet:' . $object->customer->id])->flush();
     }
 }

@@ -12,10 +12,6 @@ class CartPurchasedEvent implements ShouldQueue
 {
     use Dispatchable, SerializesModels;
 
-    /** @var \Larapress\Profiles\Models\Domain */
-    public $domain;
-    /** @var string */
-    public $ip;
     /** @var int */
     public $timestamp;
     /** @var Cart */
@@ -29,10 +25,8 @@ class CartPurchasedEvent implements ShouldQueue
      * @param $ip
      * @param $timestamp
      */
-    public function __construct($domain, $ip, $timestamp, Cart $cart)
+    public function __construct(Cart $cart, $timestamp)
     {
-        $this->domain = $domain;
-        $this->ip = $ip;
         $this->timestamp = $timestamp;
         $this->cart = $cart;
     }

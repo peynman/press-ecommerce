@@ -149,7 +149,7 @@ class AdobeConnectService implements IAdobeConnectService
 
         $firstname = 'بدون پروفایل';
         $lastname = ' '.$user->id;
-        if (!is_null($user->profile) && isset($user->profile['data']['values'])) {
+        if (!is_null($user->profile) && isset($user->profile['data']['values']['display_name'])) {
             $profile = $user->profile['data']['values'];
             $firstname = $profile['display_name'];
             $lastname = ' #'.$user->id;

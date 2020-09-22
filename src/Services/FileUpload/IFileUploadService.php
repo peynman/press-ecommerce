@@ -49,4 +49,15 @@ interface IFileUploadService {
      * @return void
      */
     public function serveFile(Request $request, $fileId);
+
+
+    /**
+     * Undocumented function
+     *
+     * @param string $encoded
+     * @param string $storage
+     * @param string $folder
+     * @return bool
+     */
+    public function saveBase64Image($encoded, $storage, $folder);
 }

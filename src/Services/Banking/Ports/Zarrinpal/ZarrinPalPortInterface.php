@@ -8,6 +8,7 @@ use Exception;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\View\View;
@@ -99,7 +100,7 @@ class ZarrinPalPortInterface implements IBankPortInterface
                 'status' => BankGatewayTransaction::STATUS_FORWARDED,
                 'reference_code' => $result['Authority'],
             ]);
-            CRUDUpdated::dispatch($transaction, BankGatewayTransactionCRUDProvider::class, Carbon::now());
+            CRUDUpdated::dispatch(Auth::user(), $transaction, BankGatewayTransactionCRUDProvider::class, Carbon::now());
 
             return $zarinpal->redirect($result["StartPay"]);
         }

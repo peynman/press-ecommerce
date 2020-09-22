@@ -29,9 +29,14 @@ class SupportGroupService implements ISupportGroupService {
      * @return Response
      */
     public function updateUsersSupportGroup(SupportGroupUpdateRequest $request) {
+        ini_set('memory_limit', '1024M');
+        ini_set('max_execution_time', 0);
+
         $class = config('larapress.crud.user.class');
 
         $avSupportUserIds = [];
+        $supportUserId = null;
+        $supportProfile = null;
         if ($request->shouldRandomizeSupportIds()) {
             $avSupportUserIds = call_user_func([$class, 'whereHas'], 'roles', function($q) {
                 $q->whereIn('id', config('larapress.ecommerce.lms.support_randomizer_role_ids'));
@@ -50,7 +55,7 @@ class SupportGroupService implements ISupportGroupService {
                 $q->where('tags', 'LIKE', 'support-group-%');
             })->whereHas('roles', function($q) {
                 $q->where('id', config('larapress.ecommerce.lms.customer_role_id'));
-            })->get();
+            });
         } else {
             $userIds = $request->getUserIds();
         }
@@ -60,32 +65,40 @@ class SupportGroupService implements ISupportGroupService {
 
         $totalSupUserIds = count($avSupportUserIds);
         $indexer = 1;
-        foreach ($userIds as $userId) {
-            if ($request->shouldRandomizeSupportIds()) {
-                $supportUser = $avSupportUserIds[$indexer % $totalSupUserIds];
-                $supportUserId = $supportUser->id;
-                $supportProfile = !is_null($supportUser->profile) ? $supportUser->profile['data']['values'] : [];
-            }
 
-            if (is_numeric($userId)) {
-                $user = call_user_func([$class, 'find'], $userId);
-            } else {
-                $user = $userId;
-                $userId = $user->id;
-            }
-
-            $service->updateUserFormEntryTag(
-                $request,
-                $user,
-                config('larapress.ecommerce.lms.support_group_default_form_id'),
-                'support-group-'.$supportUserId,
-                function ($request, $inputNames, $form, $entry) use($supportUserId, $supportProfile) {
-                    return $this->getSupportIdsDataForEntry($entry, $supportUserId, $supportProfile);
+        $updateUsersSupportGroup = function($userIds) use(&$indexer, $request, $avSupportUserIds, $totalSupUserIds, $class, $service, $supportUserId, $supportProfile) {
+            foreach ($userIds as $userId) {
+                if ($request->shouldRandomizeSupportIds()) {
+                    $supportUser = $avSupportUserIds[$indexer % $totalSupUserIds];
+                    $supportUserId = $supportUser->id;
+                    $supportProfile = !is_null($supportUser->profile) ? $supportUser->profile['data']['values'] : [];
                 }
-            );
-            Cache::tags(['user.support:'.$userId])->flush();
 
-            $indexer++;
+                if (is_numeric($userId)) {
+                    $user = call_user_func([$class, 'find'], $userId);
+                } else {
+                    $user = $userId;
+                    $userId = $user->id;
+                }
+
+                $service->updateUserFormEntryTag(
+                    $request,
+                    $user,
+                    config('larapress.ecommerce.lms.support_group_default_form_id'),
+                    'support-group-'.$supportUserId,
+                    function ($request, $inputNames, $form, $entry) use($supportUserId, $supportProfile) {
+                        return $this->getSupportIdsDataForEntry($entry, $supportUserId, $supportProfile);
+                    }
+                );
+                Cache::tags(['user.support:'.$userId])->flush();
+
+                $indexer++;
+            }
+        };
+        if (is_array($userIds)) {
+            $updateUsersSupportGroup($userIds);
+        } else {
+            $userIds->chunk(100, $updateUsersSupportGroup);
         }
         return ['message' => 'Success'];
     }

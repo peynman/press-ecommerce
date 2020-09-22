@@ -61,7 +61,7 @@ class BankingService implements IBankingService
             'amount' => $amount,
             'data' => []
         ]);
-        CRUDUpdated::dispatch($cart, CartCRUDProvider::class, Carbon::now());
+        CRUDUpdated::dispatch($user, $cart, CartCRUDProvider::class, Carbon::now());
 
         return $this->redirectToBankForCart($request, $cart, $gateway_id, $onFailed, $onAlreadyPurchased);
     }
@@ -197,7 +197,7 @@ class BankingService implements IBankingService
         $transaction->customer = $user;
 
         BankGatewayTransactionEvent::dispatch($domain, $request->ip(), time(), $transaction);
-        CRUDCreated::dispatch($transaction, BankGatewayTransactionCRUDProvider::class, Carbon::now());
+        CRUDCreated::dispatch($user, $transaction, BankGatewayTransactionCRUDProvider::class, Carbon::now());
 
 
         return $port->redirect($request, $transaction, $callback);
@@ -259,9 +259,9 @@ class BankingService implements IBankingService
                 DB::commit();
 
                 $this->resetPurchasedCache($cart->customer, $cart->domain);
-                WalletTransactionEvent::dispatch($cart->domain, $request->ip(), time(), $wallet);
+                WalletTransactionEvent::dispatch($wallet, time());
                 BankGatewayTransactionEvent::dispatch($cart->domain, $request->ip(), time(), $transaction);
-                CRUDUpdated::dispatch($transaction, BankGatewayTransactionCRUDProvider::class, Carbon::now());
+                CRUDUpdated::dispatch(Auth::user(), $transaction, BankGatewayTransactionCRUDProvider::class, Carbon::now());
                 $this->resetBalanceCache($cart->customer_id);
 
                 return $onSuccess($request, $cart, $transaction);
@@ -272,7 +272,7 @@ class BankingService implements IBankingService
                 DB::commit();
 
                 BankGatewayTransactionEvent::dispatch($transaction->domain, $request->ip(), time(), $transaction);
-                CRUDUpdated::dispatch($transaction, BankGatewayTransactionCRUDProvider::class, Carbon::now());
+                CRUDUpdated::dispatch(Auth::user(), $transaction, BankGatewayTransactionCRUDProvider::class, Carbon::now());
 
                 return $onCancel($request, $cart, 'Bank Request Canceled');
             }
@@ -293,7 +293,7 @@ class BankingService implements IBankingService
                 'data' => $data,
             ]);
             BankGatewayTransactionEvent::dispatch($transaction->domain, $request->ip(), time(), $transaction);
-            CRUDUpdated::dispatch($transaction, BankGatewayTransactionCRUDProvider::class, Carbon::now());
+            CRUDUpdated::dispatch(Auth::user(), $transaction, BankGatewayTransactionCRUDProvider::class, Carbon::now());
 
             return $onFailed($request, $cart, $e->getMessage());
         }
@@ -475,7 +475,7 @@ class BankingService implements IBankingService
         }
         $this->resetPurchasingCache($user, $domain);
         $cart['items'] = $cart->products()->get();
-        CRUDUpdated::dispatch($cart, CartCRUDProvider::class, Carbon::now());
+        CRUDUpdated::dispatch(Auth::user(), $cart, CartCRUDProvider::class, Carbon::now());
 
         return $cart;
     }
@@ -512,7 +512,7 @@ class BankingService implements IBankingService
 
         $this->resetPurchasingCache($user, $domain);
         $cart['items'] = $cart->products()->get();
-        CRUDUpdated::dispatch($cart, CartCRUDProvider::class, Carbon::now());
+        CRUDUpdated::dispatch(Auth::user(), $cart, CartCRUDProvider::class, Carbon::now());
 
         return $cart;
     }
@@ -648,6 +648,7 @@ class BankingService implements IBankingService
             'amount' => $amount,
             'currency' => $currency,
             'type' => $type,
+            'flags' => $flags,
             'data' => [
                 'cart_id' => !is_null($cart) ? $cart->id : null,
                 'description' => $desc,
@@ -656,9 +657,9 @@ class BankingService implements IBankingService
         ]);
 
         if (!is_null($cart)) {
-            CRUDUpdated::dispatch($cart, CartCRUDProvider::class, Carbon::now());
+            CRUDUpdated::dispatch(Auth::user(), $cart, CartCRUDProvider::class, Carbon::now());
         }
-        WalletTransactionEvent::dispatch($domain, $request->ip(), time(), $wallet);
+        WalletTransactionEvent::dispatch($wallet, time());
         $this->resetBalanceCache($user->id);
 
         $user->updateUserCache('balance');
@@ -905,7 +906,7 @@ class BankingService implements IBankingService
                     'balance' => $this->getUserBalance($cart->customer, $cart->domain, $cart->currency),
                 ]
             ]);
-            WalletTransactionEvent::dispatch($cart->domain, $request->ip(), time(), $wallet);
+            WalletTransactionEvent::dispatch($wallet, time());
 
             // give introducer gift, for first purchase only
             // if the amount is higher than some value
@@ -972,10 +973,10 @@ class BankingService implements IBankingService
                     'balance' => $this->getUserBalance($cart->customer, $cart->domain, $cart->currency),
                 ]
             ]);
-            WalletTransactionEvent::dispatch($cart->domain, $request->ip(), time(), $wallet);
+            WalletTransactionEvent::dispatch($wallet, time());
         }
-        CartPurchasedEvent::dispatch($cart->domain, $request->ip(), time(), $cart);
-        CRUDUpdated::dispatch($cart, CartCRUDProvider::class, Carbon::now());
+        CartPurchasedEvent::dispatch($cart, time());
+        CRUDUpdated::dispatch(Auth::user(), $cart, CartCRUDProvider::class, Carbon::now());
         $this->resetPurchasedCache($cart->customer, $cart->domain);
         $this->resetPurchasingCache($cart->customer, $cart->domain);
         $this->resetBalanceCache($cart->customer_id);
@@ -1063,7 +1064,7 @@ class BankingService implements IBankingService
             'amount' => $amount,
             'data' => $data,
         ]);
-        CRUDUpdated::dispatch($cart, CartCRUDProvider::class, Carbon::now());
+        CRUDUpdated::dispatch(Auth::user(), $cart, CartCRUDProvider::class, Carbon::now());
         $this->resetPurchasedCache($cart->customer, $cart->domain);
         $this->resetPurchasingCache($cart->customer, $cart->domain);
 
@@ -1123,7 +1124,7 @@ class BankingService implements IBankingService
      */
     protected function resetBalanceCache($user_id)
     {
-        // Cache::tags(['user.wallet:' . $user_id])->flush();
+        Cache::tags(['user.wallet:' . $user_id])->flush();
     }
 
     /**
