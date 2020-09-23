@@ -13,7 +13,6 @@ use Larapress\Profiles\Models\FormEntry;
 use Larapress\Profiles\Services\FormEntry\FormEntryUpdateEvent;
 
 class SupportGroupFormListener implements ShouldQueue {
-
     use Dispatchable;
 
     public function handle(FormEntryUpdateEvent $event) {

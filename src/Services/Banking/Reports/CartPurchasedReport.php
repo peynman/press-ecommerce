@@ -2,6 +2,7 @@
 
 namespace Larapress\ECommerce\Services\Banking\Reports;
 
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Log;
 use Larapress\CRUD\BaseFlags;
 use Larapress\CRUD\Services\IReportSource;
@@ -12,7 +13,7 @@ use Larapress\Reports\Services\IReportsService;
 use Larapress\ECommerce\Services\Banking\ICartItem;
 use Larapress\Reports\Services\IMetricsService;
 
-class CartPurchasedReport implements IReportSource
+class CartPurchasedReport implements IReportSource, ShouldQueue
 {
     use BaseReportSource;
 

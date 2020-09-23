@@ -2,6 +2,7 @@
 
 namespace Larapress\ECommerce\Services\Banking\Reports;
 
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Log;
 use Larapress\CRUD\Services\IReportSource;
 use Larapress\ECommerce\Services\Banking\Events\BankGatewayTransactionEvent;
@@ -11,7 +12,7 @@ use Larapress\Reports\Services\BaseReportSource;
 use Larapress\Reports\Services\IMetricsService;
 use Larapress\Reports\Services\IReportsService;
 
-class WalletTransactionReport implements IReportSource
+class WalletTransactionReport implements IReportSource, ShouldQueue
 {
     use BaseReportSource;
 
