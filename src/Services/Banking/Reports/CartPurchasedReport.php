@@ -70,8 +70,8 @@ class CartPurchasedReport implements IReportSource, ShouldQueue
             'support' => $supportProfileId,
         ];
         $this->reports->pushMeasurement('carts.purchased', 1, $tags, [
-            'amount' => $event->cart->amount,
-            'gift' => isset($event->cart->data['gift_code']['amount']) ? $event->cart->data['gift_code']['amount']: 0,
+            'amount' => floatval($event->cart->amount),
+            'gift' => isset($event->cart->data['gift_code']['amount']) ? floatval($event->cart->data['gift_code']['amount']): 0,
         ], $event->timestamp);
 
         if (!is_null($supportProfileId)) {
@@ -84,34 +84,38 @@ class CartPurchasedReport implements IReportSource, ShouldQueue
 
         // add to original product sales if this is a peridic paument
         if (BaseFlags::isActive($event->cart->flags, Cart::FLAGS_PERIOD_PAYMENT_CART)) {
-            $originalProductId = $event->cart->data['periodic_pay']['product']['id'];
-            $paymentPeriodIndex = $event->cart->data['periodic_pay']['index'];
-            $amount = floatval($event->cart->amount);
-            $this->metrics->pushMeasurement(
-                $event->cart->domain_id,
-                'product.'.$originalProductId.'.sales_amount',
-                $amount
-            );
-            if (!is_null($supportProfileId)) {
+            if (isset($event->cart->data['periodic_pay']['custom']) && $event->cart->data['periodic_pay']['custom']) {
+
+            } else {
+                $originalProductId = $event->cart->data['periodic_pay']['product']['id'];
+                $paymentPeriodIndex = $event->cart->data['periodic_pay']['index'];
+                $amount = floatval($event->cart->amount);
                 $this->metrics->pushMeasurement(
                     $event->cart->domain_id,
-                    'product.'.$originalProductId.'.sales_amount.'.$supportProfileId,
+                    'product.'.$originalProductId.'.sales_amount',
                     $amount
                 );
+                if (!is_null($supportProfileId)) {
+                    $this->metrics->pushMeasurement(
+                        $event->cart->domain_id,
+                        'product.'.$originalProductId.'.sales_amount.'.$supportProfileId,
+                        $amount
+                    );
+                }
+
+                $itemTags = [
+                    'domain' => $event->cart->domain_id,
+                    'currency' => $event->cart->currency,
+                    'product' => $originalProductId,
+                    'periodic' => true,
+                    'period' => $paymentPeriodIndex,
+                    'support' => $supportProfileId,
+                ];
+
+                $this->reports->pushMeasurement('carts.purchased.items', 1, $itemTags, [
+                    'amount' => floatval($amount),
+                ], $event->timestamp);
             }
-
-            $itemTags = [
-                'domain' => $event->cart->domain_id,
-                'currency' => $event->cart->currency,
-                'product' => $originalProductId,
-                'periodic' => true,
-                'period' => $paymentPeriodIndex,
-                'support' => $supportProfileId,
-            ];
-
-            $this->reports->pushMeasurement('carts.purchased.items', 1, $itemTags, [
-                'amount' => $amount,
-            ], $event->timestamp);
         }
 
         /** @var ICartItem[] */

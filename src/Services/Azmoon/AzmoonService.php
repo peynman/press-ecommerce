@@ -51,7 +51,7 @@ class AzmoonService implements IAzmoonService
         $data['types']['azmoon']['answer_at'];
         if ($canSeeAnswerSheet !== true) {
             $now = Carbon::now();
-            $release = Carbon::createFromFormat('Y/m/d\TH:i:sO', $canSeeAnswerSheet);
+            $release = Carbon::createFromFormat(config('larapress.crud.datetime-format'), $canSeeAnswerSheet);
             $canSeeAnswerSheet = $now > $release;
         }
 

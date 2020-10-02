@@ -33,6 +33,11 @@ class CartController extends BaseCRUDController
         )->name(config('larapress.ecommerce.routes.carts.name').'.any.purchasing.installments');
 
         Route::post(
+            '/me/{cart_id}/custom-installment',
+            '\\'.self::class.'@getCartInstallmentCustom'
+        )->name(config('larapress.ecommerce.routes.carts.name').'.any.purchasing.installments.custom');
+
+        Route::post(
             '/me/{cart_id}/update',
             '\\'.self::class.'@updatePurchasingCart'
         )->name(config('larapress.ecommerce.routes.carts.name').'.any.purchasing.update');
@@ -62,7 +67,7 @@ class CartController extends BaseCRUDController
      * @return void
      */
     public function checkPurchasingCartGiftCode(IBankingService $service, CartGiftCodeRequest $request) {
-        return $service->checkGiftCodeForPurchasingCart($request, $request->getCurrency(), $request->getGiftCode());
+        return $service->checkGiftCodeForPurchasingCart($request, Auth::user(), $request->getCurrency(), $request->getGiftCode());
     }
 
     /**
@@ -72,7 +77,7 @@ class CartController extends BaseCRUDController
      * @return Response
      */
     public function updatePurchasingCart(IBankingService $service, CartUpdateRequest $request, $cart_id) {
-        return $service->updatePurchasingCart($request, $request->getCurrency(), $cart_id);
+        return $service->updatePurchasingCart($request, Auth::user(), $request->getCurrency(), $cart_id);
     }
 
 
@@ -83,7 +88,7 @@ class CartController extends BaseCRUDController
      * @return Response
      */
     public function addToPurchasingCart(IBankingService $service, CartModifyRequest $request) {
-        return $service->addItemToPurchasingCart($request, $request->getProduct());
+        return $service->addItemToPurchasingCart($request, Auth::user(), $request->getProduct());
     }
 
 
@@ -94,7 +99,7 @@ class CartController extends BaseCRUDController
      * @return Response
      */
     public function removeFromPurchasingCart(IBankingService $service, CartModifyRequest $request) {
-        return $service->removeItemFromPurchasingCart($request, $request->getProduct());
+        return $service->removeItemFromPurchasingCart($request, Auth::user(), $request->getProduct());
     }
 
 
@@ -110,6 +115,16 @@ class CartController extends BaseCRUDController
         return $service->getInstallmentsForProductInCart(Auth::user(), $cart_id, $product_id);
     }
 
+    /**
+     * Undocumented function
+     *
+     * @param IBankingService $service
+     * @param int $cart_id
+     * @return Response
+     */
+    public function getCartInstallmentCustom(IBankingService $service, $cart_id) {
+        return $service->getInstallmentsForCartPeriodicCustom(Auth::user(), $cart_id);
+    }
 
     /**
      * Undocumented function
@@ -120,6 +135,8 @@ class CartController extends BaseCRUDController
      * @return Response
      */
     public function getAllInstallments(IBankingService $service) {
-
+        return [
+            'message' => 'not implemented!'
+        ];
     }
 }

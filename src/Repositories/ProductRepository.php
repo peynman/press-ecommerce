@@ -144,8 +144,16 @@ class ProductRepository implements IProductRepository
         $query = $this->getPurchasedProductsPaginatedQuery($user, $page, $categories, $types);
         $resultset = $query->paginate($limit);
         $items = $resultset->items();
+
+        /** @var IBankingService */
+        $service = app(IBankingService::class);
+        $locked = $service->getPeriodicInstallmentsLockedProducts($user);
+
         foreach ($items as $item) {
             $item['available'] = true;
+            if (in_array($item->id, $locked)) {
+                $item['locked'] = true;
+            }
         }
 
         return BaseCRUDService::formatPaginatedResponse([], $resultset);
@@ -219,11 +227,14 @@ class ProductRepository implements IProductRepository
         $domainRepo = app(IDomainRepository::class);
         $domain = $domainRepo->getCurrentRequestDomain();
         $purchases = $service->getPurchasedItemIds($user, $domain);
+        $locked = $service->getPeriodicInstallmentsLockedProducts($user);
 
         $product['available'] = in_array($product->id, $purchases) || $product->isFree();
+        $product['locked'] = in_array($product->id, $locked) && !$product->isFree();
         $children = $product['children'];
         foreach ($children as &$child) {
             $child['available'] = $product['available'] || in_array($child->id, $purchases) || $child->isFree();
+            $child['locked'] = $product['locked'] && !$child->isFree();
 
             if (isset($child->data['types']['session']['sendForm']) && isset($child->data['types']['session']['sendForm'])) {
                 $child['sent_forms'] = FormEntry::query()

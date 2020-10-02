@@ -6,6 +6,8 @@ use Illuminate\Database\Query\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Larapress\CRUD\BaseFlags;
 use Larapress\CRUD\Services\BaseCRUDProvider;
 use Larapress\CRUD\Services\ICRUDProvider;
 use Larapress\CRUD\Services\IPermissionsMetadata;
@@ -40,7 +42,9 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         'flags' => 'nullable|numeric',
         'description' => 'nullable',
         'products.*.id' => 'required|numeric|exists:products,id',
-        'periodic_product_ids.*.id' => 'nullable|numeric|exists:products,id'
+        'data.periodic_product_ids.*.id' => 'nullable|numeric|exists:products,id',
+        'data.periodic_custom' => 'nullable',
+        'data.period_start' => 'nullable|datetime_zoned',
     ];
     public $updateValidations = [
         'customer_id' => 'required|numeric|exists:users,id',
@@ -49,10 +53,13 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         'status' => 'required|numeric',
         'flags' => 'nullable|numeric',
         'products.*.id' => 'required|numeric|exists:products,id',
-        'periodic_product_ids.*.id' => 'nullable|numeric|exists:products,id'
+        'data.periodic_product_ids.*.id' => 'nullable|numeric|exists:products,id',
+        'data.periodic_custom' => 'nullable',
+        'data.period_start' => 'nullable|datetime_zoned',
     ];
     public $searchColumns = [
-        'has:customer.phones,number',
+        'has_exact:customer,name',
+        'has_exact:customer.phones,number',
     ];
     public $validSortColumns = [
         'id',
@@ -71,6 +78,7 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         'customer.phones',
     ];
     public $defaultShowRelations = [
+        'products'
     ];
     public $filterFields = [
         'from' => 'after:created_at',
@@ -141,15 +149,65 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
     public function onBeforeCreate($args)
     {
         $args['flags'] = Cart::FLAGS_ADMIN;
-        $args['data'] = [
-            'periodic_product_ids' => isset($args['periodic_product_ids']) ? array_keys($args['periodic_product_ids']) : [],
+        $periodic_ids = [];
+        if (isset($args['data']['periodic_product_ids'])) {
+            $periodic_ids = array_values($args['data']['periodic_product_ids']);
+            if (isset($args['data']['periodic_product_ids'][0]['id'])) {
+                $periodic_ids = array_map(function ($m) { return $m['id']; }, $args['data']['periodic_product_ids']);
+            }
+        }
+        $data = [
+            'periodic_product_ids' => $periodic_ids,
             'description' => isset($args['description']) ? $args['description']: null,
         ];
+        if (isset($args['data']['periodic_custom']) && count($args['data']['periodic_custom']) > 0) {
+            $data['periodic_custom'] = $args['data']['periodic_custom'];
+        }
+        if (isset($args['data']['period_start'])) {
+            $data['period_start'] = $args['data']['period_start'];
+        }
+        $args['data'] = $data;
 
         $class = config('larapress.crud.user.class');
         /** @var IProfileUser */
         $target_user = call_user_func([$class, 'find'], $args['customer_id']);
-        $args['domain_id'] = $target_user->getRegistrationDomainId();
+        $args['domain_id'] = $target_user->getMembershipDomainId();
+
+        return $args;
+    }
+
+
+    /**
+     * Undocumented function
+     *
+     * @param [type] $args
+     * @return void
+     */
+    public function onBeforeUpdate($args)
+    {
+        $periodic_ids = [];
+        if (isset($args['data']['periodic_product_ids'])) {
+            $periodic_ids = array_values($args['data']['periodic_product_ids']);
+            if (isset($args['data']['periodic_product_ids'][0]['id'])) {
+                $periodic_ids = array_map(function ($m) { return $m['id']; }, $args['data']['periodic_product_ids']);
+            }
+        }
+        $data = [
+            'periodic_product_ids' => $periodic_ids,
+            'description' => isset($args['description']) ? $args['description']: null,
+        ];
+        if (isset($args['data']['periodic_custom']) && count($args['data']['periodic_custom']) > 0) {
+            $data['periodic_custom'] = $args['data']['periodic_custom'];
+        }
+        if (isset($args['data']['period_start'])) {
+            $data['period_start'] = $args['data']['period_start'];
+        }
+        $args['data'] = $data;
+
+        $class = config('larapress.crud.user.class');
+        /** @var IProfileUser */
+        $target_user = call_user_func([$class, 'find'], $args['customer_id']);
+        $args['domain_id'] = $target_user->getMembershipDomainId();
 
         return $args;
     }
@@ -164,6 +222,9 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
     public function onAfterCreate($object, $input_data)
     {
         $product_ids = array_keys($input_data['products']);
+        if (isset($input_data['products'][0]['id'])) {
+            $product_ids = array_map(function($m) { return $m['id']; } ,$input_data['products']);
+        }
         foreach ($product_ids as $product_id) {
             $object->products()->attach($product_id, [
                 'amount' => $input_data['amount'],
@@ -173,6 +234,58 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
 
         if ($object->status == Cart::STATUS_ACCESS_COMPLETE) {
             $object->flags |= Cart::FLAG_USER_CART;
+            /** @var IBankingService */
+            $banking = app(IBankingService::class);
+            $banking->markCartPurchased(
+                Request::createFromGlobals(),
+                $object
+            );
+        } else {
+            // update internal fast cache! for balance
+            $object->customer->updateUserCache();
+            Cache::tags(['purchasing-cart:' . $object->customer->id])->flush();
+            Cache::tags(['purchased-cart:' . $object->customer->id])->flush();
+            Cache::tags(['user.wallet:' . $object->customer->id])->flush();
+
+            if ($object->status == Cart::STATUS_ACCESS_GRANTED) {
+                CartPurchasedEvent::dispatch($object, time());
+            }
+        }
+
+        return $object;
+    }
+
+
+    /**
+     * Undocumented function
+     *
+     * @param Cart $object
+     * @param [type] $input_data
+     * @return void
+     */
+    public function onAfterUpdate($object, $input_data)
+    {
+        $product_ids = array_keys($input_data['products']);
+        if (isset($input_data['products'][0]['id'])) {
+            $product_ids = array_map(function($m) { return $m['id']; } ,$input_data['products']);
+        }
+
+        // remove existing products
+        DB::table('carts_products_pivot')->where('cart_id', $object->id)->delete();
+        // attach new product again
+        foreach ($product_ids as $product_id) {
+            $object->products()->attach($product_id, [
+                'amount' => $input_data['amount'],
+                'currency' => $input_data['currency'],
+            ]);
+        }
+
+        if ($object->status == Cart::STATUS_ACCESS_COMPLETE) {
+            $object->flags |= Cart::FLAG_USER_CART;
+            //remove wallet transaction for this purchase
+            WalletTransaction::where('user_id', $object->customer_id)->where('data->cart_id', $object->id."")->where('amount', '<', 0)->delete();
+
+            // accept purchase again
             /** @var IBankingService */
             $banking = app(IBankingService::class);
             $banking->markCartPurchased(

@@ -61,7 +61,7 @@ class Product extends Model implements ICartItem
     ];
 
     public $hidden = [
-        // 'sales'
+        'sales'
     ];
 	/**
 	 * @return \Illuminate\Database\Eloquent\Relations\BelongsTo

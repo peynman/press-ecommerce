@@ -60,7 +60,7 @@ class BankGatewayTransactionReport implements IReportSource
             'gateway' => $event->transaction->bank_gateway_id,
         ];
         $this->reports->pushMeasurement('bank.gateway', 1, $tags, [
-            'amount' => $event->transaction->amount,
+            'amount' => floatval($event->transaction->amount),
             'status' => $event->transaction->status,
         ], $event->timestamp);
     }

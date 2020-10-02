@@ -72,7 +72,8 @@ class WalletTransactionCRUDProvider implements ICRUDProvider, IPermissionsMetada
         'type',
     ];
     public $searchColumns = [
-        'has:user.phones,number',
+        'has_exact:user,name',
+        'has_exact:user.phones,number',
     ];
     public $validRelations = [
         'user',

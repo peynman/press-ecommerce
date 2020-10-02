@@ -20,32 +20,7 @@ trait BaseECommerceUser {
         if (isset($this->cache['support'])) {
             return  $this->cache['support'];
         }
-
         return null;
-        return Helpers::getCachedValue(
-            'larapress.users.'.$this->id.'.support',
-            function () {
-                $entry = $this->form_entries()
-                                ->where('form_id', config('larapress.profiles.defaults.support-registration-form-id'))
-                                ->first();
-                if (!is_null($entry)) {
-                    $taggedSupportId = explode('-', $entry->tags)[2];
-                    $profile = FormEntry::where('user_id', $taggedSupportId)
-                                ->where('form_id', config('larapress.profiles.defaults.profile-support-form-id'))
-                                ->first();
-                    if (isset($profile->data['values']['firstname']) && isset($profile->data['values']['lastname'])) {
-                        $data = $profile->data;
-                        $data['values']['fullname'] = $profile->data['values']['firstname'].' '.$profile->data['values']['lastname'];
-                        $profile->data = $data;
-                        $profile['entry'] = $entry;
-                    }
-                    return $profile;
-                }
-                return null;
-            },
-            ['user.support:'.$this->id],
-            null
-        );
     }
 
     /** @var IBankingService */
@@ -54,21 +29,7 @@ trait BaseECommerceUser {
         if (isset($this->cache['balance'])) {
             return $this->cache['balance'];
         }
-
         return null;
-        return Helpers::getCachedValue(
-            'larapress.users.'.$this->id.'.balance-attr',
-            function () {
-                return [
-                    'amount' => $this->wallet()
-                        ->where('currency', config('larapress.ecommerce.banking.currency.id'))
-                        ->sum('amount'),
-                    'currency' => config('larapress.ecommerce.banking.currency'),
-                ];
-            },
-            ['user.wallet:'.$this->id],
-            null
-        );
     }
 
     /**
