@@ -42,6 +42,7 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         'flags' => 'nullable|numeric',
         'description' => 'nullable',
         'products.*.id' => 'required|numeric|exists:products,id',
+        'extra_product_id' => 'nullable|numeric|exists:products,id',
         'data.periodic_product_ids.*.id' => 'nullable|numeric|exists:products,id',
         'data.periodic_custom' => 'nullable',
         'data.period_start' => 'nullable|datetime_zoned',
@@ -53,6 +54,7 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         'status' => 'required|numeric',
         'flags' => 'nullable|numeric',
         'products.*.id' => 'required|numeric|exists:products,id',
+        'extra_product_id' => 'nullable|numeric|exists:products,id',
         'data.periodic_product_ids.*.id' => 'nullable|numeric|exists:products,id',
         'data.periodic_custom' => 'nullable',
         'data.period_start' => 'nullable|datetime_zoned',
@@ -221,10 +223,14 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
      */
     public function onAfterCreate($object, $input_data)
     {
-        $product_ids = array_keys($input_data['products']);
+        $product_ids = isset($input_data['products']) ? array_keys($input_data['products']) : [];
         if (isset($input_data['products'][0]['id'])) {
             $product_ids = array_map(function($m) { return $m['id']; } ,$input_data['products']);
         }
+        if (isset($input_data['extra_product_id'])) {
+            $product_ids[] = $input_data['extra_product_id'];
+        }
+
         foreach ($product_ids as $product_id) {
             $object->products()->attach($product_id, [
                 'amount' => $input_data['amount'],
@@ -265,9 +271,12 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
      */
     public function onAfterUpdate($object, $input_data)
     {
-        $product_ids = array_keys($input_data['products']);
+        $product_ids = isset($input_data['products']) ? array_keys($input_data['products']) : [];
         if (isset($input_data['products'][0]['id'])) {
             $product_ids = array_map(function($m) { return $m['id']; } ,$input_data['products']);
+        }
+        if (isset($input_data['extra_product_id'])) {
+            $product_ids[] = $input_data['extra_product_id'];
         }
 
         // remove existing products

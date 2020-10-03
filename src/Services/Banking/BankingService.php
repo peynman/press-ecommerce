@@ -1148,7 +1148,8 @@ class BankingService implements IBankingService
         }
 
         $avUsersIds = explode(",", isset($code->data['specific_ids']) ? $code->data['specific_ids'] : "");
-        if (in_array($user->id, $code->use_list->pluck('user_id')->toArray()) && !in_array($user->id, $avUsersIds)) {
+        $multiUsePerUser = isset($code->data['multi_time_use']) && $code->data['multi_time_use'] ? true : false;
+        if (in_array($user->id, $code->use_list->pluck('user_id')->toArray()) && !in_array($user->id, $avUsersIds) && !$multiUsePerUser) {
             throw new AppException(AppException::ERR_INVALID_PARAMS);
         }
 
