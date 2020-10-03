@@ -556,7 +556,7 @@ class BankingService implements IBankingService
                                     }
                                 }
                             }
-                        } else if (isset($cart->data['periodic_product_ids'])) {
+                        } else if (isset($cart->data['periodic_product_ids']) && isset($cart->data['period_start'])) {
                             $periodicProducts = $cart->data['periodic_product_ids'];
                             foreach ($cart->products as $product) {
                                 if (in_array($product->id, $periodicProducts)) {
