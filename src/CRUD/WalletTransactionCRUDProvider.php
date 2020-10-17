@@ -33,8 +33,8 @@ class WalletTransactionCRUDProvider implements ICRUDProvider, IPermissionsMetada
     {
         return [
             'type' => 'required|numeric|in:'.implode(',', [
-                WalletTransaction::TYPE_BANK_TRANSACTION,
-                WalletTransaction::TYPE_MANUAL_MODIFY,
+                WalletTransaction::TYPE_REAL_MONEY,
+                WalletTransaction::TYPE_VIRTUAL_MONEY,
             ]),
             'target_user' => 'required|numeric|exists:users,id',
             'amount' => 'required|numeric',
@@ -47,8 +47,8 @@ class WalletTransactionCRUDProvider implements ICRUDProvider, IPermissionsMetada
     {
         return [
             'type' => 'required|numeric|in:'.implode(',', [
-                WalletTransaction::TYPE_BANK_TRANSACTION,
-                WalletTransaction::TYPE_MANUAL_MODIFY,
+                WalletTransaction::TYPE_REAL_MONEY,
+                WalletTransaction::TYPE_VIRTUAL_MONEY,
             ]),
             'target_user' => 'required|numeric|exists:users,id',
             'amount' => 'required|numeric',

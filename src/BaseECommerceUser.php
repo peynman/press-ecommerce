@@ -29,7 +29,12 @@ trait BaseECommerceUser {
         if (isset($this->cache['balance'])) {
             return $this->cache['balance'];
         }
-        return null;
+
+        return [
+            'amount' => 0,
+            'currency' => config('larapress.ecommerce.banking.currency'),
+            'default_gateway' => config('larapress.ecommerce.banking.default_gateway'),
+        ];
     }
 
     /**
@@ -169,7 +174,8 @@ trait BaseECommerceUser {
                         'introducer' => [$introducer, $entry]
                     ]);
                 }
-            }
+            },
+
         ];
 
         if (is_null($property)) {

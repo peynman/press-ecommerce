@@ -66,10 +66,10 @@ class CartPurchasedReport implements IReportSource, ShouldQueue
             'domain' => $event->cart->domain_id,
             'currency' => $event->cart->currency,
             'support' => $supportProfileId,
-            'type' => $event->cart->status,
-            'support' => $supportProfileId,
+            'cart_id' => $event->cart->id,
         ];
         $this->reports->pushMeasurement('carts.purchased', 1, $tags, [
+            'type' => $event->cart->status,
             'amount' => floatval($event->cart->amount),
             'gift' => isset($event->cart->data['gift_code']['amount']) ? floatval($event->cart->data['gift_code']['amount']): 0,
         ], $event->timestamp);
@@ -82,7 +82,7 @@ class CartPurchasedReport implements IReportSource, ShouldQueue
             );
         }
 
-        // add to original product sales if this is a peridic paument
+        // add to original product sales if this is a peridic payment
         if (BaseFlags::isActive($event->cart->flags, Cart::FLAGS_PERIOD_PAYMENT_CART)) {
             if (isset($event->cart->data['periodic_pay']['custom']) && $event->cart->data['periodic_pay']['custom']) {
 
@@ -118,6 +118,7 @@ class CartPurchasedReport implements IReportSource, ShouldQueue
             }
         }
 
+        // add each product in
         /** @var ICartItem[] */
         $items = $event->cart->products;
         $periodicPurchases = isset($event->cart->data['periodic_product_ids']) ? $event->cart->data['periodic_product_ids'] : [];
@@ -130,6 +131,7 @@ class CartPurchasedReport implements IReportSource, ShouldQueue
                     'product' => $item->id,
                     'periodic' => $periodic,
                     'support' => $supportProfileId,
+                    'cart_id' => $event->cart->id,
                 ];
 
                 $this->metrics->pushMeasurement(

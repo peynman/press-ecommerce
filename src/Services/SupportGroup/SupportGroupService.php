@@ -182,16 +182,16 @@ class SupportGroupService implements ISupportGroupService {
     }
 
     /**
-     * Undocumented function
+     * add user to support/introducer group, if we have introducer
+     * add user gift balance too
      *
-     * @param Request $request
      * @param IProfileUser $user
      * @param int|IProfileUser $introducer
      * @param bool $updateSupportGroup
      * @param bool $updateIntroducer
      * @return void
      */
-    public function updateUserRegistrationGiftWithIntroducer(Request $request, IProfileUser $user, $introducer, $updateSupportGroup, $updateIntroducer) {
+    public function updateUserRegistrationGiftWithIntroducer(IProfileUser $user, $introducer, $updateSupportGroup, $updateIntroducer) {
         // add registerar gift based on introducer id
         if (!is_null($introducer)) {
             // add to support group if introducer has support role
@@ -205,7 +205,7 @@ class SupportGroupService implements ISupportGroupService {
 
 
             $service->updateUserFormEntryTag(
-                $request,
+                null,
                 $user,
                 config('larapress.ecommerce.lms.introducer_default_form_id'),
                 'introducer-id-'.$introducer->id,
@@ -222,7 +222,7 @@ class SupportGroupService implements ISupportGroupService {
             if ($introducer->hasRole(config('larapress.ecommerce.lms.support_role_id'))) {
                 if ($updateSupportGroup) {
                     $service->updateUserFormEntryTag(
-                        $request,
+                        null,
                         $user,
                         config('larapress.ecommerce.lms.support_group_default_form_id'),
                         'support-group-'.$introducer->id,
@@ -255,31 +255,31 @@ class SupportGroupService implements ISupportGroupService {
             /** @var IBankingService */
             $bankService = app(IBankingService::class);
 
-            $userPrevGifts = $bankService->getUserTotalGiftBalance($user, config('larapress.ecommerce.lms.registeration_gift.currency'));
+            $userPrevGifts = $bankService->getUserTotalAquiredGiftBalance($user, config('larapress.ecommerce.lms.registeration_gift.currency'));
             $giftAmount = $giftAmount - $userPrevGifts;
 
             if ($giftAmount > 0) {
                 $bankService->addBalanceForUser(
-                    $request,
                     $user,
                     $giftAmount,
                     config('larapress.ecommerce.lms.introducers.user_gift.currency'),
-                    WalletTransaction::TYPE_MANUAL_MODIFY,
+                    WalletTransaction::TYPE_VIRTUAL_MONEY,
                     WalletTransaction::FLAGS_REGISTRATION_GIFT,
                     trans('larapress::ecommerce.banking.messages.wallet-descriptions.introducer_gift_wallet_desc', [
                         'introducer_id' => $introducer->id
                     ])
                 );
             }
-        } else {
+        }
+        // add global registration gift for user
+        else {
             /** @var IBankingService */
             $bankService = app(IBankingService::class);
             $bankService->addBalanceForUser(
-                $request,
                 $user,
                 config('larapress.ecommerce.lms.registeration_gift.amount'),
                 config('larapress.ecommerce.lms.registeration_gift.currency'),
-                WalletTransaction::TYPE_MANUAL_MODIFY,
+                WalletTransaction::TYPE_VIRTUAL_MONEY,
                 WalletTransaction::FLAGS_REGISTRATION_GIFT,
                 trans('larapress::ecommerce.banking.messages.wallet-descriptions.register_gift_wallet_desc')
             );

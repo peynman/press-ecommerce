@@ -41,7 +41,7 @@ interface ICartService
      * @param integer $type
      * @param integer $flags
      * @param string $desc
-     * @return [Cart, WalletTransaction]
+     * @return WalletTransaction
      */
     public function addBalanceForUser(Request $request, IProfileUser $user, float $amount, int $currency, int $type, int $flags, string $desc);
 

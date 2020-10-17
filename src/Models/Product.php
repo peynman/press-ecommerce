@@ -48,6 +48,8 @@ class Product extends Model implements ICartItem
     ];
 
     public $dates = [
+	    'publish_at',
+	    'expires_at',
     ];
 
     public $casts = [

@@ -31,7 +31,7 @@ class SupportGroupFormListener implements ShouldQueue {
                         $event->user,
                         config('larapress.ecommerce.lms.profle_gift.amount'),
                         config('larapress.ecommerce.lms.profle_gift.currency'),
-                        WalletTransaction::TYPE_MANUAL_MODIFY,
+                        WalletTransaction::TYPE_VIRTUAL_MONEY,
                         WalletTransaction::FLAGS_REGISTRATION_GIFT,
                         trans('larapress::ecommerce.banking.messages.wallet-descriptions.profile_gift_wallet_desc')
                     );

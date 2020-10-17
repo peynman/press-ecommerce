@@ -212,7 +212,7 @@ class ProductService implements IProductService
                 }
             }
 		} else {
-			throw new AppException(AppException::ERR_OBJ_ACCESS_DENIED);
+//			throw new AppException(AppException::ERR_OBJ_ACCESS_DENIED);
 		}
 
         return $callback($request, $product);

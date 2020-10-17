@@ -26,8 +26,8 @@ use Larapress\Profiles\Models\Domain;
  */
 class WalletTransaction extends Model
 {
-    const TYPE_MANUAL_MODIFY = 1;
-    const TYPE_BANK_TRANSACTION = 2;
+    const TYPE_VIRTUAL_MONEY = 1;
+    const TYPE_REAL_MONEY = 2;
 
     const FLAGS_REGISTRATION_GIFT = 1;
 

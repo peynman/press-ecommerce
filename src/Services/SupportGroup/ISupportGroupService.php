@@ -46,5 +46,5 @@ interface ISupportGroupService {
      * @param bool $updateIntroducer
      * @return void
      */
-    public function updateUserRegistrationGiftWithIntroducer(Request $request, IProfileUser $user, $introducerId, $updateSupportGroup, $updateIntroducer);
+    public function updateUserRegistrationGiftWithIntroducer(IProfileUser $user, $introducerId, $updateSupportGroup, $updateIntroducer);
 }

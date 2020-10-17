@@ -34,6 +34,11 @@ class EventServiceProvider extends ServiceProvider
         'Larapress\Profiles\Services\FormEntry\FormEntryUpdateEvent' => [
             'Larapress\ECommerce\Services\SupportGroup\SupportGroupFormListener',
         ],
+
+        // sync ecommerce for support group
+        'Larapress\Auth\Signup\SignupEvent' => [
+            'Larapress\ECommerce\Services\SupportGroup\SupportGroupSignupListener'
+        ],
     ];
 
 

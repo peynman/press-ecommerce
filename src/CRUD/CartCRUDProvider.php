@@ -239,7 +239,7 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         }
 
         if ($object->status == Cart::STATUS_ACCESS_COMPLETE) {
-            $object->flags |= Cart::FLAG_USER_CART;
+            $object->flags |= Cart::FLAGS_USER_CART;
             /** @var IBankingService */
             $banking = app(IBankingService::class);
             $banking->markCartPurchased(
@@ -290,7 +290,7 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         }
 
         if ($object->status == Cart::STATUS_ACCESS_COMPLETE) {
-            $object->flags |= Cart::FLAG_USER_CART;
+            $object->flags |= Cart::FLAGS_USER_CART;
             //remove wallet transaction for this purchase
             WalletTransaction::where('user_id', $object->customer_id)->where('data->cart_id', $object->id."")->where('amount', '<', 0)->delete();
 
@@ -302,15 +302,18 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
                 $object
             );
         } else {
+            if ($object->status == Cart::STATUS_ACCESS_GRANTED) {
+                WalletTransaction::where('user_id', $object->customer_id)->where('data->cart_id', $object->id."")->where('amount', '<', 0)->delete();
+                CartPurchasedEvent::dispatch($object, time());
+            }
+
             // update internal fast cache! for balance
             $object->customer->updateUserCache();
             Cache::tags(['purchasing-cart:' . $object->customer->id])->flush();
             Cache::tags(['purchased-cart:' . $object->customer->id])->flush();
             Cache::tags(['user.wallet:' . $object->customer->id])->flush();
+            $object->customer->updateUserCache('balance');
 
-            if ($object->status == Cart::STATUS_ACCESS_GRANTED) {
-                CartPurchasedEvent::dispatch($object, time());
-            }
         }
 
         return $object;

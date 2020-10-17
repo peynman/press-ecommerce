@@ -65,13 +65,15 @@ class WalletTransactionReport implements IReportSource, ShouldQueue
             'domain' => $event->transaction->domain_id,
             'currency' => $event->transaction->currency,
             'type' => $event->transaction->type,
+            'decrease' => floatval($event->transaction->amount) > 0,
             'tr_id' => $event->transaction->id,
             'support' => $supportProfileId,
-            'status' => $event->transaction->status,
         ];
         $this->reports->pushMeasurement('user_wallet', 1, $tags, [
             'amount' => floatval($event->transaction->amount),
         ], $event->timestamp);
+
+
         $this->metrics->pushMeasurement(
             $event->transaction->domain_id,
             'wallet.'.$event->transaction->type.'.amount',

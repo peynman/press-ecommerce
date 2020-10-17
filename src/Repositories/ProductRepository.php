@@ -5,6 +5,7 @@ namespace Larapress\ECommerce\Repositories;
 use Carbon\Carbon;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Larapress\CRUD\Services\BaseCRUDService;
 use Larapress\CRUD\Services\ICRUDService;
 use Larapress\CRUD\Exceptions\AppException;
@@ -90,6 +91,7 @@ class ProductRepository implements IProductRepository
             return [];
         }
         $query = Product::query()->select('id', 'name');
+        $this->applyPublishExpireWindow($query);
         if (count($types) > 0) {
             $query->whereHas('types', function($q) use($types) {
                 $q->whereIn('name', $types);
@@ -171,7 +173,7 @@ class ProductRepository implements IProductRepository
             ->with(['products', 'products.types'])
             ->where('customer_id', $user->id)
             ->whereIn('status', [Cart::STATUS_ACCESS_COMPLETE, Cart::STATUS_ACCESS_GRANTED])
-            ->where('flags', '&', Cart::FLAG_USER_CART|Cart::FLAGS_ADMIN)
+            ->where('flags', '&', Cart::FLAGS_USER_CART|Cart::FLAGS_ADMIN)
             ->orderBy('updated_at', 'desc')
             ->get();
 
@@ -259,6 +261,7 @@ class ProductRepository implements IProductRepository
                 }
             }
         }
+        Log::debug(json_encode($product));
 
         return $product;
     }
@@ -285,6 +288,7 @@ class ProductRepository implements IProductRepository
                 $q->whereRaw("JSON_EXTRACT(data, '$.pricing[0].amount') = 0");
             });
         });
+        $this->applyPublishExpireWindow($query);
 
         return $query;
     }
@@ -331,7 +335,20 @@ class ProductRepository implements IProductRepository
             });
         }
 
+        $query = $this->applyPublishExpireWindow($query);
         $query->orderBy('priority', 'desc');
+        return $query;
+    }
+
+    protected function applyPublishExpireWindow($query) {
+        $query->where(function ($q) {
+            $q->whereNull('publish_at');
+            $q->orWhereDate('publish_at', '<=', Carbon::now());
+        });
+        $query->where(function ($q) {
+            $q->whereNull('expires_at');
+            $q->orWhereDate('expires_at', '>', Carbon::now());
+        });
         return $query;
     }
 }

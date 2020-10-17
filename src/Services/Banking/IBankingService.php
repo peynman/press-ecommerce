@@ -67,7 +67,6 @@ interface IBankingService
     /**
      * Undocumented function
      *
-     * @param Request $request
      * @param IProfileUser $user
      * @param float $amount
      * @param integer $currency
@@ -76,7 +75,7 @@ interface IBankingService
      * @param string $desc
      * @return [Cart, WalletTransaction]
      */
-    public function addBalanceForUser(Request $request, IProfileUser $user, float $amount, int $currency, int $type, int $flags, string $desc);
+    public function addBalanceForUser(IProfileUser $user, float $amount, int $currency, int $type, int $flags, string $desc);
 
     /**
      * Undocumented function
@@ -181,6 +180,16 @@ interface IBankingService
      */
     public function getUserBalance(IProfileUser $user, int $currency);
 
+
+    /**
+     * Undocumented function
+     *
+     * @param IProfileUser $user
+     * @param integer $currency
+     * @return float
+     */
+    public function getUserVirtualBalance(IProfileUser $user, int $currency);
+
     /**
      * Undocumented function
      *
@@ -189,7 +198,7 @@ interface IBankingService
      * @param integer $currency
      * @return float
      */
-    public function getUserTotalGiftBalance(IProfileUser $user, int $currency);
+    public function getUserTotalAquiredGiftBalance(IProfileUser $user, int $currency);
 
     /**
      * Undocumented function

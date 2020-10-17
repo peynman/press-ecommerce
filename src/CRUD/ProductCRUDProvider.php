@@ -128,14 +128,11 @@ class ProductCRUDProvider implements ICRUDProvider, IPermissionsMetadata
     public function onBeforeQuery($query)
     {
         /** @var ICRUDUser $user */
-        // $user = Auth::user();
-        // if (! $user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
-        //     $query->where('author_id', $user->id);
-        // }
+        $user = Auth::user();
+        if (! $user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
+            $query->where('author_id', $user->id);
+        }
 
-        // return $query;
-
-        // give access anyone with products.view permission
         return $query;
     }
 
@@ -151,13 +148,8 @@ class ProductCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         if (! $user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
             return $user->id === $object->author_id;
         }
-        return true;
 
-        return $user->hasRole(
-            array_merge(
-                config('larapress.profiles.security.roles.super-role'),
-                config('larapress.profiles.security.roles.affiliate')
-        ));
+        return true;
     }
 
     /**

@@ -28,8 +28,8 @@ class Cart extends Model
     const STATUS_ACCESS_GRANTED = 2;
     const STATUS_ACCESS_COMPLETE = 3;
 
-    const FLAG_USER_CART = 1;
-    const FLAG_INCREASE_WALLET = 2;
+    const FLAGS_USER_CART = 1;
+    const FLAGS_INCREASE_WALLET = 2;
     const FLAGS_EVALUATED = 4;
     const FLAGS_HAS_PERIODS = 8;
     const FLAGS_PERIOD_PAYMENT_CART = 16;

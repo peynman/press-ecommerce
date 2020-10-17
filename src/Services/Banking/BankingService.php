@@ -14,7 +14,6 @@ use Larapress\CRUD\Events\CRUDCreated;
 use Larapress\CRUD\Events\CRUDUpdated;
 use Larapress\CRUD\Exceptions\AppException;
 use Larapress\CRUD\Extend\Helpers;
-use Larapress\ECommerce\CRUD\BankGatewayCRUDProvider;
 use Larapress\ECommerce\CRUD\BankGatewayTransactionCRUDProvider;
 use Larapress\ECommerce\CRUD\CartCRUDProvider;
 use Larapress\ECommerce\Models\BankGateway;
@@ -28,8 +27,6 @@ use Larapress\ECommerce\Services\Banking\Events\BankGatewayTransactionEvent;
 use Larapress\ECommerce\Services\Banking\Events\CartPurchasedEvent;
 use Larapress\ECommerce\Services\Banking\Events\WalletTransactionEvent;
 use Larapress\Profiles\IProfileUser;
-use Larapress\Profiles\Models\Domain;
-use Larapress\Profiles\Repository\Domain\IDomainRepository;
 
 class BankingService implements IBankingService
 {
@@ -52,7 +49,7 @@ class BankingService implements IBankingService
             'currency' => $currency,
             'customer_id' => $user->id,
             'domain_id' => $user->getMembershipDomainId(),
-            'flags' => Cart::FLAG_INCREASE_WALLET,
+            'flags' => Cart::FLAGS_INCREASE_WALLET,
             'status' => Cart::STATUS_UNVERIFIED,
         ], [
             'amount' => $amount,
@@ -231,6 +228,7 @@ class BankingService implements IBankingService
             $port = new $avPorts[$gatewayData->type]($gatewayData);
             $transaction = $port->verify($request, $transaction);
             if ($transaction->status === BankGatewayTransaction::STATUS_SUCCESS) {
+                $supportProfileId = isset($cart->customer->supportProfile['id']) ? $cart->customer->supportProfile['id']: null;
                 $wallet = WalletTransaction::create([
                     'user_id' => $cart->customer_id,
                     'domain_id' => $cart->domain_id,
@@ -239,12 +237,13 @@ class BankingService implements IBankingService
                     // cart amount may differ to this value
                     'amount' => $transaction->amount,
                     'currency' => $transaction->currency,
-                    'type' => WalletTransaction::TYPE_BANK_TRANSACTION,
+                    'type' => WalletTransaction::TYPE_REAL_MONEY,
                     'data' => [
                         'cart_id' => $cart->id,
                         'transaction_id' => $transaction->id,
                         'description' => trans('larapress::ecommerce.banking.messages.wallet-descriptions.cart_increased', ['cart_id' => $cart->id]),
                         'balance' => $this->getUserBalance($cart->customer, $cart->currency),
+                        'support' => $supportProfileId,
                     ]
                 ]);
                 $this->markCartPurchased($request, $cart);
@@ -426,7 +425,7 @@ class BankingService implements IBankingService
                     ->where('customer_id', $user->id)
                     ->where('domain_id', $user->getMembershipDomainId())
                     ->where('currency', $currency)
-                    ->where('flags', '&', Cart::FLAG_USER_CART)
+                    ->where('flags', '&', Cart::FLAGS_USER_CART)
                     ->where('status', '=', Cart::STATUS_UNVERIFIED)
                     ->first();
 
@@ -436,7 +435,7 @@ class BankingService implements IBankingService
                         'currency' => $currency,
                         'customer_id' => $user->id,
                         'domain_id' => $user->getMembershipDomainId(),
-                        'flags' => Cart::FLAG_USER_CART,
+                        'flags' => Cart::FLAGS_USER_CART,
                         'status' => Cart::STATUS_UNVERIFIED,
                         'data' => []
                     ]);
@@ -563,11 +562,13 @@ class BankingService implements IBankingService
                                     $period_start = Carbon::parse($cart->data['period_start']);
                                     $alreadyPaidPeriods = isset($cart->data['periodic_payments']) ? $cart->data['periodic_payments']: [];
                                     $alreadyPaidCount = isset($alreadyPaidPeriods[$product->id]) ? count($alreadyPaidPeriods[$product->id]) : 0;
-                                    $calc = $product->data['calucalte_periodic'];
-                                    $duration = isset($calc['period_duration']) ? $calc['period_duration'] : 30;
-                                    $period_start->addDays($duration * ($alreadyPaidCount+1) - 1);
-                                    if ($now > $period_start) {
-                                        $ids[] = $product->id;
+                                    if (isset($product->data['calucalte_periodic'])) {
+                                        $calc = $product->data['calucalte_periodic'];
+                                        $duration = isset($calc['period_duration']) ? $calc['period_duration'] : 30;
+                                        $period_start->addDays($duration * ($alreadyPaidCount+1) - 1);
+                                        if ($now > $period_start) {
+                                            $ids[] = $product->id;
+                                        }
                                     }
                                 }
                             }
@@ -591,27 +592,11 @@ class BankingService implements IBankingService
      * @param integer $type
      * @param integer $flags
      * @param string $desc
-     * @return [Cart, WalletTransaction]
+     * @return WalletTransaction
      */
-    public function addBalanceForUser(Request $request, IProfileUser $user, float $amount, int $currency, int $type, int $flags, string $desc)
+    public function addBalanceForUser(IProfileUser $user, float $amount, int $currency, int $type, int $flags, string $desc)
     {
-        $cart = null;
-
-        if ($type === WalletTransaction::TYPE_BANK_TRANSACTION) {
-            /** @var Cart */
-            $cart = Cart::create([
-                'currency' => $currency,
-                'customer_id' => $user->id,
-                'domain_id' => $user->getMembershipDomainId(),
-                'flags' => Cart::FLAG_INCREASE_WALLET | Cart::FLAGS_EVALUATED,
-                'status' => Cart::STATUS_ACCESS_COMPLETE,
-                'amount' => $amount,
-                'data' => [
-                    'desc' => $desc,
-                ]
-            ]);
-        }
-
+        $supportProfileId = isset($user->supportProfile['id']) ? $user->supportProfile['id']: null;
         $wallet = WalletTransaction::create([
             'user_id' => $user->id,
             'domain_id' => $user->getMembershipDomainId(),
@@ -620,21 +605,17 @@ class BankingService implements IBankingService
             'type' => $type,
             'flags' => $flags,
             'data' => [
-                'cart_id' => !is_null($cart) ? $cart->id : null,
                 'description' => $desc,
                 'balance' => $this->getUserBalance($user, $currency),
+                'support' => $supportProfileId,
             ]
         ]);
 
-        if (!is_null($cart)) {
-            CRUDUpdated::dispatch(Auth::user(), $cart, CartCRUDProvider::class, Carbon::now());
-        }
-        WalletTransactionEvent::dispatch($wallet, time());
         $this->resetBalanceCache($user->id);
-
         $user->updateUserCache('balance');
+        WalletTransactionEvent::dispatch($wallet, time());
 
-        return [$cart, $wallet];
+        return $wallet;
     }
 
     /**
@@ -807,19 +788,8 @@ class BankingService implements IBankingService
 
         return [
             'amount' => 0,
+            'currency' => config('larapress.ecommerce.banking.currency'),
         ];
-        return Helpers::getCachedValue(
-            'larapress.ecommerce.user.' . $user->id . '.balance',
-            function () use ($user, $currency) {
-                return WalletTransaction::query()
-                    ->where('user_id', $user->id)
-                    ->where('domain_id', $user->getMembershipDomainId())
-                    ->where('currency', $currency)
-                    ->sum('amount');
-            },
-            ['user.wallet:' . $user->id],
-            null
-        );
     }
 
     /**
@@ -829,14 +799,37 @@ class BankingService implements IBankingService
      * @param integer $currency
      * @return float
      */
-    public function getUserTotalGiftBalance(IProfileUser $user, int $currency) {
+    public function getUserTotalAquiredGiftBalance(IProfileUser $user, int $currency) {
         return Helpers::getCachedValue(
-            'larapress.ecommerce.user.' . $user->id . '.balance',
+            'larapress.ecommerce.user.' . $user->id . '.gift-balance',
             function () use ($user, $currency) {
                 return WalletTransaction::query()
                     ->where('user_id', $user->id)
                     ->where('currency', $currency)
                     ->where('flags', '&', WalletTransaction::FLAGS_REGISTRATION_GIFT)
+                    ->sum('amount');
+            },
+            ['user.wallet:' . $user->id],
+            null
+        );
+    }
+
+
+    /**
+     * Undocumented function
+     *
+     * @param IProfileUser $user
+     * @param integer $currency
+     * @return float
+     */
+    public function getUserVirtualBalance(IProfileUser $user, int $currency) {
+        return Helpers::getCachedValue(
+            'larapress.ecommerce.user.' . $user->id . '.gift-balance',
+            function () use ($user, $currency) {
+                return WalletTransaction::query()
+                    ->where('user_id', $user->id)
+                    ->where('currency', $currency)
+                    ->where('type', WalletTransaction::TYPE_VIRTUAL_MONEY)
                     ->sum('amount');
             },
             ['user.wallet:' . $user->id],
@@ -897,16 +890,47 @@ class BankingService implements IBankingService
             'flags' => $cart->flags | Cart::FLAGS_EVALUATED | $periodicFlag,
             'data' => $data,
         ]);
+        $supportProfileId = isset($cart->customer->supportProfile['id']) ? $cart->customer->supportProfile['id']: null;
 
-        if (BaseFlags::isActive($cart->flags, Cart::FLAG_USER_CART)) {
-            $this->markGiftCodeForCart($cart);
+        if (BaseFlags::isActive($cart->flags, Cart::FLAGS_USER_CART)) {
+            $this->markGiftCodeUsageForCart($cart);
+
+            $realMoneyDecrese = abs($cart->amount);
+            // separate gift balance from real balance
+            $giftBalance = $this->getUserVirtualBalance($cart->customer, $cart->currency);
+            if ($giftBalance > 0) {
+                $virtualMoneyDecrease = $giftBalance;
+                // user has gift more than cart amount
+                if ($giftBalance >= $realMoneyDecrese) {
+                    $virtualMoneyDecrease = $realMoneyDecrese;
+                    $realMoneyDecrese = 0;
+                } else {
+                    $realMoneyDecrese = $realMoneyDecrese - $virtualMoneyDecrease;
+                }
+
+                // decrease wallet gift amount for cart amount
+                $wallet = WalletTransaction::create([
+                    'user_id' => $cart->customer_id,
+                    'domain_id' => $cart->domain_id,
+                    'amount' => -1 * $virtualMoneyDecrease,
+                    'currency' => $cart->currency,
+                    'type' => WalletTransaction::TYPE_VIRTUAL_MONEY,
+                    'data' => [
+                        'cart_id' => $cart->id,
+                        'description' => trans('larapress::ecommerce.banking.messages.wallet-descriptions.cart_purchased', ['cart_id' => $cart->id]),
+                        'balance' => $this->getUserBalance($cart->customer, $cart->currency),
+                        'support' => $supportProfileId,
+                    ]
+                ]);
+                WalletTransactionEvent::dispatch($wallet, time());
+            }
             // decrease wallet amount for cart amount
             $wallet = WalletTransaction::create([
                 'user_id' => $cart->customer_id,
                 'domain_id' => $cart->domain_id,
-                'amount' => -1 * abs($cart->amount),
+                'amount' => -1 * $realMoneyDecrese,
                 'currency' => $cart->currency,
-                'type' => WalletTransaction::TYPE_BANK_TRANSACTION,
+                'type' => WalletTransaction::TYPE_REAL_MONEY,
                 'data' => [
                     'cart_id' => $cart->id,
                     'description' => trans('larapress::ecommerce.banking.messages.wallet-descriptions.cart_purchased', ['cart_id' => $cart->id]),
@@ -936,7 +960,7 @@ class BankingService implements IBankingService
                                 $introducer,
                                 $data['gifted_amount'],
                                 $data['gifted_currency'],
-                                WalletTransaction::TYPE_MANUAL_MODIFY,
+                                WalletTransaction::TYPE_VIRTUAL_MONEY,
                                 WalletTransaction::FLAGS_REGISTRATION_GIFT,
                                 trans('larapress::ecommerce.banking.messages.wallet-descriptions.introducer_gift_purchase_wallet_desc')
                             );
@@ -948,6 +972,7 @@ class BankingService implements IBankingService
             $originalCart = Cart::find($cart->data['periodic_pay']['originalCart']);
             $origData = $originalCart->data;
             $now = Carbon::now();
+
             // custom cart with periodic payments or
             if (isset($cart->data['periodic_pay']['custom'])) {
                 if (!isset($origData['periodic_payments_custom'])) {
@@ -974,22 +999,55 @@ class BankingService implements IBankingService
                 ]);
                 CRUDUpdated::dispatch(Auth::user(), $originalCart, CartCRUDProvider::class, $now);
 
-                // decrease wallet amount for cart amount
-                $wallet = WalletTransaction::create([
-                    'user_id' => $cart->customer_id,
-                    'domain_id' => $cart->domain_id,
-                    'amount' => -1 * abs($cart->amount),
-                    'currency' => $cart->currency,
-                    'type' => WalletTransaction::TYPE_BANK_TRANSACTION,
-                    'data' => [
-                        'cart_id' => $cart->id,
-                        'description' => trans('larapress::ecommerce.banking.messages.wallet-descriptions.cart_purchased', ['cart_id' => $cart->id]),
-                        'balance' => $this->getUserBalance($cart->customer, $cart->currency),
-                    ]
-                ]);
-                WalletTransactionEvent::dispatch($wallet, time());
+                $realMoneyDecrese = abs($cart->amount);
+                // separate gift balance from real balance
+                $giftBalance = $this->getUserVirtualBalance($cart->customer, $cart->currency);
+                if ($giftBalance > 0) {
+                    $virtualMoneyDecrease = $giftBalance;
+                    // user has gift more than cart amount
+                    if ($giftBalance >= $realMoneyDecrese) {
+                        $virtualMoneyDecrease = $realMoneyDecrese;
+                        $realMoneyDecrese = 0;
+                    } else {
+                        $realMoneyDecrese = $realMoneyDecrese - $virtualMoneyDecrease;
+                    }
+                    // decrease wallet gift amount for cart amount
+                    $wallet = WalletTransaction::create([
+                        'user_id' => $cart->customer_id,
+                        'domain_id' => $cart->domain_id,
+                        'amount' => -1 * $virtualMoneyDecrease,
+                        'currency' => $cart->currency,
+                        'type' => WalletTransaction::TYPE_VIRTUAL_MONEY,
+                        'data' => [
+                            'cart_id' => $cart->id,
+                            'description' => trans('larapress::ecommerce.banking.messages.wallet-descriptions.cart_purchased', ['cart_id' => $cart->id]),
+                            'balance' => $this->getUserBalance($cart->customer, $cart->currency),
+                            'support' => $supportProfileId,
+                        ]
+                    ]);
+                    WalletTransactionEvent::dispatch($wallet, time());
+                }
+
+                if ($realMoneyDecrese > 0) {
+                    // decrease wallet amount for cart amount
+                    $wallet = WalletTransaction::create([
+                        'user_id' => $cart->customer_id,
+                        'domain_id' => $cart->domain_id,
+                        'amount' => -1 * $realMoneyDecrese,
+                        'currency' => $cart->currency,
+                        'type' => WalletTransaction::TYPE_REAL_MONEY,
+                        'data' => [
+                            'cart_id' => $cart->id,
+                            'description' => trans('larapress::ecommerce.banking.messages.wallet-descriptions.cart_purchased', ['cart_id' => $cart->id]),
+                            'balance' => $this->getUserBalance($cart->customer, $cart->currency),
+                            'support' => $supportProfileId,
+                        ]
+                    ]);
+                    WalletTransactionEvent::dispatch($wallet, time());
+                }
+
             } else {
-                        // or system cart with product based parchases
+                // or system cart with product based parchases
                 $originalProductId = $cart->data['periodic_pay']['product']['id'];
                 if (!isset($origData['periodic_payments'])) {
                     $origData['periodic_payments'] = [];
@@ -1012,17 +1070,48 @@ class BankingService implements IBankingService
                 ]);
                 CRUDUpdated::dispatch(Auth::user(), $originalCart, CartCRUDProvider::class, Carbon::now());
 
+
+                $realMoneyDecrese = abs($cart->amount);
+                // separate gift balance from real balance
+                $giftBalance = $this->getUserVirtualBalance($cart->customer, $cart->currency);
+                if ($giftBalance > 0) {
+                    $virtualMoneyDecrease = $giftBalance;
+                    // user has gift more than cart amount
+                    if ($giftBalance >= $realMoneyDecrese) {
+                        $virtualMoneyDecrease = $realMoneyDecrese;
+                        $realMoneyDecrese = 0;
+                    } else {
+                        $realMoneyDecrese = $realMoneyDecrese - $virtualMoneyDecrease;
+                    }
+                    // decrease wallet gift amount for cart amount
+                    $wallet = WalletTransaction::create([
+                        'user_id' => $cart->customer_id,
+                        'domain_id' => $cart->domain_id,
+                        'amount' => -1 * abs($cart->amount),
+                        'currency' => $cart->currency,
+                        'type' => WalletTransaction::TYPE_VIRTUAL_MONEY,
+                        'data' => [
+                            'cart_id' => $cart->id,
+                            'description' => trans('larapress::ecommerce.banking.messages.wallet-descriptions.cart_purchased', ['cart_id' => $cart->id]),
+                            'balance' => $this->getUserBalance($cart->customer, $cart->currency),
+                            'support' => $supportProfileId
+                        ]
+                    ]);
+                    WalletTransactionEvent::dispatch($wallet, time());
+                }
+
                 // decrease wallet amount for cart amount
                 $wallet = WalletTransaction::create([
                     'user_id' => $cart->customer_id,
                     'domain_id' => $cart->domain_id,
                     'amount' => -1 * abs($cart->amount),
                     'currency' => $cart->currency,
-                    'type' => WalletTransaction::TYPE_BANK_TRANSACTION,
+                    'type' => WalletTransaction::TYPE_REAL_MONEY,
                     'data' => [
                         'cart_id' => $cart->id,
                         'description' => trans('larapress::ecommerce.banking.messages.wallet-descriptions.cart_purchased', ['cart_id' => $cart->id]),
                         'balance' => $this->getUserBalance($cart->customer, $cart->currency),
+                        'support' => $supportProfileId
                     ]
                 ]);
                 WalletTransactionEvent::dispatch($wallet, time());
@@ -1228,7 +1317,7 @@ class BankingService implements IBankingService
      * @param Cart $cart
      * @return void
      */
-    protected function markGiftCodeForCart(Cart $cart)
+    protected function markGiftCodeUsageForCart(Cart $cart)
     {
         if (isset($cart->data['gift_code']['code'])) {
             GiftCodeUse::create([
