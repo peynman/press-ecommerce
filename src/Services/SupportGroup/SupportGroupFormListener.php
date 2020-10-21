@@ -21,20 +21,22 @@ class SupportGroupFormListener implements ShouldQueue {
             // user profile updated
             case config('larapress.profiles.defaults.profile-form-id'):
                 if ($event->created) {
-                    // add profile completion gift
-                    /** @var IBankingService */
-                    $bankingService = app(IBankingService::class);
-                    $request = new Request();
-                    $request->server->add(['REMOTE_ADDR' => $event->ip]);
-                    $bankingService->addBalanceForUser(
-                        $request,
-                        $event->user,
-                        config('larapress.ecommerce.lms.profle_gift.amount'),
-                        config('larapress.ecommerce.lms.profle_gift.currency'),
-                        WalletTransaction::TYPE_VIRTUAL_MONEY,
-                        WalletTransaction::FLAGS_REGISTRATION_GIFT,
-                        trans('larapress::ecommerce.banking.messages.wallet-descriptions.profile_gift_wallet_desc')
-                    );
+                    if (!is_null(config('larapress.ecommerce.lms.profle_gift.amount')) || !is_null(config('larapress.ecommerce.lms.profle_gift.currency')) &&
+                        config('larapress.ecommerce.lms.profle_gift.currency') && config('larapress.ecommerce.lms.profle_gift.amount')) {
+                        // add profile completion gift
+                        /** @var IBankingService */
+                        $bankingService = app(IBankingService::class);
+                        $request = new Request();
+                        $request->server->add(['REMOTE_ADDR' => $event->ip]);
+                        $bankingService->addBalanceForUser(
+                            $event->user,
+                            config('larapress.ecommerce.lms.profle_gift.amount'),
+                            config('larapress.ecommerce.lms.profle_gift.currency'),
+                            WalletTransaction::TYPE_VIRTUAL_MONEY,
+                            WalletTransaction::FLAGS_REGISTRATION_GIFT,
+                            trans('larapress::ecommerce.banking.messages.wallet-descriptions.profile_gift_wallet_desc')
+                        );
+                    }
                 }
 
                 // update internal fast cache!

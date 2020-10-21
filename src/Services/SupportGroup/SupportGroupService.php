@@ -273,16 +273,19 @@ class SupportGroupService implements ISupportGroupService {
         }
         // add global registration gift for user
         else {
-            /** @var IBankingService */
-            $bankService = app(IBankingService::class);
-            $bankService->addBalanceForUser(
-                $user,
-                config('larapress.ecommerce.lms.registeration_gift.amount'),
-                config('larapress.ecommerce.lms.registeration_gift.currency'),
-                WalletTransaction::TYPE_VIRTUAL_MONEY,
-                WalletTransaction::FLAGS_REGISTRATION_GIFT,
-                trans('larapress::ecommerce.banking.messages.wallet-descriptions.register_gift_wallet_desc')
-            );
+            if (!is_null(config('larapress.ecommerce.lms.registeration_gift.amount')) && !is_null(config('larapress.ecommerce.lms.registeration_gift.currency')) &&
+                config('larapress.ecommerce.lms.registeration_gift.amount') > 0 && config('larapress.ecommerce.lms.registeration_gift.currency') > 0) {
+                /** @var IBankingService */
+                $bankService = app(IBankingService::class);
+                $bankService->addBalanceForUser(
+                    $user,
+                    config('larapress.ecommerce.lms.registeration_gift.amount'),
+                    config('larapress.ecommerce.lms.registeration_gift.currency'),
+                    WalletTransaction::TYPE_VIRTUAL_MONEY,
+                    WalletTransaction::FLAGS_REGISTRATION_GIFT,
+                    trans('larapress::ecommerce.banking.messages.wallet-descriptions.register_gift_wallet_desc')
+                );
+            }
         }
     }
 

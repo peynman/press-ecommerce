@@ -232,7 +232,6 @@ class FileUploadService implements IFileUploadService
                     'access' => $access,
                     'size' => $fileSize,
                 ]);
-
             } else {
                 $fileUpload = $existing;
                 $fileUpload->update([
@@ -245,7 +244,6 @@ class FileUploadService implements IFileUploadService
                     'access' => $access,
                     'size' => $fileSize,
                 ]);
-
             }
 
             CRUDVerbEvent::dispatch(Auth::user(), $fileUpload, FileUploadCRUDProvider::class, Carbon::now(), 'upload');
