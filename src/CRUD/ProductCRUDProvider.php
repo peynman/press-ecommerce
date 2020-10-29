@@ -11,6 +11,7 @@ use Larapress\CRUD\Services\ICRUDProvider;
 use Larapress\CRUD\Services\IPermissionsMetadata;
 use Larapress\CRUD\Extend\Helpers;
 use Larapress\ECommerce\Models\Product;
+use Larapress\ECommerce\Services\Azmoon\IAzmoonService;
 use Larapress\Pages\Models\Page;
 use Larapress\Reports\Services\IReportsService;
 
@@ -108,8 +109,8 @@ class ProductCRUDProvider implements ICRUDProvider, IPermissionsMetadata
     /**
      * Undocumented function
      *
-     * @param [type] $args
-     * @return void
+     * @param array $args
+     * @return array
      */
     public function onBeforeCreate( $args )
     {
@@ -137,7 +138,7 @@ class ProductCRUDProvider implements ICRUDProvider, IPermissionsMetadata
     }
 
     /**
-     * @param Page $object
+     * @param Product $object
      *
      * @return bool
      */
@@ -153,7 +154,7 @@ class ProductCRUDProvider implements ICRUDProvider, IPermissionsMetadata
     }
 
     /**
-     * @param Domain $object
+     * @param Product $object
      * @param array  $input_data
      *
      * @return array|void
@@ -165,6 +166,12 @@ class ProductCRUDProvider implements ICRUDProvider, IPermissionsMetadata
             $this->syncBelongsToManyRelation('categories', $object, $input_data);
         }
 
+        if (isset($object->data['types']['azmoon']['file_id']) && !is_null($object->data['types']['azmoon']['file_id'])) {
+            /** @var IAzmoonService */
+            $service = app(IAzmoonService::class);
+            $service->buildAzmoonDetails($object);
+        }
+
         // remove ancestors cache
         if (!is_null($object->parent_id)) {
             Cache::tags(['product.ancestors:'.$object->id]);
@@ -172,7 +179,7 @@ class ProductCRUDProvider implements ICRUDProvider, IPermissionsMetadata
     }
 
     /**
-     * @param Domain $object
+     * @param Product $object
      * @param array $input_data
      *
      * @return array|void
@@ -182,6 +189,12 @@ class ProductCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         $this->syncBelongsToManyRelation('types', $object, $input_data);
         if (isset($input_data['categories'])) {
             $this->syncBelongsToManyRelation('categories', $object, $input_data);
+        }
+
+        if (isset($object->data['types']['azmoon']['file_id']) && !is_null($object->data['types']['azmoon']['file_id'])) {
+            /** @var IAzmoonService */
+            $service = app(IAzmoonService::class);
+            $service->buildAzmoonDetails($object);
         }
 
         // remove ancestors cache

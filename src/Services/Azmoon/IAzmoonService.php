@@ -8,6 +8,16 @@ use Larapress\ECommerce\Models\Product;
 use Larapress\Profiles\IProfileUser;
 
 interface IAzmoonService {
+
+
+    /**
+     * Undocumented function
+     *
+     * @param Product $product
+     * @return void
+     */
+    public function buildAzmoonDetails($product);
+
     /**
      * Undocumented function
      *

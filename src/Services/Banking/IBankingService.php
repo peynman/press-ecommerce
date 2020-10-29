@@ -123,7 +123,6 @@ interface IBankingService
      * Undocumented function
      *
      * @param IProfileUser $user
-     * @param Domain $domain
      * @param integer $currency
      * @return Cart
      */

@@ -1,9 +1,8 @@
 <?php
 
-use Larapress\ECommerce\Services\SupportGroup\ISupportGroupService;
-
-
 namespace Larapress\ECommerce\Services\SupportGroup;
+
+use Larapress\ECommerce\Services\SupportGroup\ISupportGroupService;
 
 use App\Models\User;
 use Carbon\Carbon;

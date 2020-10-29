@@ -20,6 +20,37 @@ class AzmoonService implements IAzmoonService
     /**
      * Undocumented function
      *
+     * @param Product $product
+     * @return void
+     */
+    public function buildAzmoonDetails($product) {
+        if (is_numeric($product)) {
+            $product = Product::find($product);
+        }
+
+        if (
+            is_null($product) ||
+            !isset($product->data['types']['azmoon']['file_id']) ||
+            is_null($product->data['types']['azmoon']['file_id'])
+        ) {
+            return;
+        }
+
+        $data = $product->data;
+        if (!isset($data['types']['azmoon']['details']) || is_null($data['types']['azmoon']['details']) || count($data['types']['azmoon']['details']) === 0) {
+            $file = FileUpload::find($product->data['types']['azmoon']['file_id']);
+            $details = $this->getAzmoonJSONFromFile($file);
+            $data['types']['azmoon']['details'] = $details;
+
+            $product->update([
+                'data' => $data
+            ]);
+        }
+    }
+
+    /**
+     * Undocumented function
+     *
      * @param Product|int $product
      * @return array
      */
@@ -49,28 +80,35 @@ class AzmoonService implements IAzmoonService
         $canSeeAnswerSheet = !isset($data['types']['azmoon']['answer_at']) || is_null($data['types']['azmoon']['answer_at']) ?
         true :
         $data['types']['azmoon']['answer_at'];
-        if ($canSeeAnswerSheet !== true) {
+        $user_history = $this->getAzmoonResultForUser($user->id, $productId);
+
+        if ($canSeeAnswerSheet !== true && !is_null($user_history)) {
             $now = Carbon::now();
             $release = Carbon::createFromFormat(config('larapress.crud.datetime-format'), $canSeeAnswerSheet);
             $canSeeAnswerSheet = $now > $release;
         }
-
-        if (
-            !isset($product->data['types']['azmoon']['details']) ||
-            !isset($product->data['types']['azmoon']['can_see_answers']) ||
-            !is_array($product->data['types']['azmoon']['details']) ||
-            count($product->data['types']['azmoon']['details']) === 0 ||
-            ($canSeeAnswerSheet && (!isset($data['types']['azmoon']['can_see_answers']) || !$data['types']['azmoon']['can_see_answers'])) ||
-            (!$canSeeAnswerSheet && (isset($data['types']['azmoon']['can_see_answers']) && $data['types']['azmoon']['can_see_answers']))
-        ) {
-            $data['types']['azmoon']['can_see_answers'] = $canSeeAnswerSheet;
-            $data['types']['azmoon']['details'] = $this->getAzmoonJSONFromFile($file, $canSeeAnswerSheet);
-            $product->update([
-                'data' => $data
-            ]);
+        if (!is_null($product->parent) && $canSeeAnswerSheet) {
+            /** @var Product */
+            $parent = $product->parent;
+            if (isset($parent->data['types']['session']['answer_at']) && !is_null($parent->data['types']['session']['answer_at'])) {
+                $now = Carbon::now();
+                $release = Carbon::parse($parent->data['types']['session']['answer_at']);
+                $canSeeAnswerSheet = $now > $release;
+            }
         }
+        if (is_null($user_history)) {
+            $canSeeAnswerSheet = false;
+        }
+        $product['user_history'] = $user_history;
 
-        $product['user_history'] = $this->getAzmoonResultForUser($user->id, $productId);
+        if (!$canSeeAnswerSheet) {
+            $details = [];
+            foreach ($product->data['types']['azmoon']['details'] as $q) {
+                $details[] = array_merge($q, ['answer' => null]);
+            }
+            $data['types']['azmoon']['details'] = $details;
+            $product->data = $data;
+        }
 
         return $product;
     }
@@ -216,7 +254,7 @@ class AzmoonService implements IAzmoonService
      * @param FileUpload $upload
      * @return array
      */
-    public function getAzmoonJSONFromFile(FileUpload $upload, $indludeAnswers = false)
+    public function getAzmoonJSONFromFile(FileUpload $upload)
     {
         if (!isset($upload->data['answer_sheet'])) {
             throw new AppException(AppException::ERR_OBJ_NOT_READY);
@@ -224,31 +262,37 @@ class AzmoonService implements IAzmoonService
         $dir = substr($upload->path, 0, strrpos($upload->path, '.', -1));
         $storage = Storage::disk($upload->storage);
         $content = $storage->get($dir . '/' . $upload->data['answer_sheet']);
-        $answers = explode(PHP_EOL, $content);
+        $lines = explode(PHP_EOL, $content);
         $indexer = 1;
         $details = [];
-        foreach ($answers as $answer) {
-            $entry = [
-                'question' => $indexer,
-            ];
-            if ($indludeAnswers) {
-                $entry['answer'] = $answer;
-            }
+        foreach ($lines as $line) {
+            $detailed = explode(",", $line);
+            if (count($detailed) >= 1) {
+                $entry = [
+                    'question' => $indexer,
+                ];
 
-            foreach ($upload->data['questions'] as $qname) {
-                if (\Illuminate\Support\Str::startsWith($qname, 'q' . $indexer . '.')) {
-                    $entry['q_file'] = $qname;
-                }
-            }
-            foreach ($upload->data['answers'] as $aname) {
-                if (\Illuminate\Support\Str::startsWith($aname, 'a' . $indexer . '.')) {
-                    $entry['a_file'] = $aname;
-                    $entry['has_answer'] = true;
-                }
-            }
+                $entry['answer'] = $detailed[0];
 
-            $details[] = $entry;
-            $indexer++;
+                if (count($detailed) >= 2) {
+                    $entry['difficulty'] = $detailed[1];
+                }
+
+                foreach ($upload->data['questions'] as $qname) {
+                    if (\Illuminate\Support\Str::startsWith($qname, 'q' . $indexer . '.')) {
+                        $entry['q_file'] = $qname;
+                    }
+                }
+                foreach ($upload->data['answers'] as $aname) {
+                    if (\Illuminate\Support\Str::startsWith($aname, 'a' . $indexer . '.')) {
+                        $entry['a_file'] = $aname;
+                        $entry['has_answer'] = true;
+                    }
+                }
+
+                $details[] = $entry;
+                $indexer++;
+            }
         }
 
         return $details;

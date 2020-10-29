@@ -28,7 +28,9 @@ class CartUpdateRequest extends FormRequest
         return [
             'currency' => 'required|numeric',
             'periods' => 'nullable',
-            'gateway' => 'required|exists:bank_gateways,id'
+            'gateway' => 'required|exists:bank_gateways,id',
+            'gift_code' => 'nullable|exists:gift_codes,id',
+            'use_balance' => 'nullable|in:1,0,true,false',
         ];
     }
 

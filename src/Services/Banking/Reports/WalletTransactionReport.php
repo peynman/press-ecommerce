@@ -3,10 +3,7 @@
 namespace Larapress\ECommerce\Services\Banking\Reports;
 
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Support\Facades\Log;
 use Larapress\CRUD\Services\IReportSource;
-use Larapress\ECommerce\Services\Banking\Events\BankGatewayTransactionEvent;
-use Larapress\ECommerce\Services\Banking\Events\CartPurchasedEvent;
 use Larapress\ECommerce\Services\Banking\Events\WalletTransactionEvent;
 use Larapress\Reports\Services\BaseReportSource;
 use Larapress\Reports\Services\IMetricsService;
@@ -72,7 +69,6 @@ class WalletTransactionReport implements IReportSource, ShouldQueue
         $this->reports->pushMeasurement('user_wallet', 1, $tags, [
             'amount' => floatval($event->transaction->amount),
         ], $event->timestamp);
-
 
         $this->metrics->pushMeasurement(
             $event->transaction->domain_id,
