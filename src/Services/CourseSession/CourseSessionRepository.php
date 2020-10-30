@@ -65,8 +65,8 @@ class CourseSessionRepository extends ProductRepository
         $weekEnd = Carbon::now()->endOfWeek(Carbon::FRIDAY);
         $today = Carbon::now();
         if ($today->diffInDays($weekEnd) === 0) {
-            $weekStart->addDays(7);
-            $weekEnd->addDays(7);
+            $weekStart->addDays(-7);
+//            $weekEnd->addDays(7);
         }
 
         $query = $this->getPurchasedProductsPaginatedQuery(

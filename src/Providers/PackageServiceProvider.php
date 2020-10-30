@@ -60,6 +60,7 @@ class PackageServiceProvider extends ServiceProvider
     public function boot()
     {
         $this->loadTranslationsFrom(__DIR__.'/../../resources/lang', 'larapress');
+        $this->loadRoutesFrom(__DIR__.'/../../routes/api.php');
         $this->loadMigrationsFrom(__DIR__.'/../../migrations');
 
         $this->publishes(
