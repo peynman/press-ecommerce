@@ -11,6 +11,7 @@ use Larapress\CRUD\Services\IPermissionsMetadata;
 use Larapress\ECommerce\Models\Product;
 use Larapress\ECommerce\Models\ProductCategory;
 use Larapress\Pages\Models\Page;
+use Larapress\Profiles\Services\FormEntry\IFormEntryService;
 
 class ProductCategoryCRUDProvider implements ICRUDProvider, IPermissionsMetadata
 {
@@ -77,6 +78,27 @@ class ProductCategoryCRUDProvider implements ICRUDProvider, IPermissionsMetadata
     public function onBeforeCreate( $args )
     {
         $args['author_id'] = Auth::user()->id;
+
+        /** @var IFormEntryService */
+        $service = app(IFormEntryService::class);
+        $data = $service->replaceBase64ImagesInInputs($args['data']);
+        $args['data'] = $data;
+
+        return $args;
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param [type] $args
+     * @return void
+     */
+    public function onBeforeUpdate( $args )
+    {
+        /** @var IFormEntryService */
+        $service = app(IFormEntryService::class);
+        $data = $service->replaceBase64ImagesInInputs($args['data']);
+        $args['data'] = $data;
 
         return $args;
     }

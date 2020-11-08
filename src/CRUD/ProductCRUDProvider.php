@@ -13,6 +13,7 @@ use Larapress\CRUD\Extend\Helpers;
 use Larapress\ECommerce\Models\Product;
 use Larapress\ECommerce\Services\Azmoon\IAzmoonService;
 use Larapress\Pages\Models\Page;
+use Larapress\Profiles\Services\FormEntry\IFormEntryService;
 use Larapress\Reports\Services\IReportsService;
 
 class ProductCRUDProvider implements ICRUDProvider, IPermissionsMetadata
@@ -116,9 +117,23 @@ class ProductCRUDProvider implements ICRUDProvider, IPermissionsMetadata
     {
         $args['author_id'] = Auth::user()->id;
 
+        /** @var IFormEntryService */
+        $service = app(IFormEntryService::class);
+        $data = $service->replaceBase64ImagesInInputs($args['data']);
+        $args['data'] = $data;
+
         return $args;
     }
 
+    public function onBeforeUpdate($args)
+    {
+        /** @var IFormEntryService */
+        $service = app(IFormEntryService::class);
+        $data = $service->replaceBase64ImagesInInputs($args['data']);
+        $args['data'] = $data;
+
+        return $args;
+    }
 
 
     /**
