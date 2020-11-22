@@ -26,13 +26,13 @@ class ProductCategoryCRUDProvider implements ICRUDProvider, IPermissionsMetadata
     ];
     public $model = ProductCategory::class;
     public $createValidations = [
-        'parent_id' => 'nullable|numeric|exists:products,id',
+        'parent_id' => 'nullable|numeric|exists:product_categories,id',
     	'name' => 'required|string|unique:products,name',
 	    'data.title' => 'required',
 	    'flags' => 'nullable|numeric',
     ];
     public $updateValidations = [
-        'parent_id' => 'nullable|numeric|exists:products,id',
+        'parent_id' => 'nullable|numeric|exists:product_categories,id',
     	'name' => 'required|string|unique:products,name',
 	    'data.title' => 'required',
 	    'flags' => 'nullable|numeric',
@@ -98,6 +98,7 @@ class ProductCategoryCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         /** @var IFormEntryService */
         $service = app(IFormEntryService::class);
         $data = $service->replaceBase64ImagesInInputs($args['data']);
+
         $args['data'] = $data;
 
         return $args;

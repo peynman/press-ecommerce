@@ -33,8 +33,10 @@ class ProductRepository implements IProductRepository
     public function getProdcutCateogires($user)
     {
         return ProductCategory::with([
-            'children',
-        ])->get();
+            'children' => function ($q) {
+                $q->orderBy('data->order', 'desc');
+            },
+        ])->orderBy('data->order', 'desc')->get();
     }
 
     /**
@@ -47,8 +49,10 @@ class ProductRepository implements IProductRepository
     public function getProdcutCategoryChildren($user, $category)
     {
         return ProductCategory::with([
-            'children',
-        ])->where('name', $category)->first();
+            'children' => function ($q) {
+                $q->orderBy('data->order', 'desc');
+            },
+        ])->where('name', $category)->orderBy('data->order', 'desc')->first();
     }
 
     /**
@@ -60,8 +64,10 @@ class ProductRepository implements IProductRepository
     public function getRootProductCategories($user)
     {
         return ProductCategory::with([
-            'children',
-        ])->whereNull('parent_id')->get();
+            'children' => function ($q) {
+                $q->orderBy('data->order', 'desc');
+            },
+        ])->whereNull('parent_id')->orderBy('data->order', 'desc')->get();
     }
 
     /**

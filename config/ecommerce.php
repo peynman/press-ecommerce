@@ -116,5 +116,6 @@ return [
         'course_file_upload_default_form_id' => 2,
         'support_group_default_form_id' => 4,
         'course_presense_default_form_id' => 3,
+        'support_profile_form_id' => 0,
     ]
 ];
