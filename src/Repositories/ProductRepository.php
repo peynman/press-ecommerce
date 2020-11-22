@@ -34,7 +34,7 @@ class ProductRepository implements IProductRepository
     {
         return ProductCategory::with([
             'children',
-        ])->get();
+        ])->orderBy('data->order')->get();
     }
 
     /**
