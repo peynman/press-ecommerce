@@ -18,6 +18,7 @@ use Larapress\ECommerce\Services\Banking\Events\CartPurchasedEvent;
 use Larapress\ECommerce\Services\Banking\IBankingService;
 use Larapress\ECommerce\Services\Banking\Reports\CartPurchasedReport;
 use Larapress\Profiles\IProfileUser;
+use Larapress\Reports\Models\MetricCounter;
 use Larapress\Reports\Services\IMetricsService;
 use Larapress\Reports\Services\IReportsService;
 
@@ -83,13 +84,15 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         'products'
     ];
     public $filterFields = [
-        'from' => 'after:created_at',
-        'to' => 'before:created_at',
+        'created_from' => 'after:created_at',
+        'created_to' => 'before:created_at',
         'domain' => 'has:domain:id',
         'status' => 'equals:status',
         'customer_id' => 'equals:customer_id',
         'product_ids' => 'has:products:id',
+        'products_count' => 'has-count:products:>=',
         'flags' => 'bitwise:flags',
+        'amount' => 'equals:amount',
     ];
 
 
@@ -116,10 +119,10 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
     {
         /** @var IProfileUser|ICRUDUser $user */
         $user = Auth::user();
-        if (! $user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
+        if (!$user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
             $query->orWhereIn('domain_id', $user->getAffiliateDomainIds());
-            $query->orWhereHas('customer.form_entries', function($q) use($user) {
-                $q->where('tags', 'support-group-'.$user->id);
+            $query->orWhereHas('customer.form_entries', function ($q) use ($user) {
+                $q->where('tags', 'support-group-' . $user->id);
             });
         }
 
@@ -135,7 +138,7 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
     {
         /** @var ICRUDUser|IProfileUser $user */
         $user = Auth::user();
-        if (! $user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
+        if (!$user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
             return in_array($object->domain_id, $user->getAffiliateDomainIds());
         }
 
@@ -154,13 +157,15 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         $periodic_ids = [];
         if (isset($args['data']['periodic_product_ids'])) {
             $periodic_ids = array_values($args['data']['periodic_product_ids']);
-            if (isset($args['data']['periodic_product_ids'][0]['id'])) {
-                $periodic_ids = array_map(function ($m) { return $m['id']; }, $args['data']['periodic_product_ids']);
+            if (isset($periodic_ids[0]['id'])) {
+                $periodic_ids = array_map(function ($m) {
+                    return $m['id'];
+                }, $periodic_ids);
             }
         }
         $data = [
             'periodic_product_ids' => $periodic_ids,
-            'description' => isset($args['description']) ? $args['description']: null,
+            'description' => isset($args['description']) ? $args['description'] : null,
         ];
         if (isset($args['data']['periodic_custom']) && count($args['data']['periodic_custom']) > 0) {
             $data['periodic_custom'] = $args['data']['periodic_custom'];
@@ -191,12 +196,14 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         if (isset($args['data']['periodic_product_ids'])) {
             $periodic_ids = array_values($args['data']['periodic_product_ids']);
             if (isset($args['data']['periodic_product_ids'][0]['id'])) {
-                $periodic_ids = array_map(function ($m) { return $m['id']; }, $args['data']['periodic_product_ids']);
+                $periodic_ids = array_map(function ($m) {
+                    return $m['id'];
+                }, $args['data']['periodic_product_ids']);
             }
         }
         $data = [
             'periodic_product_ids' => $periodic_ids,
-            'description' => isset($args['description']) ? $args['description']: null,
+            'description' => isset($args['description']) ? $args['description'] : null,
         ];
         if (isset($args['data']['periodic_custom']) && count($args['data']['periodic_custom']) > 0) {
             $data['periodic_custom'] = $args['data']['periodic_custom'];
@@ -225,7 +232,9 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
     {
         $product_ids = isset($input_data['products']) ? array_keys($input_data['products']) : [];
         if (isset($input_data['products'][0]['id'])) {
-            $product_ids = array_map(function($m) { return $m['id']; } ,$input_data['products']);
+            $product_ids = array_map(function ($m) {
+                return $m['id'];
+            }, $input_data['products']);
         }
         if (isset($input_data['extra_product_id'])) {
             $product_ids[] = $input_data['extra_product_id'];
@@ -247,11 +256,9 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
                 $object
             );
         } else {
-            // update internal fast cache! for balance
-            $object->customer->updateUserCache();
-            Cache::tags(['purchasing-cart:' . $object->customer->id])->flush();
-            Cache::tags(['purchased-cart:' . $object->customer->id])->flush();
-            Cache::tags(['user.wallet:' . $object->customer->id])->flush();
+            Cache::tags(['purchasing-cart:' . $object->customer_id])->flush();
+            Cache::tags(['purchased-cart:' . $object->customer_id])->flush();
+            Cache::tags(['user.wallet:' . $object->customer_id])->flush();
 
             if ($object->status == Cart::STATUS_ACCESS_GRANTED) {
                 CartPurchasedEvent::dispatch($object, time());
@@ -273,7 +280,9 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
     {
         $product_ids = isset($input_data['products']) ? array_keys($input_data['products']) : [];
         if (isset($input_data['products'][0]['id'])) {
-            $product_ids = array_map(function($m) { return $m['id']; } ,$input_data['products']);
+            $product_ids = array_map(function ($m) {
+                return $m['id'];
+            }, $input_data['products']);
         }
         if (isset($input_data['extra_product_id'])) {
             $product_ids[] = $input_data['extra_product_id'];
@@ -289,12 +298,24 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
             ]);
         }
 
+        //remove old wallet transaction for this if its a purchase
+        if (in_array($object->status, [Cart::STATUS_ACCESS_COMPLETE, Cart::STATUS_ACCESS_GRANTED])) {
+            WalletTransaction::where('user_id', $object->customer_id)
+                ->where('data->cart_id', $object->id . "")
+                ->where('amount', '<', 0)
+                ->delete();
+        }
+
+        // remove metrics about this cart
+        MetricCounter::query()
+            ->where('group', 'cart:'.$object->id)
+            ->delete();
+
         if ($object->status == Cart::STATUS_ACCESS_COMPLETE) {
             $object->flags |= Cart::FLAGS_USER_CART;
-            //remove wallet transaction for this purchase
-            WalletTransaction::where('user_id', $object->customer_id)->where('data->cart_id', $object->id."")->where('amount', '<', 0)->delete();
 
             // accept purchase again
+                // add metrics again
             /** @var IBankingService */
             $banking = app(IBankingService::class);
             $banking->markCartPurchased(
@@ -302,18 +323,14 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
                 $object
             );
         } else {
+            // accept purchase internally again
             if ($object->status == Cart::STATUS_ACCESS_GRANTED) {
-                WalletTransaction::where('user_id', $object->customer_id)->where('data->cart_id', $object->id."")->where('amount', '<', 0)->delete();
                 CartPurchasedEvent::dispatch($object, time());
             }
 
-            // update internal fast cache! for balance
-            $object->customer->updateUserCache();
-            Cache::tags(['purchasing-cart:' . $object->customer->id])->flush();
-            Cache::tags(['purchased-cart:' . $object->customer->id])->flush();
-            Cache::tags(['user.wallet:' . $object->customer->id])->flush();
-            $object->customer->updateUserCache('balance');
-
+            Cache::tags(['purchasing-cart:' . $object->customer_id])->flush();
+            Cache::tags(['purchased-cart:' . $object->customer_id])->flush();
+            Cache::tags(['user.wallet:' . $object->customer_id])->flush();
         }
 
         return $object;
@@ -328,20 +345,17 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
     public function onAfterDestroy($object)
     {
         // remove wallet transaction associated with this cart
-        $wallet = WalletTransaction::query()
+        WalletTransaction::query()
             ->where('user_id', $object->customer_id)
-            ->whereJsonContains('data->cart_id', $object->id)
-            ->where('amount', '<', 0)
-            ->first();
-        if (!is_null($wallet)) {
-            $wallet->delete();
-        }
+            ->whereJsonContains('data->cart_id', $object->id)->delete();
 
-        // update internal fast cache! for balance
-        $object->customer->updateUserCache('balance');
+        // remove metrics about this cart
+        MetricCounter::query()
+            ->where('group', 'cart:'.$object->id)
+            ->delete();
 
-        Cache::tags(['purchasing-cart:' . $object->customer->id])->flush();
-        Cache::tags(['purchased-cart:' . $object->customer->id])->flush();
-        Cache::tags(['user.wallet:' . $object->customer->id])->flush();
+        Cache::tags(['purchasing-cart:' . $object->customer_id])->flush();
+        Cache::tags(['purchased-cart:' . $object->customer_id])->flush();
+        Cache::tags(['user.wallet:' . $object->customer_id])->flush();
     }
 }

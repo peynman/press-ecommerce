@@ -14,8 +14,8 @@ class CartPurchasedEvent implements ShouldQueue
 
     /** @var int */
     public $timestamp;
-    /** @var Cart */
-    public $cart;
+    /** @var int */
+    public $cartId;
 
     /**
      * Create a new event instance.
@@ -25,9 +25,9 @@ class CartPurchasedEvent implements ShouldQueue
      * @param $ip
      * @param $timestamp
      */
-    public function __construct(Cart $cart, $timestamp)
+    public function __construct($cart, $timestamp)
     {
+        $this->cartId = is_numeric($cart) ? $cart : $cart->id;
         $this->timestamp = $timestamp;
-        $this->cart = $cart;
     }
 }

@@ -106,9 +106,12 @@ class AzmoonService implements IAzmoonService
             foreach ($product->data['types']['azmoon']['details'] as $q) {
                 $details[] = array_merge($q, ['answer' => null]);
             }
+            $data['types']['azmoon']['can_see_answers'] = false;
             $data['types']['azmoon']['details'] = $details;
-            $product->data = $data;
+        } else {
+            $data['types']['azmoon']['can_see_answers'] = true;
         }
+        $product->data = $data;
 
         return $product;
     }
@@ -182,7 +185,8 @@ class AzmoonService implements IAzmoonService
         if (
             is_null($product) ||
             !isset($product->data['types']['azmoon']['file_id']) ||
-            is_null($product->data['types']['azmoon']['file_id'])
+            is_null($product->data['types']['azmoon']['file_id']) ||
+            is_null($product->data['types']['azmoon']['details'])
         ) {
             throw new AppException(AppException::ERR_OBJ_NOT_READY);
         }
@@ -191,7 +195,7 @@ class AzmoonService implements IAzmoonService
         if (is_null($file)) {
             throw new AppException(AppException::ERR_OBJ_NOT_READY);
         }
-        $details = $this->getAzmoonJSONFromFile($file, true);
+        $details = $product->data['types']['azmoon']['details'];
 
         $correct = 0;
         $errors = 0;
@@ -210,6 +214,26 @@ class AzmoonService implements IAzmoonService
             }
         }
 
+        $data = $product->data;
+        $canSeeAnswerSheet = !isset($data['types']['azmoon']['answer_at']) || is_null($data['types']['azmoon']['answer_at']) ?
+        true :
+        $data['types']['azmoon']['answer_at'];
+
+        if ($canSeeAnswerSheet !== true) {
+            $now = Carbon::now();
+            $release = Carbon::createFromFormat(config('larapress.crud.datetime-format'), $canSeeAnswerSheet);
+            $canSeeAnswerSheet = $now > $release;
+        }
+        if (!is_null($product->parent) && $canSeeAnswerSheet) {
+            /** @var Product */
+            $parent = $product->parent;
+            if (isset($parent->data['types']['session']['answer_at']) && !is_null($parent->data['types']['session']['answer_at'])) {
+                $now = Carbon::now();
+                $release = Carbon::parse($parent->data['types']['session']['answer_at']);
+                $canSeeAnswerSheet = $now > $release;
+            }
+        }
+
         $request->merge([
             'user_id' => $user->id,
             'product_id' => $productId,
@@ -219,15 +243,23 @@ class AzmoonService implements IAzmoonService
             'total' => $total,
             'percent' => ($correct * 3 - $errors) / ($total * 3),
             'percent_no_error' => $correct / $total,
+
         ]);
         /** @var IFormEntryService */
         $service = app(IFormEntryService::class);
-        return $service->updateUserFormEntryTag(
+        $entry = $service->updateUserFormEntryTag(
             $request,
             $user,
             config('larapress.ecommerce.lms.azmoon_result_form_id'),
             'azmoon-' . $productId
         );
+
+        $entry['can_see_answers'] = $canSeeAnswerSheet;
+        if ($canSeeAnswerSheet) {
+            $entry['answer_sheet'] = $product;
+        }
+
+        return $entry;
     }
 
     /**

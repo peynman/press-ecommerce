@@ -13,6 +13,7 @@ use Larapress\ECommerce\Models\Cart;
 use Larapress\ECommerce\Models\FileUpload;
 use Larapress\Profiles\IProfileUser;
 use Larapress\Profiles\Models\Domain;
+use Larapress\Profiles\Models\FormEntry;
 
 class FileUploadCRUDProvider implements ICRUDProvider, IPermissionsMetadata
 {
@@ -37,6 +38,8 @@ class FileUploadCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         'uploader',
     ];
     public $filterFields = [
+        'created_from' => 'after:created_at',
+        'created_to' => 'before:created_at',
         'uploader_id' => 'equals:uploader_id',
         'mime' => 'in:mime',
     ];
@@ -67,7 +70,13 @@ class FileUploadCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         /** @var ICRUDUser|IProfileUser $user */
         $user = Auth::user();
         if (! $user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
-            return $object->uploader_id === $user->id;
+
+            return $object->uploader_id === $user->id ||
+                FormEntry::query()
+                    ->where('user_id', $object->uploader_id)
+                    ->where('form_id', config('larapress.ecommerce.lms.support_group_default_form_id'))
+                    ->where('tags', 'support-group-'.$user->id)
+                    ->count() > 0;
         }
 
         return true;

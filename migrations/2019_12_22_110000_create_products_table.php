@@ -18,6 +18,7 @@ class CreateProductsTable extends Migration
 	        $table->bigInteger('author_id', false, true);
 	        $table->bigInteger('parent_id', false, true)->nullable();
             $table->string('name');
+            $table->string('group')->nullable();
             $table->json('data')->nullable();
             $table->integer('priority')->default(0);
             $table->integer('flags', false, true)->default(0);
@@ -26,7 +27,7 @@ class CreateProductsTable extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->index(['publish_at', 'expires_at', 'priority']);
+            $table->index(['deleted_at', 'publish_at', 'expires_at', 'parent_id', 'group']);
 
 	        $table->foreign('author_id')->references('id')->on('users');
 	        $table->foreign('parent_id')->references('id')->on('products');

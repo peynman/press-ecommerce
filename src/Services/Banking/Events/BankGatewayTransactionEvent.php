@@ -12,13 +12,13 @@ class BankGatewayTransactionEvent implements ShouldQueue
     use Dispatchable, SerializesModels;
 
     /** @var \Larapress\Profiles\Models\Domain */
-    public $domain;
+    public $domainId;
     /** @var string */
     public $ip;
     /** @var int */
     public $timestamp;
     /** @var BankGatewayTransaction */
-    public $transaction;
+    public $transactionId;
 
     /**
      * Create a new event instance.
@@ -30,9 +30,13 @@ class BankGatewayTransactionEvent implements ShouldQueue
      */
     public function __construct($domain, $ip, $timestamp, BankGatewayTransaction $transaction)
     {
-        $this->domain = $domain;
+        $this->transactionId = $transaction->id;
+        $this->domainId = is_numeric($domain) ? $domain : $domain->id;
         $this->ip = $ip;
         $this->timestamp = $timestamp;
-        $this->transaction = $transaction;
+    }
+
+    public function getGatewayTransaction() {
+        return BankGatewayTransaction::find($this->transactionId);
     }
 }

@@ -9,6 +9,9 @@ use Illuminate\Support\Facades\Log;
 use Larapress\CRUD\Services\BaseCRUDService;
 use Larapress\CRUD\Services\ICRUDService;
 use Larapress\CRUD\Exceptions\AppException;
+use Larapress\CRUD\Services\BaseCRUDProvider;
+use Larapress\CRUD\Services\ICRUDProvider;
+use Larapress\CRUD\Services\IPermissionsMetadata;
 use Larapress\ECommerce\CRUD\ProductCRUDProvider;
 use Larapress\ECommerce\Models\Cart;
 use Larapress\ECommerce\Models\Product;
@@ -19,6 +22,7 @@ use Larapress\ECommerce\Services\Banking\IBankingService;
 use Larapress\Profiles\Models\Form;
 use Larapress\Profiles\Models\FormEntry;
 use Larapress\Profiles\Repository\Domain\IDomainRepository;
+use Larapress\ECommerce\IECommerceUser;
 
 class ProductRepository implements IProductRepository
 {
@@ -198,12 +202,13 @@ class ProductRepository implements IProductRepository
     /**
      * Undocumented function
      *
-     * @param [type] $user
+     * @param IECommerceUser $user
      * @param [type] $product_id
      * @return void
      */
     public function getProductDetails($user, $product_id)
     {
+        /** @var Product */
         $product = Product::with([
             'children' => function ($q) {
                 $q->orderBy('priority', 'desc');
@@ -234,11 +239,12 @@ class ProductRepository implements IProductRepository
         $product['available'] = in_array($product->id, $purchases) || $product->isFree();
         $product['locked'] = in_array($product->id, $locked) && !$product->isFree();
         $children = $product['children'];
+
         foreach ($children as &$child) {
             $child['available'] = $product['available'] || in_array($child->id, $purchases) || $child->isFree();
             $child['locked'] = $product['locked'] && !$child->isFree();
 
-            if (isset($child->data['types']['session']['sendForm']) && isset($child->data['types']['session']['sendForm'])) {
+            if (isset($child->data['types']['session']['sendForm'])) {
                 $child['sent_forms'] = FormEntry::query()
                                             ->where('user_id', $user->id)
                                             ->where('form_id', config('larapress.ecommerce.lms.course_file_upload_default_form_id'))
@@ -261,7 +267,16 @@ class ProductRepository implements IProductRepository
                 }
             }
         }
-        Log::debug(json_encode($product));
+
+        if (!is_null($user)) {
+            if ($user->hasPermission(config('larapress.ecommerce.routes.products.name').'.'.IPermissionsMetadata::REPORTS)) {
+                $product->sales_fixed;
+                $product->sales_periodic;
+                $product->sales_periodic_payment;
+                $product->sales_real_amount;
+                $product->sales_virtual_amount;
+            }
+        }
 
         return $product;
     }

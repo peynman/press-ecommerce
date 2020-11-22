@@ -10,8 +10,10 @@ use Larapress\CRUD\Services\ICRUDProvider;
 use Larapress\CRUD\Services\IPermissionsMetadata;
 use Larapress\CRUD\ICRUDUser;
 use Larapress\ECommerce\Models\BankGatewayTransaction;
+use Larapress\ECommerce\Services\Banking\Reports\BankGatewayTransactionReport;
 use Larapress\Profiles\IProfileUser;
 use Larapress\Profiles\Models\Domain;
+use Larapress\Reports\Services\IReportsService;
 
 class BankGatewayTransactionCRUDProvider implements ICRUDProvider, IPermissionsMetadata
 {
@@ -72,6 +74,8 @@ class BankGatewayTransactionCRUDProvider implements ICRUDProvider, IPermissionsM
         'cart',
     ];
     public $filterFields = [
+        'created_from' => 'after:created_at',
+        'created_to' => 'before:created_at',
         'customer_id' => 'equals:customer_id',
         'domain' => 'in:domain_id',
         'status' => 'equals:status',
@@ -87,6 +91,18 @@ class BankGatewayTransactionCRUDProvider implements ICRUDProvider, IPermissionsM
     public function getUpdateRules(Request $request) {
         $this->updateValidations['name'] .= ',' . $request->route('id');
         return $this->updateValidations;
+    }
+
+    /**
+     *
+     */
+    public function getReportSources()
+    {
+        /** @var IReportsService */
+        $service = app(IReportsService::class);
+        return [
+            new BankGatewayTransactionReport($service)
+        ];
     }
 
     /**

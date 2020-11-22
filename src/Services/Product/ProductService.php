@@ -101,21 +101,26 @@ class ProductService implements IProductService
                 /** @var IMetricsService */
                 $service = app(IMetricsService::class);
 
-                /** @var ICRUDUser|IProfileUser */
+                /** @var IProfileUser */
                 $user = Auth::user();
                 $domains = [];
                 if (!$user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
                     $domains = $user->getAffiliateDomainIds();
                 }
 
-                $amount = $service->sumMeasurement('product.' . $product_id . '.sales_amount', $domains);
+                $virtual = $service->sumMeasurement('product.' . $product_id . '.sales.1.amount', $domains);
+                $real = $service->sumMeasurement('product.' . $product_id . '.sales.2.amount', $domains);
+
                 $periodic = $service->sumMeasurement('product.' . $product_id . '.sales_periodic', $domains);
                 $fixed = $service->sumMeasurement('product.' . $product_id . '.sales_fixed', $domains);
+                $periodic_payment = $service->sumMeasurement('product.' . $product_id . '.periodic_payment', $domains);
 
                 return [
-                    'amount' => $amount,
+                    'real' => $real,
+                    'virtual' => $virtual,
                     'periodic' => $periodic,
                     'fixed' => $fixed,
+                    'periodic_payment' => $periodic_payment
                 ];
             },
             ['product.sales:' . $product_id],

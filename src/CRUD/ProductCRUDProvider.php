@@ -5,14 +5,11 @@ namespace Larapress\ECommerce\CRUD;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Str;
 use Larapress\CRUD\Services\BaseCRUDProvider;
 use Larapress\CRUD\Services\ICRUDProvider;
 use Larapress\CRUD\Services\IPermissionsMetadata;
-use Larapress\CRUD\Extend\Helpers;
 use Larapress\ECommerce\Models\Product;
 use Larapress\ECommerce\Services\Azmoon\IAzmoonService;
-use Larapress\Pages\Models\Page;
 use Larapress\Reports\Services\IReportsService;
 
 class ProductCRUDProvider implements ICRUDProvider, IPermissionsMetadata
@@ -30,7 +27,8 @@ class ProductCRUDProvider implements ICRUDProvider, IPermissionsMetadata
     public $model = Product::class;
     public $createValidations = [
         'parent_id' => 'nullable|numeric|exists:products,id',
-    	'name' => 'required|string|unique:products,name',
+        'name' => 'required|string|unique:products,name',
+        'group' => 'nullable|string',
 	    'data.title' => 'required',
         'priority' => 'nullable|numeric',
 	    'flags' => 'nullable|numeric',
@@ -44,6 +42,7 @@ class ProductCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         'parent_id' => 'nullable|numeric|exists:products,id',
         'name' => 'required|string|unique:products,name',
         'priority' => 'nullable|numeric',
+        'group' => 'nullable|string',
 	    'data.title' => 'required',
 	    'flags' => 'nullable|numeric',
 	    'publish_at' => 'nullable|datetime_zoned',
@@ -69,11 +68,21 @@ class ProductCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         'types',
         'categories',
         'parent',
-        'children'
+        'children',
+        'sales_real_amount',
+        'sales_virtual_amount',
+        'sales_fixed',
+        'sales_periodic',
+        'sales_periodic_payment',
     ];
     public $defaultShowRelations = [
         'types',
-        'categories'
+        'categories',
+        'sales_real_amount',
+        'sales_virtual_amount',
+        'sales_fixed',
+        'sales_periodic',
+        'sales_periodic_payment',
     ];
     public $filterFields = [
         'types' => 'has:types',

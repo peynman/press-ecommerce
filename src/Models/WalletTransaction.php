@@ -7,6 +7,7 @@ namespace Larapress\ECommerce\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Larapress\Profiles\Models\Domain;
+use Larapress\ECommerce\IECommerceUser;
 
 /**
  * @property int                    $id
@@ -17,7 +18,7 @@ use Larapress\Profiles\Models\Domain;
  * @property int                    $flags
  * @property int                    $currency
  * @property float                  $amount
- * @property IProfileUser           $user
+ * @property IECommerceUser           $user
  * @property Domain                 $domain
  * @property \Carbon\Carbon      $expires_at
  * @property \Carbon\Carbon      $updated_at

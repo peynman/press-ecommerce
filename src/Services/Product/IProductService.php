@@ -24,15 +24,6 @@ interface IProductService {
      */
     public function duplicateProductForRequest(Request $request, $product_id);
 
-
-    /**
-     * Undocumented function
-     *
-     * @param int $product_id
-     * @return array
-     */
-    public function getProductSales($product_id);
-
     /**
      * Undocumented function
      *

@@ -2,6 +2,8 @@
 
 namespace Larapress\ECommerce\Services\CourseSession;
 
+use Illuminate\Http\Request;
+
 interface ICourseSessionFormService
 {
     /**
@@ -35,4 +37,12 @@ interface ICourseSessionFormService
      * @return void
      */
     public function addCourseSessionPresenceMarkForSession($request, $user, $sessionId, $duration, $at);
+
+    /**
+     * Undocumented function
+     *
+     * @param int $sessionId
+     * @return array
+     */
+    public function getCourseSessionPresenceReport(Request $request, $sessionId);
 }

@@ -14,8 +14,8 @@ class WalletTransactionEvent implements ShouldQueue
 
     /** @var int */
     public $timestamp;
-    /** @var WalletTransaction */
-    public $transaction;
+    /** @var int */
+    public $transactionId;
 
     /**
      * Create a new event instance.
@@ -27,7 +27,7 @@ class WalletTransactionEvent implements ShouldQueue
      */
     public function __construct(WalletTransaction $transaction, $timestamp)
     {
+        $this->transactionId = is_numeric($transaction) ? $transaction : $transaction->id;
         $this->timestamp = $timestamp;
-        $this->transaction = $transaction;
     }
 }

@@ -2,6 +2,7 @@
 
 namespace Larapress\ECommerce\Services\CourseSession;
 
+use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Route;
@@ -15,8 +16,10 @@ class CourseSessionFormController extends Controller
     {
         Route::post('course-session/{session_id}/upload-form', '\\' . self::class . '@receiveCourseForm')
             ->name('course-sessions.any.upload-form');
-            Route::post('course-session/{session_id}/presence-form', '\\' . self::class . '@markCoursePresence')
+        Route::post('course-session/{session_id}/presence-form', '\\' . self::class . '@markCoursePresence')
             ->name('course-sessions.any.presence-form');
+        Route::post('course-session/{session_id}/presence-report', '\\' . self::class . '@getCoursePresenceReport')
+            ->name(config('larapress.ecommerce.routes.products.name').'.reports.presence');
     }
 
     /**
@@ -26,7 +29,7 @@ class CourseSessionFormController extends Controller
      * @param IFileUploadService $service
      * @param CourseSessionFormRequest $request
      * @param int $session_id
-     * @return Response
+    * @return Response
      */
     public function receiveCourseForm(ICourseSessionFormService $courseService, IFileUploadService $service, CourseSessionFormRequest $request, $session_id)
     {
@@ -46,5 +49,18 @@ class CourseSessionFormController extends Controller
      */
     public function markCoursePresence(ICourseSessionFormService $courseService, CourseSessionPresenceRequest $request, $session_id) {
         return $courseService->markCourseSessionPresence($request, $session_id);
+    }
+
+
+    /**
+     * Undocumented function
+     *
+     * @param ICourseSessionFormService $courseService
+     * @param CourseSessionPresenceRequest $request
+     * @param int $session_id
+     * @return Response
+     */
+    public function getCoursePresenceReport(ICourseSessionFormService $courseService, Request $request, $session_id) {
+        return $courseService->getCourseSessionPresenceReport($request, $session_id);
     }
 }

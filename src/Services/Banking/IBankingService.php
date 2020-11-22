@@ -6,9 +6,9 @@ namespace Larapress\ECommerce\Services\Banking;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Larapress\ECommerce\IECommerceUser;
 use Larapress\ECommerce\Models\Cart;
 use Larapress\ECommerce\Models\BankGatewayTransaction;
-use Larapress\Profiles\IProfileUser;
 use Larapress\Profiles\Models\Domain;
 
 interface IBankingService
@@ -53,7 +53,7 @@ interface IBankingService
      * @param int $cart_id
      * @return Response
      */
-    public function updatePurchasingCart(Request $request, IProfileUser $user, int $currency, $cart_id = null);
+    public function updatePurchasingCart(Request $request, IECommerceUser $user, int $currency, $cart_id = null);
 
     /**
      * Undocumented function
@@ -62,12 +62,12 @@ interface IBankingService
      * @param Cart $cart
      * @return Cart
      */
-    public function markCartPurchased(Request $request, Cart $cart);
+    public function markCartPurchased($request, Cart $cart);
 
     /**
      * Undocumented function
      *
-     * @param IProfileUser $user
+     * @param IECommerceUser $user
      * @param float $amount
      * @param integer $currency
      * @param integer $type
@@ -75,19 +75,19 @@ interface IBankingService
      * @param string $desc
      * @return [Cart, WalletTransaction]
      */
-    public function addBalanceForUser(IProfileUser $user, float $amount, int $currency, int $type, int $flags, string $desc);
+    public function addBalanceForUser(IECommerceUser $user, float $amount, int $currency, int $type, int $flags, string $desc);
 
     /**
      * Undocumented function
      *
      * @param Request $request
-     * @param IProfileUser $user
+     * @param IECommerceUser $user
      * @param Domain $domain
      * @param array $ids
      * @param int $currency
      * @return Cart
      */
-    public function createCartWithProductIDs(Request $request, IProfileUser $user, array $ids, $currency);
+    public function createCartWithProductIDs(Request $request, IECommerceUser $user, array $ids, $currency);
 
     /**
      * Undocumented function
@@ -97,7 +97,7 @@ interface IBankingService
      * @param string $code
      * @return void
      */
-    public function checkGiftCodeForPurchasingCart(Request $request, IProfileUser $user, int $currency, string $code);
+    public function checkGiftCodeForPurchasingCart(Request $request, IECommerceUser $user, int $currency, string $code);
 
     /**
      * Undocumented function
@@ -106,7 +106,7 @@ interface IBankingService
      * @param ICartItem $cartItem
      * @return Cart
      */
-    public function addItemToPurchasingCart(Request $request, IProfileUser $user, ICartItem  $cartItem);
+    public function addItemToPurchasingCart(Request $request, IECommerceUser $user, ICartItem  $cartItem);
 
 
     /**
@@ -116,17 +116,17 @@ interface IBankingService
      * @param ICartItem $cartItem
      * @return Cart
      */
-    public function removeItemFromPurchasingCart(Request $request, IProfileUser $user, ICartItem  $cartItem);
+    public function removeItemFromPurchasingCart(Request $request, IECommerceUser $user, ICartItem  $cartItem);
 
 
     /**
      * Undocumented function
      *
-     * @param IProfileUser $user
+     * @param IECommerceUser $user
      * @param integer $currency
      * @return Cart
      */
-    public function getPurchasingCart(IProfileUser $user, int $currency);
+    public function getPurchasingCart(IECommerceUser $user, int $currency);
 
     /**
      * Undocumented function
@@ -135,13 +135,13 @@ interface IBankingService
      * @param int|Product $product
      * @return Cart
      */
-    public function getInstallmentsForProductInCart(IProfileUser $user, $originalCart, $product);
+    public function getInstallmentsForProductInCart(IECommerceUser $user, $originalCart, $product);
 
 
     /**
      *
      */
-    public function getInstallmentsForCartPeriodicCustom(IProfileUser $user, $originalCart);
+    public function getInstallmentsForCartPeriodicCustom(IECommerceUser $user, $originalCart);
 
     /**
      * Undocumented function
@@ -154,79 +154,88 @@ interface IBankingService
      * Undocumented function
      *
      * @param Request $request
-     * @param IProfileUser $user
+     * @param IECommerceUser $user
      * @param Domain $domain
      * @param integer $currency
      * @return ICartItem[]
      */
-    public function getPurchasingCartItems(IProfileUser $user, int $currency);
+    public function getPurchasingCartItems(IECommerceUser $user, int $currency);
 
     /**
      * Undocumented function
      *
-     * @param IProfileUser $user
+     * @param IECommerceUser $user
      * @return array
      */
-    public function getPeriodicInstallmentsLockedProducts(IProfileUser $user);
+    public function getPeriodicInstallmentsLockedProducts(IECommerceUser $user);
 
     /**
      * Undocumented function
      *
-     * @param IProfileUser $user
+     * @param IECommerceUser $user
      * @param Domain $domain
      * @param integer $currency
      * @return float
      */
-    public function getUserBalance(IProfileUser $user, int $currency);
+    public function getUserBalance(IECommerceUser $user, int $currency);
 
 
     /**
      * Undocumented function
      *
-     * @param IProfileUser $user
+     * @param IECommerceUser $user
      * @param integer $currency
      * @return float
      */
-    public function getUserVirtualBalance(IProfileUser $user, int $currency);
+    public function getUserVirtualBalance(IECommerceUser $user, int $currency);
 
     /**
      * Undocumented function
      *
-     * @param IProfileUser $user
+     * @param IECommerceUser $user
      * @param Domain $domain
      * @param integer $currency
      * @return float
      */
-    public function getUserTotalAquiredGiftBalance(IProfileUser $user, int $currency);
+    public function getUserTotalAquiredGiftBalance(IECommerceUser $user, int $currency);
 
     /**
      * Undocumented function
      *
-     * @param IProfileUser $user
+     * @param IECommerceUser $user
      * @param Domain $domain
      * @return array
      */
-    public function getPurchasedItemIds(IProfileUser $user);
+    public function getPurchasedItemIds(IECommerceUser $user);
 
 
     /**
      * Undocumented function
      *
-     * @param IProfileUser $user
+     * @param IECommerceUser $user
      * @param Domain $domain
      * @return array
      */
-    public function getPurchasedCarts(IProfileUser $user);
+    public function getPurchasedCarts(IECommerceUser $user);
 
 
 
     /**
      * Undocumented function
      *
-     * @param IProfileUser $user
+     * @param IECommerceUser $user
      * @param Domain $domain
      * @param integer|Product $productId
      * @return boolean
      */
-    public function isProductOnPurchasedList(IProfileUser $user, $product);
+    public function isProductOnPurchasedList(IECommerceUser $user, $product);
+
+    /**
+     * Undocumented function
+     *
+     * @param Request $request
+     * @param int $giftCodeId
+     * @return mixed
+     */
+    public function duplicateGiftCodeForRequest(Request $request, $giftCodeId);
 }

@@ -17,6 +17,6 @@ class SupportGroupSignupListener implements ShouldQueue {
         $supportService = app(ISupportGroupService::class);
         // add user to support/introducer group, if we have introducer
         // add user gift balance too
-        $supportService->updateUserRegistrationGiftWithIntroducer($event->user, $event->introducer, true, true);
+        $supportService->updateUserRegistrationGiftWithIntroducer($event->getUser(), $event->getIntroducer(), true, true);
     }
 }

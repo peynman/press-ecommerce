@@ -16,6 +16,8 @@ use Larapress\CRUD\Exceptions\AppException;
 use Larapress\CRUD\Extend\Helpers;
 use Larapress\ECommerce\CRUD\BankGatewayTransactionCRUDProvider;
 use Larapress\ECommerce\CRUD\CartCRUDProvider;
+use Larapress\ECommerce\CRUD\GiftCodeCRUDProvider;
+use Larapress\ECommerce\IECommerceUser;
 use Larapress\ECommerce\Models\BankGateway;
 use Larapress\ECommerce\Models\BankGatewayTransaction;
 use Larapress\ECommerce\Models\Cart;
@@ -42,7 +44,7 @@ class BankingService implements IBankingService
      */
     public function redirectToBankForAmount(Request $request, $gateway_id, $amount, $currency, $onFailed, $onAlreadyPurchased)
     {
-        /** @var IProfileUser */
+        /** @var IECommerceUser */
         $user = Auth::user();
         /** @var Cart */
         $cart = Cart::updateOrCreate([
@@ -64,12 +66,12 @@ class BankingService implements IBankingService
      * Undocumented function
      *
      * @param Request $request
-     * @param IProfileUser $user
+     * @param IECommerceUser $user
      * @param array $ids
      * @param int $currency
      * @return Cart
      */
-    public function createCartWithProductIDs(Request $request, IProfileUser $user, array $ids, $currency)
+    public function createCartWithProductIDs(Request $request, IECommerceUser $user, array $ids, $currency)
     {
         $cart = Cart::create([
             'customer_id' => $user->id,
@@ -115,7 +117,7 @@ class BankingService implements IBankingService
             $cart = Cart::with(['products'])->find($cart);
         }
 
-        /** @var IProfileUser */
+        /** @var IECommerceUser */
         $user = Auth::user();
         if ($user->id !== $cart->customer_id) {
             throw new AppException(AppException::ERR_OBJ_ACCESS_DENIED);
@@ -228,7 +230,7 @@ class BankingService implements IBankingService
             $port = new $avPorts[$gatewayData->type]($gatewayData);
             $transaction = $port->verify($request, $transaction);
             if ($transaction->status === BankGatewayTransaction::STATUS_SUCCESS) {
-                $supportProfileId = isset($cart->customer->supportProfile['id']) ? $cart->customer->supportProfile['id']: null;
+                $supportProfileId = isset($cart->customer->supportProfile['id']) ? $cart->customer->supportProfile['id'] : null;
                 $wallet = WalletTransaction::create([
                     'user_id' => $cart->customer_id,
                     'domain_id' => $cart->domain_id,
@@ -297,7 +299,7 @@ class BankingService implements IBankingService
      * @param int $cart_id
      * @return Response
      */
-    public function updatePurchasingCart(Request $request, IProfileUser $user, int $currency, $cart_id = null)
+    public function updatePurchasingCart(Request $request, IECommerceUser $user, int $currency, $cart_id = null)
     {
         $cart = is_null($cart_id) ? $this->getPurchasingCart($user, $currency) : Cart::find($cart_id);
         if (is_null($cart) || $cart->customer_id !== $user->id) {
@@ -322,7 +324,7 @@ class BankingService implements IBankingService
      * @param ICartItem $cartItem
      * @return Cart
      */
-    public function addItemToPurchasingCart(Request $request, IProfileUser $user, ICartItem $cartItem)
+    public function addItemToPurchasingCart(Request $request, IECommerceUser $user, ICartItem $cartItem)
     {
         /** @var Cart */
         $cart = $this->getPurchasingCart($user, $cartItem->currency());
@@ -383,7 +385,7 @@ class BankingService implements IBankingService
      * @param ICartItem $cartItem
      * @return Cart
      */
-    public function removeItemFromPurchasingCart(Request $request, IProfileUser $user, ICartItem $cartItem)
+    public function removeItemFromPurchasingCart(Request $request, IECommerceUser $user, ICartItem $cartItem)
     {
         /** @var Cart */
         $cart = $this->getPurchasingCart($user, $cartItem->currency());
@@ -412,11 +414,11 @@ class BankingService implements IBankingService
      * Undocumented function
      *
      * @param Request $request
-     * @param IProfileUser $user
+     * @param IECommerceUser $user
      * @param integer $currency
      * @return Cart
      */
-    public function getPurchasingCart(IProfileUser $user, int $currency)
+    public function getPurchasingCart(IECommerceUser $user, int $currency)
     {
         return Helpers::getCachedValue(
             'larapress.ecommerce.user.' . $user->id . '.purchase-cart',
@@ -455,11 +457,11 @@ class BankingService implements IBankingService
      * Undocumented function
      *
      * @param Request $request
-     * @param IProfileUser $user
+     * @param IECommerceUser $user
      * @param integer $currency
      * @return ICartItem[]
      */
-    public function getPurchasingCartItems(IProfileUser $user, int $currency)
+    public function getPurchasingCartItems(IECommerceUser $user, int $currency)
     {
         return Helpers::getCachedValue(
             'larapress.ecommerce.user.' . $user->id . '.purchase-cart-items',
@@ -481,10 +483,10 @@ class BankingService implements IBankingService
     /**
      * Undocumented function
      *
-     * @param IProfileUser $user
+     * @param IECommerceUser $user
      * @return array
      */
-    public function getPurchasedCarts(IProfileUser $user)
+    public function getPurchasedCarts(IECommerceUser $user)
     {
         return Helpers::getCachedValue(
             'larapress.ecommerce.user.' . $user->id . '.purchased-cart',
@@ -504,20 +506,30 @@ class BankingService implements IBankingService
     /**
      * Undocumented function
      *
-     * @param IProfileUser $user
+     * @param IECommerceUser $user
      * @return array
      */
-    public function getPurchasedItemIds(IProfileUser $user)
+    public function getPurchasedItemIds(IECommerceUser $user)
     {
         return Helpers::getCachedValue(
             'larapress.ecommerce.user.' . $user->id . '.purchased-cart-items',
             function () use ($user) {
                 $carts = $this->getPurchasedCarts($user);
                 $ids = [];
+                $groups = [];
                 foreach ($carts as $cart) {
                     foreach ($cart->products as $item) {
                         $ids[] = $item['id'];
+                        if (!is_null($item['group']) && !empty($item['group'])) {
+                            $groups[] = $item['group'];
+                        }
                     }
+                }
+
+                if (count($groups) > 0) {
+                    // include product ids with same group
+                    $groupedIds = Product::select('id')->whereIn('group', $groups)->get()->pluck('id')->toArray();
+                    $ids = array_merge($ids, $groupedIds);
                 }
                 return $ids;
             },
@@ -529,15 +541,17 @@ class BankingService implements IBankingService
     /**
      * Undocumented function
      *
-     * @param IProfileUser $user
+     * @param IECommerceUser $user
      * @return array
      */
-    public function getPeriodicInstallmentsLockedProducts(IProfileUser $user) {
+    public function getPeriodicInstallmentsLockedProducts(IECommerceUser $user)
+    {
         return Helpers::getCachedValue(
             'larapress.ecommerce.user.' . $user->id . '.periodic-products',
             function () use ($user) {
                 $carts = $this->getPurchasedCarts($user);
                 $ids = [];
+                $groups = [];
                 $now = Carbon::now();
                 foreach ($carts as $cart) {
                     if (BaseFlags::isActive($cart->flags, Cart::FLAGS_HAS_PERIODS) && !BaseFlags::isActive($cart->flags, Cart::FLAGS_PERIODIC_COMPLETED)) {
@@ -556,6 +570,9 @@ class BankingService implements IBankingService
                                 if ($now > $payment_at) {
                                     foreach ($cart->products as $product) {
                                         $ids[] = $product->id;
+                                        if (!is_null($product->group) && !empty($product->group)) {
+                                            $groups[] = $product->group;
+                                        }
                                     }
                                 }
                             }
@@ -564,7 +581,7 @@ class BankingService implements IBankingService
                             foreach ($cart->products as $product) {
                                 if (in_array($product->id, $periodicProducts)) {
                                     $period_start = Carbon::parse($cart->data['period_start']);
-                                    $alreadyPaidPeriods = isset($cart->data['periodic_payments']) ? $cart->data['periodic_payments']: [];
+                                    $alreadyPaidPeriods = isset($cart->data['periodic_payments']) ? $cart->data['periodic_payments'] : [];
                                     $alreadyPaidCount = isset($alreadyPaidPeriods[$product->id]) ? count($alreadyPaidPeriods[$product->id]) : 0;
                                     if (isset($product->data['calucalte_periodic'])) {
                                         $calc = $product->data['calucalte_periodic'];
@@ -578,9 +595,12 @@ class BankingService implements IBankingService
                                             }
                                         }
 
-                                        $period_start->addDays($duration * ($alreadyPaidCount+1) - 1);
+                                        $period_start->addDays($duration * ($alreadyPaidCount + 1) - 1);
                                         if ($now > $period_start) {
                                             $ids[] = $product->id;
+                                            if (!is_null($product->group) && !empty($product->group)) {
+                                                $groups[] = $product->group;
+                                            }
                                         }
                                     }
                                 }
@@ -588,6 +608,13 @@ class BankingService implements IBankingService
                         }
                     }
                 }
+
+                if (count($groups) > 0) {
+                    // include product ids with same group
+                    $groupedIds = Product::select('id')->whereIn('group', $groups)->get()->pluck('id')->toArray();
+                    $ids = array_merge($ids, $groupedIds);
+                }
+
                 return $ids;
             },
             ['purchased-cart:' . $user->id],
@@ -599,7 +626,7 @@ class BankingService implements IBankingService
      * Undocumented function
      *
      * @param Request $request
-     * @param IProfileUser $user
+     * @param IECommerceUser $user
      * @param float $amount
      * @param integer $currency
      * @param integer $type
@@ -607,9 +634,9 @@ class BankingService implements IBankingService
      * @param string $desc
      * @return WalletTransaction
      */
-    public function addBalanceForUser(IProfileUser $user, float $amount, int $currency, int $type, int $flags, string $desc)
+    public function addBalanceForUser(IECommerceUser $user, float $amount, int $currency, int $type, int $flags, string $desc)
     {
-        $supportProfileId = isset($user->supportProfile['id']) ? $user->supportProfile['id']: null;
+        $supportProfileId = isset($user->supportProfile['id']) ? $user->supportProfile['id'] : null;
         $wallet = WalletTransaction::create([
             'user_id' => $user->id,
             'domain_id' => $user->getMembershipDomainId(),
@@ -625,7 +652,6 @@ class BankingService implements IBankingService
         ]);
 
         $this->resetBalanceCache($user->id);
-        $user->updateUserCache('balance');
         WalletTransactionEvent::dispatch($wallet, time());
 
         return $wallet;
@@ -638,7 +664,7 @@ class BankingService implements IBankingService
      * @param int|Product $product
      * @return Cart
      */
-    public function getInstallmentsForProductInCart(IProfileUser $user, $originalCart, $product)
+    public function getInstallmentsForProductInCart(IECommerceUser $user, $originalCart, $product)
     {
         if (is_numeric($originalCart)) {
             $originalCart = Cart::find($originalCart);
@@ -688,13 +714,11 @@ class BankingService implements IBankingService
         $due_date = $period_start->addDays($duration * ($alreadyPaidCount + 1));
 
         $amount = $calc['period_amount'];
-        if (isset($originalCart->data['gift_code']['products']) && isset($originalCart->data['gift_code']['percent'])) {
-            $gifted_products = $originalCart->data['gift_code']['products'];
-            foreach ($gifted_products as $gift_product_id) {
-                if ($gift_product_id == $product->id) {
-                    $percent = floatval($originalCart->data['gift_code']['percent']);
-                    $amount = ceil((1 - $percent) * $amount);
-                }
+        if (isset($originalCart->data['gift_code']['percent'])) {
+            $gifted_products = isset($originalCart->data['gift_code']['products']) ? $originalCart->data['gift_code']['products'] : [];
+            if (in_array($product->id, $gifted_products) || count($gifted_products) === 0) {
+                $percent = floatval($originalCart->data['gift_code']['percent']);
+                $amount = ceil((1 - $percent) * $amount);
             }
         }
 
@@ -728,7 +752,8 @@ class BankingService implements IBankingService
     /**
      *
      */
-    public function getInstallmentsForCartPeriodicCustom(IProfileUser $user, $originalCart) {
+    public function getInstallmentsForCartPeriodicCustom(IECommerceUser $user, $originalCart)
+    {
         if (is_numeric($originalCart)) {
             $originalCart = Cart::find($originalCart);
         }
@@ -775,6 +800,9 @@ class BankingService implements IBankingService
                         'total' => $totalPeriods,
                         'originalCart' => $originalCart->id,
                         'due_date' => $paymentInfo['payment_at'],
+                        'product_titles' => $originalCart->products->map(function ($item) {
+                            return $item->data['title'];
+                        })
                     ],
                 ]
             ]);
@@ -797,7 +825,7 @@ class BankingService implements IBankingService
             ->whereRaw('(flags & ' . Cart::FLAGS_PERIODIC_COMPLETED . ') = 0')
             ->chunk(100, function ($carts) {
                 foreach ($carts as $cart) {
-                    if (isset($cart->data['periodic_custom'])) {
+                    if (isset($cart->data['periodic_custom']) && count($cart->data['periodic_custom']) > 0) {
                         $this->getInstallmentsForCartPeriodicCustom($cart->customer, $cart);
                     } else if (isset($cart->data['periodic_product_ids'])) {
                         foreach ($cart->data['periodic_product_ids'] as $pid) {
@@ -814,30 +842,24 @@ class BankingService implements IBankingService
     /**
      * Undocumented function
      *
-     * @param IProfileUser $user
+     * @param IECommerceUser $user
      * @param integer $currency
      * @return void
      */
-    public function getUserBalance(IProfileUser $user, int $currency)
+    public function getUserBalance(IECommerceUser $user, int $currency)
     {
-        if (isset($user->cache['balance'])) {
-            return $user->cache['balance'];
-        }
-
-        return [
-            'amount' => 0,
-            'currency' => config('larapress.ecommerce.banking.currency'),
-        ];
+        return $user->getBalanceAttribute();
     }
 
     /**
      * Undocumented function
      *
-     * @param IProfileUser $user
+     * @param IECommerceUser $user
      * @param integer $currency
      * @return float
      */
-    public function getUserTotalAquiredGiftBalance(IProfileUser $user, int $currency) {
+    public function getUserTotalAquiredGiftBalance(IECommerceUser $user, int $currency)
+    {
         return Helpers::getCachedValue(
             'larapress.ecommerce.user.' . $user->id . '.gift-balance',
             function () use ($user, $currency) {
@@ -856,11 +878,12 @@ class BankingService implements IBankingService
     /**
      * Undocumented function
      *
-     * @param IProfileUser $user
+     * @param IECommerceUser $user
      * @param integer $currency
      * @return float
      */
-    public function getUserVirtualBalance(IProfileUser $user, int $currency) {
+    public function getUserVirtualBalance(IECommerceUser $user, int $currency)
+    {
         return Helpers::getCachedValue(
             'larapress.ecommerce.user.' . $user->id . '.gift-balance',
             function () use ($user, $currency) {
@@ -878,11 +901,11 @@ class BankingService implements IBankingService
     /**
      * Undocumented function
      *
-     * @param IProfileUser $user
+     * @param IECommerceUser $user
      * @param integer|Product $product
      * @return boolean
      */
-    public function isProductOnPurchasedList(IProfileUser $user, $product)
+    public function isProductOnPurchasedList(IECommerceUser $user, $product)
     {
         if (is_numeric($product)) {
             $product = Product::find($product);
@@ -916,7 +939,7 @@ class BankingService implements IBankingService
      * @param Cart $cart
      * @return void
      */
-    public function markCartPurchased(Request $request, Cart $cart)
+    public function markCartPurchased($request, Cart $cart)
     {
         $periodicFlag = isset($cart->data['periodic_product_ids']) && count($cart->data['periodic_product_ids']) > 0 ? Cart::FLAGS_HAS_PERIODS : 0;
         $data = $cart->data;
@@ -928,65 +951,16 @@ class BankingService implements IBankingService
             'flags' => $cart->flags | Cart::FLAGS_EVALUATED | $periodicFlag,
             'data' => $data,
         ]);
-        $supportProfileId = isset($cart->customer->supportProfile['id']) ? $cart->customer->supportProfile['id']: null;
+        $this->markGiftCodeUsageForCart($cart);
+        $supportProfileId = isset($cart->customer->supportProfile['id']) ? $cart->customer->supportProfile['id'] : null;
+        $purchasedAt = isset($cart->data['period_start']) ? Carbon::parse($cart->data['period_start']) : $cart->updated_at;
+        $user = $cart->customer;
 
+        // give introducer gift
         if (BaseFlags::isActive($cart->flags, Cart::FLAGS_USER_CART)) {
-            $this->markGiftCodeUsageForCart($cart);
-
-            $realMoneyDecrese = abs($cart->amount);
-            $realShare = [];
-            // separate gift balance from real balance
-            $giftBalance = $this->getUserVirtualBalance($cart->customer, $cart->currency);
-            if ($giftBalance > 0) {
-                $virtualMoneyDecrease = $giftBalance;
-                // user has gift more than cart amount
-                if ($giftBalance >= $realMoneyDecrese) {
-                    $virtualMoneyDecrease = $realMoneyDecrese;
-                    $realMoneyDecrese = 0;
-                } else {
-                    $realMoneyDecrese = $realMoneyDecrese - $virtualMoneyDecrease;
-                }
-
-                [$virtualShare, $realShare] = $this->calculateCartProductsMarketShareVirtualMoney($cart, $giftBalance);
-                // decrease wallet gift amount for cart amount
-                $wallet = WalletTransaction::create([
-                    'user_id' => $cart->customer_id,
-                    'domain_id' => $cart->domain_id,
-                    'amount' => -1 * $virtualMoneyDecrease,
-                    'currency' => $cart->currency,
-                    'type' => WalletTransaction::TYPE_VIRTUAL_MONEY,
-                    'data' => [
-                        'cart_id' => $cart->id,
-                        'description' => trans('larapress::ecommerce.banking.messages.wallet-descriptions.cart_purchased', ['cart_id' => $cart->id]),
-                        'balance' => $this->getUserBalance($cart->customer, $cart->currency),
-                        'support' => $supportProfileId,
-                        'product_shares' => $virtualShare,
-                    ]
-                ]);
-                WalletTransactionEvent::dispatch($wallet, time());
-            }
-
-            // decrease wallet amount for cart amount
-            $wallet = WalletTransaction::create([
-                'user_id' => $cart->customer_id,
-                'domain_id' => $cart->domain_id,
-                'amount' => -1 * $realMoneyDecrese,
-                'currency' => $cart->currency,
-                'type' => WalletTransaction::TYPE_REAL_MONEY,
-                'data' => [
-                    'cart_id' => $cart->id,
-                    'description' => trans('larapress::ecommerce.banking.messages.wallet-descriptions.cart_purchased', ['cart_id' => $cart->id]),
-                    'balance' => $this->getUserBalance($cart->customer, $cart->currency),
-                    'product_shares' => $realShare,
-                ]
-            ]);
-            WalletTransactionEvent::dispatch($wallet, time());
-
-            // give introducer gift, for first purchase only
-            // if the amount is higher than some value
+            // if the amount is higher than some value for first purchase only
             if (floatval($cart->amount) >= floatval(config('larapress.ecommerce.lms.introducers.introducer_gift_on.amount'))) {
-                /** @var IProfileUser $introducer */
-                /** @var FormEntry $entry */
+                /** @var [IECommerceUser,FormEntry] $entry */
                 [$introducer, $entry] = $cart->customer->introducerData;
                 if (!is_null($introducer)) {
                     if (!$introducer->hasRole(config('larapress.ecommerce.lms.support_role_id'))) {
@@ -999,7 +973,6 @@ class BankingService implements IBankingService
                                 'data' => $data,
                             ]);
                             $this->addBalanceForUser(
-                                $request,
                                 $introducer,
                                 $data['gifted_amount'],
                                 $data['gifted_currency'],
@@ -1011,8 +984,11 @@ class BankingService implements IBankingService
                     }
                 }
             }
-        } elseif (BaseFlags::isActive($cart->flags, Cart::FLAGS_PERIOD_PAYMENT_CART)) {
-            $originalCart = Cart::find($cart->data['periodic_pay']['originalCart']);
+        }
+
+        // update original cart if this is a FLAGS_PERIOD_PAYMENT_CART
+        if (BaseFlags::isActive($cart->flags, Cart::FLAGS_PERIOD_PAYMENT_CART)) {
+            $originalCart = Cart::with('products')->find($cart->data['periodic_pay']['originalCart']);
             $origData = $originalCart->data;
             $now = Carbon::now();
 
@@ -1040,70 +1016,7 @@ class BankingService implements IBankingService
                     'flags' => $flags,
                     'data' => $origData,
                 ]);
-                CRUDUpdated::dispatch(Auth::user(), $originalCart, CartCRUDProvider::class, $now);
-
-                $items = $cart->products();
-
-                $realMoneyDecrese = abs($cart->amount);
-                // separate gift balance from real balance
-                $giftBalance = $this->getUserVirtualBalance($cart->customer, $cart->currency);
-                if ($giftBalance > 0) {
-                    $virtualMoneyDecrease = $giftBalance;
-                    // user has gift more than cart amount
-                    if ($giftBalance >= $realMoneyDecrese) {
-                        $virtualMoneyDecrease = $realMoneyDecrese;
-                        $realMoneyDecrese = 0;
-                    } else {
-                        $realMoneyDecrese = $realMoneyDecrese - $virtualMoneyDecrease;
-                    }
-
-                    $virtualShare = [];
-                    $eachVirtual = $virtualMoneyDecrease / count($items);
-                    foreach ($items as $item) {
-                        $virtualShare[$item->id] = $eachVirtual;
-                    }
-
-                    // decrease wallet gift amount for cart amount
-                    $wallet = WalletTransaction::create([
-                        'user_id' => $cart->customer_id,
-                        'domain_id' => $cart->domain_id,
-                        'amount' => -1 * abs($virtualMoneyDecrease),
-                        'currency' => $cart->currency,
-                        'type' => WalletTransaction::TYPE_VIRTUAL_MONEY,
-                        'data' => [
-                            'cart_id' => $cart->id,
-                            'description' => trans('larapress::ecommerce.banking.messages.wallet-descriptions.cart_purchased', ['cart_id' => $cart->id]),
-                            'balance' => $this->getUserBalance($cart->customer, $cart->currency),
-                            'support' => $supportProfileId,
-                            'product_shares' => $virtualShare,
-                        ]
-                    ]);
-                    WalletTransactionEvent::dispatch($wallet, time());
-                }
-
-                if ($realMoneyDecrese > 0) {
-                    $eachReal = $realMoneyDecrese / count($items);
-                    $realShare = [];
-                    foreach ($items as $item) {
-                        $realShare[$item->id] = $eachReal;
-                    }
-                    // decrease wallet amount for cart amount
-                    $wallet = WalletTransaction::create([
-                        'user_id' => $cart->customer_id,
-                        'domain_id' => $cart->domain_id,
-                        'amount' => -1 * $realMoneyDecrese,
-                        'currency' => $cart->currency,
-                        'type' => WalletTransaction::TYPE_REAL_MONEY,
-                        'data' => [
-                            'cart_id' => $cart->id,
-                            'description' => trans('larapress::ecommerce.banking.messages.wallet-descriptions.cart_purchased', ['cart_id' => $cart->id]),
-                            'balance' => $this->getUserBalance($cart->customer, $cart->currency),
-                            'support' => $supportProfileId,
-                            'product_shares' => $realShare,
-                        ]
-                    ]);
-                    WalletTransactionEvent::dispatch($wallet, time());
-                }
+                CRUDUpdated::dispatch($user, $originalCart, CartCRUDProvider::class, $now);
             } else {
                 // or system cart with product based parchases
                 $originalProductId = $cart->data['periodic_pay']['product']['id'];
@@ -1126,119 +1039,183 @@ class BankingService implements IBankingService
                     'flags' => $flags,
                     'data' => $origData,
                 ]);
-                CRUDUpdated::dispatch(Auth::user(), $originalCart, CartCRUDProvider::class, Carbon::now());
-
-                $items = $cart->products();
-                $realMoneyDecrese = abs($cart->amount);
-                // separate gift balance from real balance
-                $giftBalance = $this->getUserVirtualBalance($cart->customer, $cart->currency);
-                if ($giftBalance > 0) {
-                    $virtualMoneyDecrease = $giftBalance;
-                    // user has gift more than cart amount
-                    if ($giftBalance >= $realMoneyDecrese) {
-                        $virtualMoneyDecrease = $realMoneyDecrese;
-                        $realMoneyDecrese = 0;
-                    } else {
-                        $realMoneyDecrese = $realMoneyDecrese - $virtualMoneyDecrease;
-                    }
-
-                    $virtualShare = [];
-                    $eachVirtual = $virtualMoneyDecrease / count($items);
-                    foreach ($items as $item) {
-                        $virtualShare[$item->id] = $eachVirtual;
-                    }
-                    // decrease wallet gift amount for cart amount
-                    $wallet = WalletTransaction::create([
-                        'user_id' => $cart->customer_id,
-                        'domain_id' => $cart->domain_id,
-                        'amount' => -1 * abs($virtualMoneyDecrease),
-                        'currency' => $cart->currency,
-                        'type' => WalletTransaction::TYPE_VIRTUAL_MONEY,
-                        'data' => [
-                            'cart_id' => $cart->id,
-                            'description' => trans('larapress::ecommerce.banking.messages.wallet-descriptions.cart_purchased', ['cart_id' => $cart->id]),
-                            'balance' => $this->getUserBalance($cart->customer, $cart->currency),
-                            'support' => $supportProfileId,
-                            'product_shares' => $virtualShare,
-                        ]
-                    ]);
-                    WalletTransactionEvent::dispatch($wallet, time());
-                }
-
-                if ($realMoneyDecrese > 0) {
-                    $eachReal = $realMoneyDecrese / count($items);
-                    $realShare = [];
-                    foreach ($items as $item) {
-                        $realShare[$item->id] = $eachReal;
-                    }
-                    // decrease wallet amount for cart amount
-                    $wallet = WalletTransaction::create([
-                        'user_id' => $cart->customer_id,
-                        'domain_id' => $cart->domain_id,
-                        'amount' => -1 * abs($realMoneyDecrese),
-                        'currency' => $cart->currency,
-                        'type' => WalletTransaction::TYPE_REAL_MONEY,
-                        'data' => [
-                            'cart_id' => $cart->id,
-                            'description' => trans('larapress::ecommerce.banking.messages.wallet-descriptions.cart_purchased', ['cart_id' => $cart->id]),
-                            'balance' => $this->getUserBalance($cart->customer, $cart->currency),
-                            'support' => $supportProfileId,
-                            'product_shares' => $realShare,
-                        ]
-                    ]);
-                    WalletTransactionEvent::dispatch($wallet, time());
-                }
+                CRUDUpdated::dispatch($user, $originalCart, CartCRUDProvider::class, Carbon::now());
             }
         }
+
+        // decrease use wallet cart if this is a STATUS_ACCESS_COMPLETE & some items are being purchased or a period payment
+        //      is getting paid for
+        if ($cart->status === Cart::STATUS_ACCESS_COMPLETE && !BaseFlags::isActive($cart->flags, Cart::FLAGS_INCREASE_WALLET)) {
+            $realMoneyDecrese = abs($cart->amount);
+            // separate gift balance from real balance
+            $giftBalance = $this->getUserVirtualBalance($cart->customer, $cart->currency);
+            $virtualMoneyDecrease = $giftBalance;
+
+            if ($giftBalance > 0) {
+                // user has gift more than cart amount
+                if ($giftBalance >= $realMoneyDecrese) {
+                    $virtualMoneyDecrease = $realMoneyDecrese;
+                    $realMoneyDecrese = 0;
+                } else {
+                    $realMoneyDecrese = $realMoneyDecrese - $virtualMoneyDecrease;
+                }
+            }
+
+            // calculate products share on virtual and real money
+            /** @var Product[] */
+            $items = $cart->products;
+            $virtualShare = [];
+            $realShare = [];
+
+            $usedVirtual = 0;
+            $usedReal = 0;
+            $periodicIds = isset($cart->data['periodic_product_ids']) ? $cart->data['periodic_product_ids'] : [];
+            $giftCode = isset($cart->data['gift_code']) ? $cart->data['gift_code'] : [];
+            // use original cart data if this is a period payment
+            if (BaseFlags::isActive($cart->flags, Cart::FLAGS_PERIOD_PAYMENT_CART)) {
+                $originalCart = Cart::with('products')->find($cart->data['periodic_pay']['originalCart']);
+                $originalItems = $originalCart->products;
+                $items = [];
+                // use original cart gift code
+                $giftCode = isset($originalCart->data['gift_code']) ? $originalCart->data['gift_code'] : [];
+                if (
+                    isset($originalCart->data['periodic_custom']) && count($originalCart->data['periodic_custom']) > 0 &&
+                    isset($cart->data['periodic_pay']['custom']) && $cart->data['periodic_pay']['custom']
+                ) {
+                    $items = $originalItems;
+                } else {
+                    $originalProductId = $cart->data['periodic_pay']['product']['id'];
+                    foreach ($originalItems as $origItem) {
+                        if ($originalProductId == $origItem->id) {
+                            $items[] = $origItem;
+                        }
+                    }
+                }
+            }
+
+            // calculate each product share now
+            if (
+                // for periodic pays installment or admin single item cart
+                BaseFlags::isActive($cart->flags, Cart::FLAGS_PERIOD_PAYMENT_CART) ||
+                count($items) === 1
+            ) {
+                $eachVirtaulShare = floor($virtualMoneyDecrease / count($items));
+                $eachRealShare = floor($realMoneyDecrese / count($items));
+                if ($eachVirtaulShare > 0) {
+                    foreach ($items as $item) {
+                        $virtualShare[$item->id] = $eachVirtaulShare;
+                    }
+                }
+                if ($eachRealShare > 0) {
+                    foreach ($items as $item) {
+                        $realShare[$item->id] = $eachRealShare;
+                    }
+                }
+            } else {
+                // user
+                foreach ($items as $item) {
+                    $itemPrice = in_array($item->id, $periodicIds) ? $item->pricePeriodic() : $item->price();
+
+                    if ($itemPrice === 0) {
+                        continue;
+                    }
+
+                    if (isset($giftCode['amount']) && $giftCode['amount'] > 0) {
+                        // should we use gift code for item price
+                        /** @var GiftCode */
+                        $gift = GiftCode::find($giftCode['code']);
+
+                        if (!is_null($gift)) {
+                            if ((isset($giftCode['products']) && in_array($item->id, $giftCode['products'])) ||
+                                (!isset($giftCode['products']) || count($giftCode['products']) === 0)
+                            ) {
+                                if ($gift->isPercentGift()) {
+                                    $itemPrice = floor((1 - floatval($gift->data['value']) / 100.0) * $itemPrice);
+                                }
+                            }
+                        }
+                    }
+
+                    if ($virtualMoneyDecrease > 0 && $virtualMoneyDecrease > $usedVirtual) {
+                        if ($virtualMoneyDecrease >= $itemPrice) {
+                            $usedVirtual += $itemPrice;
+                            $virtualShare[$item->id] = $itemPrice;
+                        } else {
+                            $usedVirtual = $virtualMoneyDecrease;
+                            $virtualShare[$item->id] = $virtualMoneyDecrease;
+                            $itemRealShare = $itemPrice - $virtualMoneyDecrease;
+                            $realShare[$item->id] = $itemRealShare;
+                        }
+                    } else if ($realMoneyDecrese > 0 && $realMoneyDecrese > $usedReal) {
+                        if (($realMoneyDecrese - $usedReal) >= $itemPrice) {
+                            $usedReal += $itemPrice;
+                            $realShare[$item->id] = $itemPrice;
+                        } else {
+                            $realShare[$item->id] = $realMoneyDecrese - $usedReal;
+                            $usedReal = $realMoneyDecrese;
+                        }
+                    }
+                }
+            }
+
+            if ($virtualMoneyDecrease > 0) {
+                // decrease wallet gift amount for cart amount
+                $wallet = WalletTransaction::create([
+                    'user_id' => $cart->customer_id,
+                    'domain_id' => $cart->domain_id,
+                    'amount' => -1 * $virtualMoneyDecrease,
+                    'currency' => $cart->currency,
+                    'type' => WalletTransaction::TYPE_VIRTUAL_MONEY,
+                    'data' => [
+                        'cart_id' => $cart->id,
+                        'period_start' => $purchasedAt,
+                        'description' => trans('larapress::ecommerce.banking.messages.wallet-descriptions.cart_purchased', ['cart_id' => $cart->id]),
+                        'balance' => $this->getUserBalance($cart->customer, $cart->currency),
+                        'support' => $supportProfileId,
+                        'product_shares' => $virtualShare,
+                    ]
+                ]);
+                WalletTransactionEvent::dispatch($wallet, time());
+            }
+
+            if ($realMoneyDecrese > 0) {
+                // decrease wallet amount for cart amount
+                $wallet = WalletTransaction::create([
+                    'user_id' => $cart->customer_id,
+                    'domain_id' => $cart->domain_id,
+                    'amount' => -1 * $realMoneyDecrese,
+                    'currency' => $cart->currency,
+                    'type' => WalletTransaction::TYPE_REAL_MONEY,
+                    'data' => [
+                        'cart_id' => $cart->id,
+                        'period_start' => $purchasedAt,
+                        'description' => trans('larapress::ecommerce.banking.messages.wallet-descriptions.cart_purchased', ['cart_id' => $cart->id]),
+                        'balance' => $this->getUserBalance($cart->customer, $cart->currency),
+                        'product_shares' => $realShare,
+                    ]
+                ]);
+                WalletTransactionEvent::dispatch($wallet, time());
+            }
+        }
+
         CartPurchasedEvent::dispatch($cart, time());
-        CRUDUpdated::dispatch(Auth::user(), $cart, CartCRUDProvider::class, Carbon::now());
+        CRUDUpdated::dispatch($user, $cart, CartCRUDProvider::class, Carbon::now());
         $this->resetPurchasedCache($cart->customer_id);
         $this->resetPurchasingCache($cart->customer_id);
         $this->resetBalanceCache($cart->customer_id);
 
-        // update internal fast cache! for balance
-        $cart->customer->updateUserCache('balance');
-
         return $cart;
-    }
-
-    protected function calculateCartProductsMarketShareVirtualMoney(Cart $cart, $giftBalance) {
-        /** @var Product[] */
-        $items = $cart->products;
-        $periodicIds = isset($cart->data['periodic_product_ids']) ? $cart->data['periodic_product_ids'] : [];
-
-        // calculate items that are purchased using this virtual money
-        $itemsUsingVirtualMoney = [];
-        $itemsUsingRealMoney = [];
-
-        $usedVirtualMoney = 0;
-        foreach ($items as $item) {
-            $virtualAmount = $giftBalance - $usedVirtualMoney;
-
-            $itemPrice = in_array($item->id, $periodicIds) ? $item->pricePeriodic() : $item->price();
-            if ($virtualAmount > $itemPrice) {
-                $itemsUsingVirtualMoney[$item->id] = $itemPrice;
-                $usedVirtualMoney += $itemPrice;
-            } else {
-                $itemsUsingVirtualMoney[$item->id] = $virtualAmount;
-                $itemRemainingPrice = $itemPrice - $virtualAmount;
-                $usedVirtualMoney += $virtualAmount;
-                $itemsUsingRealMoney[$item->id] = $itemRemainingPrice;
-            }
-        }
-
-        return [$itemsUsingVirtualMoney, $itemsUsingRealMoney];
     }
 
     /**
      * Undocumented function
      *
-     * @param IProfileUser $user
+     * @param IECommerceUser $user
      * @param Cart $cart
      * @param [type] $request
      * @return [float, array]
      */
-    protected function getCartAmountWithRequest(IProfileUser $user, Cart $cart, $request)
+    protected function getCartAmountWithRequest(IECommerceUser $user, Cart $cart, $request)
     {
         $data = $cart->data;
         if (is_null($data)) {
@@ -1282,19 +1259,19 @@ class BankingService implements IBankingService
     /**
      * Undocumented function
      *
-     * @param IProfileUser $user
+     * @param IECommerceUser $user
      * @param Cart $cart
      * @param Request $request
      * @return Cart
      */
-    protected function updateCartWithRequest(IProfileUser $user, Cart $cart, $request)
+    protected function updateCartWithRequest(IECommerceUser $user, Cart $cart, $request)
     {
         [$amount, $data] = $this->getCartAmountWithRequest($user, $cart, $request);
 
         $data['gift_code'] = null;
         $code = $request->get('gift_code', null);
         if (!is_null($code)) {
-            $data['gift_code'] = $this->checkGiftCodeForPurchasingCart($request, Auth::user(), $cart->currency, $code);
+            $data['gift_code'] = $this->checkGiftCodeForPurchasingCart($request, $user, $cart->currency, $code);
         }
         if (isset($data['gift_code']['amount'])) {
             $amount -= $data['gift_code']['amount'];
@@ -1305,7 +1282,7 @@ class BankingService implements IBankingService
             'amount' => $amount,
             'data' => $data,
         ]);
-        CRUDUpdated::dispatch(Auth::user(), $cart, CartCRUDProvider::class, Carbon::now());
+        CRUDUpdated::dispatch($user, $cart, CartCRUDProvider::class, Carbon::now());
         $this->resetPurchasedCache($cart->customer_id);
         $this->resetPurchasingCache($cart->customer_id);
 
@@ -1319,7 +1296,7 @@ class BankingService implements IBankingService
      * @param integer $currency
      * @return void
      */
-    public function checkGiftCodeForPurchasingCart(Request $request, IProfileUser $user, int $currency, string $code)
+    public function checkGiftCodeForPurchasingCart(Request $request, IECommerceUser $user, int $currency, string $code)
     {
         /** @var GiftCode */
         $code = GiftCode::query()
@@ -1358,6 +1335,15 @@ class BankingService implements IBankingService
             }
         }
 
+        $periodIds = [];
+        $periods = $request->get('periods', []);
+        foreach ($periods as $period => $val) {
+            if ($val) {
+                $periodIds[] = $period;
+            }
+        }
+        $fixed_only = isset($code->data['fixed_only']) && $code->data['fixed_only'];
+
         switch ($code->data['type']) {
             case 'percent':
                 $percent = floatval($code->data['value']) / 100.0;
@@ -1365,19 +1351,31 @@ class BankingService implements IBankingService
                 if ($percent <= 1) {
                     if (isset($code->data['products'])) {
                         $avCodeProducts = array_keys($code->data['products']);
-                        $periodIds = isset($data['periodic_product_ids']) ? $data['periodic_product_ids'] : [];
                         $offAmount = 0;
                         foreach ($avCodeProducts as $avId) {
                             foreach ($cartItems as $item) {
                                 if ($item->id === $avId) {
-                                    $itemPrice = in_array($avId, $periodIds) ? $item->pricePeriodic() : $item->price();
-                                    $offAmount += floor($percent * $itemPrice);
-                                    $offProductIds[] = $item->id;
+                                    if (!$fixed_only || !in_array($avId, $periodIds)) {
+                                        $itemPrice = in_array($avId, $periodIds) ? $item->pricePeriodic() : $item->price();
+                                        $offAmount += floor($percent * $itemPrice);
+                                        $offProductIds[] = $item->id;
+                                    }
                                 }
                             }
                         }
                     } else {
-                        $offAmount = floor($amount * $percent);
+                        if ($fixed_only) {
+                            $offAmount = 0;
+                            foreach ($cartItems as $item) {
+                                if (!in_array($periodIds, $item->id)) {
+                                    $itemPrice = $item->price();
+                                    $offAmount += floor($percent * $itemPrice);
+                                    $offProductIds[] = $item->id;
+                                }
+                            }
+                        } else {
+                            $offAmount = floor($amount * $percent);
+                        }
                     }
                     $offAmount = min($code->amount, $offAmount);
                     return [
@@ -1414,9 +1412,7 @@ class BankingService implements IBankingService
                 ];
         }
 
-        if (is_null($code)) {
-            throw new AppException(AppException::ERR_OBJECT_NOT_FOUND);
-        }
+        throw new AppException(AppException::ERR_OBJ_NOT_READY);
     }
 
     /**
@@ -1495,5 +1491,32 @@ class BankingService implements IBankingService
             ['product.ancestors:' . $product->id],
             null
         );
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param Request $request
+     * @param int $giftCodeId
+     * @return mixed
+     */
+    public function duplicateGiftCodeForRequest(Request $request, $giftCodeId)
+    {
+        /** @var GiftCode */
+        $giftCode = GiftCode::find($giftCodeId);
+
+        if (is_null($giftCode)) {
+            throw new AppException(AppException::ERR_OBJECT_NOT_FOUND);
+        }
+
+        $data = $giftCode->toArray();
+        $data['code'] = Helpers::randomString(10);
+        unset($data['id']);
+        /** @var GiftCode */
+        $duplicate = GiftCode::create($data);
+
+        CRUDCreated::dispatch(Auth::user(), $duplicate, GiftCodeCRUDProvider::class, Carbon::now());
+
+        return $duplicate;
     }
 }

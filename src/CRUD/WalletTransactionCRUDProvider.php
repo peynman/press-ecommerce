@@ -82,8 +82,8 @@ class WalletTransactionCRUDProvider implements ICRUDProvider, IPermissionsMetada
     public $defaultShowRelations = [];
     public $excludeIfNull = [];
     public $filterFields = [
-        'from' => 'after:created_at',
-        'to' => 'before:created_at',
+        'created_from' => 'after:created_at',
+        'created_to' => 'before:created_at',
         'domain' => 'has:domain:id',
         'type' => 'equals:type',
         'user_id' => 'equals:user_id',
@@ -181,8 +181,6 @@ class WalletTransactionCRUDProvider implements ICRUDProvider, IPermissionsMetada
      */
     public function onAfterCreate($object, $input_data)
     {
-        $object->user->updateUserCache('balance');
-
         WalletTransactionEvent::dispatch($object, time());
     }
 
@@ -195,8 +193,6 @@ class WalletTransactionCRUDProvider implements ICRUDProvider, IPermissionsMetada
      */
     public function onAfterUpdate($object, $input_data)
     {
-        $object->user->updateUserCache('balance');
-
         WalletTransactionEvent::dispatch($object, time());
     }
 
@@ -208,6 +204,5 @@ class WalletTransactionCRUDProvider implements ICRUDProvider, IPermissionsMetada
      */
     public function onAfterDestroy($object)
     {
-        $object->user->updateUserCache('balance');
     }
 }

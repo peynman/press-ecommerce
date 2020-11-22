@@ -4,8 +4,8 @@ namespace Larapress\ECommerce\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Larapress\Profiles\IProfileUser;
 use Larapress\Profiles\Models\Domain;
+use Larapress\ECommerce\IECommerceUser;
 
 /**
  * @property int            $id
@@ -14,9 +14,9 @@ use Larapress\Profiles\Models\Domain;
  * @property int            $status
  * @property float          $amount
  * @property int            $currency
- * @property IProfileUser   $customer
+ * @property IECommerceUser   $customer
  * @property Domain         $domain
- * @property ICartItem[]    $items
+ * @property ICartItem[]    $products
  * @property array          $data
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
@@ -37,6 +37,7 @@ class Cart extends Model
     const FLAGS_ADMIN = 64;
     const FLAGS_PERIODIC_COMPLETED = 128;
     const FLAGS_GIFT_CART = 256;
+    const FLAGS_ADMIN_MODIFY = 512;
 
     use SoftDeletes;
 
@@ -94,5 +95,14 @@ class Cart extends Model
      */
     public function isPaid() {
         return $this->status === self::STATUS_ACCESS_GRANTED || $this->status === self::STATUS_ACCESS_COMPLETE;
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return array
+     */
+    public function getPeriodicProductIds() {
+        return isset($this->data['periodic_product_ids']) ? $this->data['periodic_product_ids'] : [];
     }
 }

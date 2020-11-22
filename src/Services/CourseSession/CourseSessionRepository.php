@@ -5,6 +5,7 @@ namespace Larapress\ECommerce\Services\CourseSession;
 use Carbon\Carbon;
 use Larapress\ECommerce\Models\Product;
 use Larapress\ECommerce\Repositories\ProductRepository;
+use Larapress\ECommerce\Services\Banking\IBankingService;
 use Larapress\Profiles\Models\FormEntry;
 
 class CourseSessionRepository extends ProductRepository
@@ -31,28 +32,40 @@ class CourseSessionRepository extends ProductRepository
             'children.types',
             'children.categories',
         ]);
+        /** @var Product[] */
         $items = $query->get();
+
+        /** @var IBankingService */
+        $service = app(IBankingService::class);
+        $locked = $service->getPeriodicInstallmentsLockedProducts($user);
+
         foreach ($items as $item) {
             $item['available'] = true;
 
+            $item['locked'] = in_array($item->parent_id, $locked) && !$item->isFree();
+
             if (isset($item->data['types']['session']['sendForm']) && $item->data['types']['session']['sendForm']) {
-                $child['sent_forms'] = FormEntry::query()
+                $item['sent_forms'] = FormEntry::query()
                                             ->where('user_id', $user->id)
                                             ->where('form_id', config('larapress.ecommerce.lms.course_file_upload_default_form_id'))
                                             ->where('tags', 'course-'.$item->id.'-taklif')
                                             ->first();
             }
 
-            if (isset($item['children'])) {
-                foreach($item['children'] as $child) {
+            $itemChildren = [];
+            if (!is_null($item->children) && count($item->children) > 0) {
+                $innerChilds = $item->children;
+                foreach($innerChilds as $child) {
                     $child['available'] = true;
+                    $child['locked'] = $item['locked'];
+                    $itemChildren[] = $child;
                 }
             }
+            $item['children'] = $itemChildren;
         }
 
         return $items;
     }
-
 
     /**
      * Undocumented function
@@ -66,7 +79,6 @@ class CourseSessionRepository extends ProductRepository
         $today = Carbon::now();
         if ($today->diffInDays($weekEnd) === 0) {
             $weekStart->addDays(-7);
-//            $weekEnd->addDays(7);
         }
 
         $query = $this->getPurchasedProductsPaginatedQuery(
@@ -87,15 +99,6 @@ class CourseSessionRepository extends ProductRepository
         $items = $query->get();
         foreach ($items as $item) {
             $item['available'] = true;
-
-            if (isset($item->data['types']['session']['sendForm']) && isset($item->data['types']['session']['sendForm'])) {
-                $child['sent_forms'] = FormEntry::query()
-                                            ->where('user_id', $user->id)
-                                            ->where('form_id', config('larapress.ecommerce.lms.course_file_upload_default_form_id'))
-                                            ->where('tags', 'course-'.$item->id.'-taklif')
-                                            ->first();
-            }
-
             if (isset($item['children'])) {
                 foreach($item['children'] as $child) {
                     $child['available'] = true;
@@ -104,27 +107,5 @@ class CourseSessionRepository extends ProductRepository
         }
 
         return $items;
-    }
-
-    /**
-     * Undocumented function
-     *
-     * @param IProfileUser $user
-     * @return FormEntry[]
-     */
-    public function getIntroducedUsersList($user) {
-        $introduced = FormEntry::query()
-                ->where('form_id', config('larapress.ecommerce.lms.introducer_default_form_id'))
-                ->where('tags', 'introducer-id-'.$user->id)
-                ->get();
-
-        // protect form filler personal info!
-        foreach ($introduced as &$user) {
-            $data = $user->data;
-            $data['ip'] = null;
-            $data['agent'] = null;
-            $user->data = $data;
-        }
-        return $introduced;
     }
 }

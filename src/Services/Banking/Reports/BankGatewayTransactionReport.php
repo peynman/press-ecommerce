@@ -32,7 +32,7 @@ class BankGatewayTransactionReport implements IReportSource
                     array_merge(["_value"], $groups),
                     $fromC,
                     $toC,
-                    'count()'
+                    'sum()'
                 );
             },
             'bank.gateway.windowed' => function ($user, array $options = []) {
@@ -53,15 +53,14 @@ class BankGatewayTransactionReport implements IReportSource
 
     public function handle(BankGatewayTransactionEvent $event)
     {
+        $transaction = $event->getGatewayTransaction();
         $tags = [
-            'domain' => $event->domain->id,
-            'currency' => $event->transaction->currency,
-            'tr_id' => $event->transaction->id,
-            'gateway' => $event->transaction->bank_gateway_id,
+            'domain' => $event->domainId,
+            'currency' => $transaction->currency,
+            'tr_id' => $transaction->id,
+            'gateway' => $transaction->bank_gateway_id,
+            'status' => $transaction->status,
         ];
-        $this->reports->pushMeasurement('bank.gateway', 1, $tags, [
-            'amount' => floatval($event->transaction->amount),
-            'status' => $event->transaction->status,
-        ], $event->timestamp);
+        $this->reports->pushMeasurement('bank.gateway', intval($transaction->amount), $tags, [], $event->timestamp);
     }
 }

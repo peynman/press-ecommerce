@@ -58,7 +58,28 @@ class GiftCode extends Model
      *
      * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
-    public function use_list() {
+    public function use_list()
+    {
         return $this->hasMany(GiftCodeUse::class, 'code_id');
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return boolean
+     */
+    public function isPercentGift()
+    {
+        return $this->data['type'] === 'percent';
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return boolean
+     */
+    public function isFixedGift()
+    {
+        return $this->data['type'] === 'fixed';
     }
 }

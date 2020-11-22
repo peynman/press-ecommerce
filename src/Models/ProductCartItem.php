@@ -76,14 +76,7 @@ trait ProductCartItem
 
         return 0;
     }
-    /**
-     * Undocumented function
-     *
-     * @return float
-     */
-    public function pricePeriods()
-    {
-    }
+
     /**
      * Undocumented function
      *
@@ -91,8 +84,9 @@ trait ProductCartItem
      */
     public function currency()
     {
-        return 1;
+        return config('larapress.ecommerce.banking.currency.id');
     }
+
     /**
      * Undocumented function
      *
@@ -102,6 +96,7 @@ trait ProductCartItem
     {
         return 'product:' . $this->id;
     }
+
     /**
      * Undocumented function
      *
@@ -112,15 +107,11 @@ trait ProductCartItem
         return $this;
     }
 
-    /** @var IProductService */
-    protected static $pService;
-    public function getSalesAttribute() {
-        if (is_null(self::$pService)) {
-            self::$pService = app(IProductService::class);
-        }
-        return self::$pService->getProductSales($this->id);
-    }
-
+    /**
+     * Undocumented function
+     *
+     * @return array
+     */
     public function getPriceTagAttribute() {
         if ($this->isFree()) {
             return [ 'amount' => 0, 'currency' => $this->currency() ];

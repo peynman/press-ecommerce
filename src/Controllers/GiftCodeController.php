@@ -15,7 +15,26 @@ class GiftCodeController extends BaseCRUDController
         parent::registerCrudRoutes(
             config('larapress.ecommerce.routes.gift_codes.name'),
             self::class,
-            GiftCodeCRUDProvider::class
+            GiftCodeCRUDProvider::class,
+            [
+                'create.duplicate' => [
+                    'methods' => ['POST'],
+                    'uses' => '\\'.self::class.'@duplicateGiftCode',
+                    'url' => config('larapress.ecommerce.routes.gift_codes.name').'/{id}/duplicate',
+                ]
+            ]
         );
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param IBankingService $service
+     * @param Request $request
+     * @param int $giftCodeId
+     * @return void
+     */
+    public function duplicateGiftCode(IBankingService $service, Request $request, $giftCodeId) {
+        return $service->duplicateGiftCodeForRequest($request, $giftCodeId);
     }
 }

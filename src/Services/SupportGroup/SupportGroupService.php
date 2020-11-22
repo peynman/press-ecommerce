@@ -171,7 +171,7 @@ class SupportGroupService implements ISupportGroupService {
             function ($request, $inputNames, $form, $entry) use($supportUserId, $supportProfile, $supportUser) {
                 $data = $this->getSupportIdsDataForEntry($entry, $supportUserId, $supportProfile);
                 if (is_null($entry)) {
-                    $this->updateUserRegistrationGiftWithIntroducer($request, Auth::user(), $supportUser, false, false);
+                    $this->updateUserRegistrationGiftWithIntroducer(Auth::user(), $supportUser, false, false);
                 }
                 return $data;
             }
@@ -293,10 +293,10 @@ class SupportGroupService implements ISupportGroupService {
      */
     protected function getSupportIdsDataForEntry($entry, $supportUserId, $supportProfile) {
         $values = [];
-        if (is_null($entry) || !isset($entry->data['values']['support_ids']) || Helpers::isAssocArray($entry->data['values']['support_ids'])) {
+        if (is_null($entry) || !isset($entry->data['values']['support_ids'])) {
             $values['support_ids'] = [];
         } else {
-            $values['support_ids'] = $entry->data['values']['support_ids'];
+            $values['support_ids'] = array_values($entry->data['values']['support_ids']);
         }
 
         $values['support_ids'][] = [
@@ -306,5 +306,27 @@ class SupportGroupService implements ISupportGroupService {
             'updated_at' => Carbon::now(),
         ];
         return $values;
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param IProfileUser $user
+     * @return FormEntry[]
+     */
+    public function getIntroducedUsersList($user) {
+        $introduced = FormEntry::query()
+                ->where('form_id', config('larapress.ecommerce.lms.introducer_default_form_id'))
+                ->where('tags', 'introducer-id-'.$user->id)
+                ->get();
+
+        // protect form filler personal info!
+        foreach ($introduced as &$user) {
+            $data = $user->data;
+            $data['ip'] = null;
+            $data['agent'] = null;
+            $user->data = $data;
+        }
+        return $introduced;
     }
 }

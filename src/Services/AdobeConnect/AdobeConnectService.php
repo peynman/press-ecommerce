@@ -291,6 +291,11 @@ class AdobeConnectService implements IAdobeConnectService
     public function onEachServerForProduct($item, $callback)
     {
         $serverIdsList = isset($item->data['types']['ac_meeting']['servers']) ? $item->data['types']['ac_meeting']['servers'] : [];
+
+        if (count($serverIdsList) == 0) {
+            return;
+        }
+
         $serverIds = array_map(function ($item) {
             return $item['id'];
         }, $serverIdsList);

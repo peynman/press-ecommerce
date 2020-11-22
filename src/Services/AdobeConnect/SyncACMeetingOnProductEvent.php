@@ -20,7 +20,10 @@ class SyncACMeetingOnProductEvent implements ShouldQueue
     public function handle(CRUDVerbEvent $event)
     {
         if ($event->providerClass === ProductCRUDProvider::class) {
-            $this->service->createMeetingForProduct($event->model);
+            $model = $event->getModel();
+            if (isset($model->data['types']['ac_meeting']['servers'])) {
+                $this->service->createMeetingForProduct($model);
+            }
         }
     }
 }

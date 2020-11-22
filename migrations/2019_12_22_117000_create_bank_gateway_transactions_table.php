@@ -18,6 +18,7 @@ class CreateBankGatewayTransactionsTable extends Migration
             $table->bigInteger('customer_id', false, true);
             $table->bigInteger('domain_id', false, true);
             $table->bigInteger('bank_gateway_id', false, true);
+            $table->bigInteger('cart_id', false, true);
             $table->string('agent_ip')->nullable();
             $table->string('agent_client')->nullable();
             $table->decimal('amount', 12, 2);
@@ -33,6 +34,7 @@ class CreateBankGatewayTransactionsTable extends Migration
             $table->foreign('customer_id')->references('id')->on('users');
             $table->foreign('domain_id')->references('id')->on('domains');
             $table->foreign('bank_gateway_id')->references('id')->on('bank_gateways');
+            $table->foreign('cart_id')->references('id')->on('carts');
         });
     }
 

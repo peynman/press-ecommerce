@@ -2,66 +2,14 @@
 
 namespace Larapress\ECommerce;
 
-use Illuminate\Support\Facades\Cache;
 use Larapress\CRUD\Extend\Helpers;
 use Larapress\ECommerce\Models\Cart;
-use Larapress\ECommerce\Models\Product;
 use Larapress\ECommerce\Models\WalletTransaction;
-use Larapress\ECommerce\Services\Banking\IBankingService;
+use Larapress\ECommerce\Services\SupportGroup\FormEntryUserSupportProfileRelationship;
 use Larapress\Profiles\Models\FormEntry;
+use Illuminate\Support\Str;
 
 trait BaseECommerceUser {
-    /**
-     * Undocumented function
-     *
-     * @return void
-     */
-    public function getSupportUserProfileAttribute() {
-        if (isset($this->cache['support'])) {
-            return  $this->cache['support'];
-        }
-        return null;
-    }
-
-    /** @var IBankingService */
-    static $bankingService = null;
-    public function getBalanceAttribute() {
-        if (isset($this->cache['balance'])) {
-            return $this->cache['balance'];
-        }
-
-        return [
-            'amount' => 0,
-            'currency' => config('larapress.ecommerce.banking.currency'),
-            'default_gateway' => config('larapress.ecommerce.banking.default_gateway'),
-        ];
-    }
-
-    /**
-     * Undocumented function
-     *
-     * @return void
-     */
-    public function getIntroducerDataAttribute() {
-        return Helpers::getCachedValue(
-            'larapress.users.'.$this->id.'.introducer',
-            function () {
-                $entry = $this->form_entries()
-                                ->where('form_id', config('larapress.ecommerce.lms.introducer_default_form_id'))
-                                ->first();
-                if (! is_null($entry)) {
-                    $introducer_id = explode('-',$entry->tags)[2];
-                    $class = config('larapress.crud.user.class');
-                    $introducer = call_user_func([$class, 'find'], $introducer_id);
-                    return [$introducer, $entry];
-                }
-            },
-            ['user.introducer:'.$this->id],
-            null
-        );
-    }
-
-
     /**
      * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
@@ -97,103 +45,150 @@ trait BaseECommerceUser {
         );
     }
 
+
+    public function wallet_balance() {
+        return $this->wallet()
+            ->selectRaw('user_id, sum(amount) as balance')
+            ->where('currency', config('larapress.ecommerce.banking.currency.id'))
+            ->groupBy('user_id');
+    }
+
     /**
      * Undocumented function
      *
-     * @param nullable $property
      * @return void
      */
-    public function updateUserCache($property = null, $values = []) {
-        $fastCache = $this->cache;
-        if (is_null($fastCache)) {
-            $fastCache = [];
+    public function getProfileAttribute() {
+        if ($this->hasRole(config('larapress.profiles.security.roles.super-role'))) {
+            return $this->form_profile_support;
         }
 
-        $fastUpdaters = [
-            'balance' => function() use(&$fastCache) {
-                // update internal fast cache! for balance
-                $fastCache = array_merge($fastCache, [
-                    'balance' => [
-                        'amount' => WalletTransaction::query()
-                                    ->where('user_id', $this->id)
-                                    ->where('currency', config('larapress.ecommerce.banking.currency.id'))
-                                    ->sum('amount'),
-                        'currency' => config('larapress.ecommerce.banking.currency'),
-                        'default_gateway' => config('larapress.ecommerce.banking.default_gateway')
-                    ]
-                ]);
-            },
-            'profile' => function() use(&$fastCache) {
-                $entry = null;
-                // if this role has custom form-id for its profiles, use it.
-                $profileRoles = self::getProfilesRoleMap();
-                foreach ($profileRoles as $role => $formId) {
-                    if ($this->hasRole($role)) {
-                        $entry = $this->form_entries()->where('form_id', $formId)->first();
-                    }
-                }
-                // else use default form-id from config
-                if (is_null($entry)) {
-                    $entry = $this->form_entries()->where('form_id', config('larapress.profiles.defaults.profile-form-id'))->first();
-                }
-                $fastCache = array_merge($fastCache, [
-                    'profile' => $entry
-                ]);
-            },
-            'support' => function() use(&$fastCache) {
-                $entry = $this->form_entries()
-                                ->where('form_id', config('larapress.profiles.defaults.support-registration-form-id'))
-                                ->first();
-                if (!is_null($entry)) {
-                    $taggedSupportId = explode('-', $entry->tags)[2];
-                    $profile = FormEntry::where('user_id', $taggedSupportId)
-                                ->where('form_id', config('larapress.profiles.defaults.profile-support-form-id'))
-                                ->first();
-                    if (isset($profile->data['values']['firstname']) && isset($profile->data['values']['lastname'])) {
-                        $data = $profile->data;
-                        $data['values']['fullname'] = $profile->data['values']['firstname'].' '.$profile->data['values']['lastname'];
-                        $profile->data = $data;
-                        $profile['entry'] = $entry;
-                    }
-                    $entry = $profile;
-                }
+        return $this->form_profile_default;
+    }
 
-                $fastCache = array_merge($fastCache, [
-                    'support' => $entry
-                ]);
-            },
-            'introducer' => function() use(&$fastCache) {
+    /**
+     * Undocumented function
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     */
+    public function form_profile_default() {
+        return $this->hasOne(
+            FormEntry::class,
+            'user_id'
+        )->where('form_id', config('larapress.ecommerce.lms.profile_form_id'));
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     */
+    public function form_profile_support() {
+        return $this->hasOne(
+            FormEntry::class,
+            'user_id'
+        )->where('form_id', config('larapress.ecommerce.lms.support_profile_form_id'));
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     */
+    public function form_support_registration_entry() {
+        return $this->hasOne(
+            FormEntry::class,
+            'user_id'
+        )->where('form_id', config('larapress.ecommerce.lms.support_group_default_form_id'));
+    }
+
+
+    /**
+     * Undocumented function
+     *
+     * @return null|int
+     */
+    public function getSupportUserId() {
+        if (!is_null($this->form_support_registration_entry)) {
+            $tags = $this->form_support_registration_entry->tags;
+            if (Str::startsWith($tags, 'supporg-group-')) {
+                return Str::substr($tags, Str::length('supporg-group-'));
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     */
+    public function form_support_introducer_entry() {
+        return $this->hasOne(
+            FormEntry::class,
+            'user_id'
+        )->where('form_id', config('larapress.ecommerce.lms.introducer_default_form_id'));
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     */
+    public function form_support_user_profile() {
+        return new FormEntryUserSupportProfileRelationship($this);
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return void
+     */
+    public function getSupportUserProfileAttribute() {
+        return $this->form_support_user_profile;
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return array
+     */
+    public function getBalanceAttribute() {
+        $wallet_balance = $this->wallet_balance;
+        if (count($wallet_balance) === 0) {
+            $wallet_balance = 0;
+        } else {
+            $wallet_balance = $wallet_balance[0]->balance;
+        }
+        return [
+            'amount' => $wallet_balance,
+            'currency' => config('larapress.ecommerce.banking.currency'),
+            'default_gateway' => config('larapress.ecommerce.banking.default_gateway'),
+        ];
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return void
+     */
+    public function getIntroducerDataAttribute() {
+        return Helpers::getCachedValue(
+            'larapress.users.'.$this->id.'.introducer',
+            function () {
                 $entry = $this->form_entries()
-                            ->where('form_id', config('larapress.ecommerce.lms.introducer_default_form_id'))
-                            ->first();
+                                ->where('form_id', config('larapress.ecommerce.lms.introducer_default_form_id'))
+                                ->first();
                 if (! is_null($entry)) {
                     $introducer_id = explode('-',$entry->tags)[2];
                     $class = config('larapress.crud.user.class');
                     $introducer = call_user_func([$class, 'find'], $introducer_id);
-                    $fastCache = array_merge($fastCache, [
-                        'introducer' => [$introducer, $entry]
-                    ]);
+                    return [$introducer, $entry];
                 }
             },
-
-        ];
-
-        if (is_null($property)) {
-            $fastCache = [];
-            foreach ($fastUpdaters as $name => $updater) {
-                $updater();
-            }
-        } else {
-            if (isset($values[$property])) {
-                $fastCache = array_merge($fastCache, [
-                    $property => $values[$property]
-                ]);
-            } else if (isset($fastUpdaters[$property])) {
-                $fastUpdaters[$property]();
-            }
-        }
-
-        $this->cache = $fastCache;
-        $this->update();
+            ['user.introducer:'.$this->id],
+            null
+        );
     }
 }

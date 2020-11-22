@@ -28,13 +28,6 @@ interface ICartItem
      */
     public function pricePeriodic();
 
-        /**
-     * Undocumented function
-     *
-     * @return float
-     */
-    public function pricePeriods();
-
     /**
      * Undocumented function
      *

@@ -2,8 +2,10 @@
 
 namespace Larapress\ECommerce\Services\Banking\Reports;
 
+use Carbon\Carbon;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Larapress\CRUD\Services\IReportSource;
+use Larapress\ECommerce\Models\WalletTransaction;
 use Larapress\ECommerce\Services\Banking\Events\WalletTransactionEvent;
 use Larapress\Reports\Services\BaseReportSource;
 use Larapress\Reports\Services\IMetricsService;
@@ -57,33 +59,73 @@ class WalletTransactionReport implements IReportSource, ShouldQueue
 
     public function handle(WalletTransactionEvent $event)
     {
-        $supportProfileId = isset($event->transaction->user->supportProfile['id']) ? $event->transaction->user->supportProfile['id']: null;
+        /** @var WalletTransaction */
+        $transaction = WalletTransaction::with([
+            'user',
+        ])->find($event->transactionId);
+
+        $supportProfileId = $transaction->user->getSupportUserId();
+
         $tags = [
-            'domain' => $event->transaction->domain_id,
-            'currency' => $event->transaction->currency,
-            'type' => $event->transaction->type,
-            'decrease' => floatval($event->transaction->amount) > 0,
-            'tr_id' => $event->transaction->id,
+            'domain' => $transaction->domain_id,
+            'currency' => $transaction->currency,
+            'type' => $transaction->type,
+            'decrease' => floatval($transaction->amount) > 0,
+            'tr_id' => $transaction->id,
             'support' => $supportProfileId,
         ];
         $this->reports->pushMeasurement('user_wallet', 1, $tags, [
-            'amount' => floatval($event->transaction->amount),
+            'amount' => floatval($transaction->amount),
         ], $event->timestamp);
 
+        // in case of metrics we use $transactions created_at as timestamp
+        //   on WalletTransaction updates we dont want to change the original records timestamp of measurement
+        $purchaseTimestamp = isset($transaction->data['period_start']) ? Carbon::parse($transaction->data['period_start']) : $transaction->created_at;
+
+        $tags = isset($transaction->data['cart_id']) ? 'cart:'.$transaction->data['cart_id'] : 'wallet:'.$transaction->id;
+
         $this->metrics->pushMeasurement(
-            $event->transaction->domain_id,
-            'wallet.'.$event->transaction->type.'.amount',
-            $event->transaction->amount,
-            $event->timestamp
+            $transaction->domain_id,
+            $tags,
+            'wallet.'.$transaction->type.'.amount',
+            $transaction->amount,
+            $purchaseTimestamp
         );
 
         if (!is_null($supportProfileId)) {
             $this->metrics->pushMeasurement(
-                $event->transaction->domain_id,
-                'wallet.'.$event->transaction->type.'.amount.'.$supportProfileId,
-                $event->transaction->amount,
-                $event->timestamp
+                $transaction->domain_id,
+                $tags,
+                'wallet.'.$transaction->type.'.amount.'.$supportProfileId,
+                $transaction->amount,
+                $purchaseTimestamp
             );
+        }
+
+        // add each products share for this wallet transaction
+        if (isset($transaction->data['product_shares'])) {
+            $shares = $transaction->data['product_shares'];
+            foreach ($shares as $productId => $shareAmount) {
+                $this->metrics->pushMeasurement(
+                    $transaction->domain_id,
+                    $tags,
+                    'product.'.$productId.'.sales.'.$transaction->type.'.amount',
+                    floatval($shareAmount),
+                    $purchaseTimestamp
+                );
+            }
+
+            if (!is_null($supportProfileId)) {
+                foreach ($shares as $productId => $shareAmount) {
+                    $this->metrics->pushMeasurement(
+                        $transaction->domain_id,
+                        $tags,
+                        'product.'.$productId.'.sales.'.$transaction->type.'.amount.'.$supportProfileId,
+                        floatval($shareAmount),
+                        $purchaseTimestamp
+                    );
+                }
+            }
         }
     }
 }

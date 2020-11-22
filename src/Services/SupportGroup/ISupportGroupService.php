@@ -47,4 +47,12 @@ interface ISupportGroupService {
      * @return void
      */
     public function updateUserRegistrationGiftWithIntroducer(IProfileUser $user, $introducerId, $updateSupportGroup, $updateIntroducer);
+
+    /**
+     * Undocumented function
+     *
+     * @param IProfileUser $user
+     * @return FormEntry[]
+     */
+    public function getIntroducedUsersList($user);
 }

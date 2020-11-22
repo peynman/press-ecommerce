@@ -189,6 +189,11 @@ class FileUploadService implements IFileUploadService
             throw new AppException(AppException::ERR_OBJECT_NOT_FOUND);
         }
 
+        $provider = new FileUploadCRUDProvider();
+        if (! $provider->onBeforeAccess($link)) {
+            throw new AppException(AppException::ERR_ACCESS_DENIED);
+        }
+
         return response()->stream(function() use($link) {
             $fileStream = Storage::disk($link->storage)->readStream($link->path);
             fpassthru($fileStream);
