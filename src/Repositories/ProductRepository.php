@@ -115,7 +115,7 @@ class ProductRepository implements IProductRepository
     /**
      * Undocumented function
      *
-     * @param IProfileUser $user
+     * @param IECommerceUser $user
      * @param integer $page
      * @param integer $limit
      * @param array $categories
@@ -130,12 +130,8 @@ class ProductRepository implements IProductRepository
         if (!is_null($user)) {
             /** @var IBankingService */
             $service = app(IBankingService::class);
-            /** @var IDomainRepository */
-            $domainRepo = app(IDomainRepository::class);
-            $domain = $domainRepo->getCurrentRequestDomain();
-
             $items = $resultset->items();
-            $purchases = $service->getPurchasedItemIds($user, $domain);
+            $purchases = is_null($user) ? [] : $service->getPurchasedItemIds($user);
             foreach ($items as $item) {
                 $item['available'] = in_array($item['id'], $purchases) || $item->isFree();
             }
@@ -236,10 +232,7 @@ class ProductRepository implements IProductRepository
 
         /** @var IBankingService */
         $service = app(IBankingService::class);
-        /** @var IDomainRepository */
-        $domainRepo = app(IDomainRepository::class);
-        $domain = $domainRepo->getCurrentRequestDomain();
-        $purchases = $service->getPurchasedItemIds($user, $domain);
+        $purchases = is_null($user) ? [] : $service->getPurchasedItemIds($user);
         $locked = $service->getPeriodicInstallmentsLockedProducts($user);
 
         $product['available'] = in_array($product->id, $purchases) || $product->isFree();
@@ -296,10 +289,7 @@ class ProductRepository implements IProductRepository
 
         /** @var IBankingService */
         $service = app(IBankingService::class);
-        /** @var IDomainRepository */
-        $domainRepo = app(IDomainRepository::class);
-        $domain = $domainRepo->getCurrentRequestDomain();
-        $purchases = $service->getPurchasedItemIds($user, $domain);
+        $purchases = is_null($user) ? [] : $service->getPurchasedItemIds($user);
 
         $query->where(function ($query) use ($purchases) {
             $query->orWhere(function ($q) use ($purchases) {

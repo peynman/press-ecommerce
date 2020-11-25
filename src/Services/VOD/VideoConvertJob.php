@@ -31,7 +31,7 @@ class VideoConvertJob implements ShouldQueue
     public function __construct(FileUpload $upload)
     {
         $this->upload = $upload;
-//        $this->onQueue(config('larapress.ecommerce.vod.queue'));
+        $this->onQueue(config('larapress.ecommerce.vod.queue'));
     }
 
     public function tags()
