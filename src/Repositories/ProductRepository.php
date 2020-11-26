@@ -362,14 +362,14 @@ class ProductRepository implements IProductRepository
     }
 
     protected function applyPublishExpireWindow($query) {
-        $query->where(function ($q) {
+/*        $query->where(function ($q) {
             $q->whereNull('publish_at');
             $q->orWhereDate('publish_at', '<=', Carbon::now());
         });
         $query->where(function ($q) {
             $q->whereNull('expires_at');
             $q->orWhereDate('expires_at', '>', Carbon::now());
-        });
+        });*/
         return $query;
     }
 }

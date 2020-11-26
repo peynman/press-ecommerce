@@ -139,7 +139,7 @@ class LiveStreamService implements ILiveStreamService
             }
         }
 
-        return $repo->isProductOnPurchasedList($user, $domainRepo->getRequestDomain($request), $product);
+        return $repo->isProductOnPurchasedList($user, $product);
     }
 
 

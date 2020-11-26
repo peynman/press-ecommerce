@@ -41,12 +41,12 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         'currency' => 'required|numeric|exists:filters,id',
         'status' => 'required|numeric',
         'flags' => 'nullable|numeric',
-        'description' => 'nullable',
         'products.*.id' => 'required|numeric|exists:products,id',
         'extra_product_id' => 'nullable|numeric|exists:products,id',
         'data.periodic_product_ids.*.id' => 'nullable|numeric|exists:products,id',
         'data.periodic_custom' => 'nullable',
         'data.period_start' => 'nullable|datetime_zoned',
+        'data.description' => 'nullable',
     ];
     public $updateValidations = [
         'customer_id' => 'required|numeric|exists:users,id',
@@ -59,6 +59,7 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         'data.periodic_product_ids.*.id' => 'nullable|numeric|exists:products,id',
         'data.periodic_custom' => 'nullable',
         'data.period_start' => 'nullable|datetime_zoned',
+        'data.description' => 'nullable',
     ];
     public $searchColumns = [
         'has_exact:customer,name',
@@ -165,7 +166,7 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         }
         $data = [
             'periodic_product_ids' => $periodic_ids,
-            'description' => isset($args['description']) ? $args['description'] : null,
+            'description' => isset($args['data']['description']) ? $args['data']['description'] : null,
         ];
         if (isset($args['data']['periodic_custom']) && count($args['data']['periodic_custom']) > 0) {
             $data['periodic_custom'] = $args['data']['periodic_custom'];
@@ -203,7 +204,7 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         }
         $data = [
             'periodic_product_ids' => $periodic_ids,
-            'description' => isset($args['description']) ? $args['description'] : null,
+            'description' => isset($args['data']['description']) ? $args['data']['description'] : null,
         ];
         if (isset($args['data']['periodic_custom']) && count($args['data']['periodic_custom']) > 0) {
             $data['periodic_custom'] = $args['data']['periodic_custom'];
@@ -347,7 +348,9 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         // remove wallet transaction associated with this cart
         WalletTransaction::query()
             ->where('user_id', $object->customer_id)
-            ->whereJsonContains('data->cart_id', $object->id)->delete();
+            ->whereJsonContains('data->cart_id', $object->id)
+            ->where('amount', '<', 0)
+            ->delete();
 
         // remove metrics about this cart
         MetricCounter::query()

@@ -14,6 +14,7 @@ use Larapress\ECommerce\Services\AdobeConnect\WebAPI\Entities\SCO;
 use Larapress\ECommerce\Services\AdobeConnect\WebAPI\Filter;
 use Larapress\Profiles\Models\Filter as FilterModel;
 use Illuminate\Support\Str;
+use Larapress\ECommerce\IECommerceUser;
 
 class AdobeConnectService implements IAdobeConnectService
 {
@@ -137,7 +138,7 @@ class AdobeConnectService implements IAdobeConnectService
     /**
      * Undocumented function
      *
-     * @param [type] $user
+     * @param IECommerceUser $user
      * @param int $product_id
      * @return /Illuminate/Http/Response
      */
@@ -149,9 +150,9 @@ class AdobeConnectService implements IAdobeConnectService
 
         $firstname = 'بدون پروفایل';
         $lastname = ' '.$user->id;
-        if (!is_null($user->profile) && isset($user->profile['data']['values']['display_name'])) {
-            $profile = $user->profile['data']['values'];
-            $firstname = $profile['display_name'];
+        $profile = $user->getProfileAttribute();
+        if (!is_null($profile) && isset($profile['data']['values']['display_name'])) {
+            $firstname = $profile['data']['values']['display_name'];
             $lastname = ' #'.$user->id;
         }
         /** @var Principal */

@@ -46,9 +46,10 @@ interface IFileUploadService {
      *
      * @param Request $request
      * @param int $fileId
+     * @param bool $checkAccess
      * @return void
      */
-    public function serveFile(Request $request, $fileId);
+    public function serveFile(Request $request, $fileId, $checkAccess = true);
 
 
     /**

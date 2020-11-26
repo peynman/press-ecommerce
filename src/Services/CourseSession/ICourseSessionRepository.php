@@ -21,4 +21,13 @@ interface ICourseSessionRepository
      * @return Product[]
      */
     public function getWeekCourseSessions($user);
+
+
+    /**
+     * Undocumented function
+     *
+     * @param IProfileUser $user
+     * @return FormEntry[]
+     */
+    public function getIntroducedUsersList($user);
 }

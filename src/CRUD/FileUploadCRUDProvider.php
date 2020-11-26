@@ -70,7 +70,6 @@ class FileUploadCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         /** @var ICRUDUser|IProfileUser $user */
         $user = Auth::user();
         if (! $user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
-
             return $object->uploader_id === $user->id ||
                 FormEntry::query()
                     ->where('user_id', $object->uploader_id)

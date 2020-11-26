@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Larapress\ECommerce\Models\Product;
 use Larapress\ECommerce\Repositories\ProductRepository;
 use Larapress\ECommerce\Services\Banking\IBankingService;
+use Larapress\ECommerce\Services\SupportGroup\ISupportGroupService;
 use Larapress\Profiles\Models\FormEntry;
 
 class CourseSessionRepository extends ProductRepository
@@ -107,5 +108,19 @@ class CourseSessionRepository extends ProductRepository
         }
 
         return $items;
+    }
+
+
+
+    /**
+     * Undocumented function
+     *
+     * @param IProfileUser $user
+     * @return FormEntry[]
+     */
+    public function getIntroducedUsersList($user) {
+        /** @var ISupportGroupService  */
+        $service = app(ISupportGroupService::class);
+        return $service->getIntroducedUsersList($user);
     }
 }

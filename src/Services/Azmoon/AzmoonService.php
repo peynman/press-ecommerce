@@ -163,7 +163,7 @@ class AzmoonService implements IAzmoonService
                 'filename' => $filename,
                 'mime' => 'application/image',
             ]);
-            return $fileService->serveFile($request, $link);
+            return $fileService->serveFile($request, $link, false);
         });
     }
 

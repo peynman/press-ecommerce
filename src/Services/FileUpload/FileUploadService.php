@@ -180,7 +180,7 @@ class FileUploadService implements IFileUploadService
      * @param int $fileId
      * @return void
      */
-    public function serveFile(Request $request, $link) {
+    public function serveFile(Request $request, $link, $checkAccess = true) {
         if (is_numeric($link)) {
             /** @var FileUpload */
             $link = FileUpload::find($link);
@@ -189,9 +189,11 @@ class FileUploadService implements IFileUploadService
             throw new AppException(AppException::ERR_OBJECT_NOT_FOUND);
         }
 
-        $provider = new FileUploadCRUDProvider();
-        if (! $provider->onBeforeAccess($link)) {
-            throw new AppException(AppException::ERR_ACCESS_DENIED);
+        if ($checkAccess) {
+            $provider = new FileUploadCRUDProvider();
+            if (! $provider->onBeforeAccess($link)) {
+                throw new AppException(AppException::ERR_ACCESS_DENIED);
+            }
         }
 
         return response()->stream(function() use($link) {

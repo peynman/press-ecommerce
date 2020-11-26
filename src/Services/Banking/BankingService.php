@@ -683,14 +683,21 @@ class BankingService implements IBankingService
         }
 
         $periodicIds = isset($originalCart->data['periodic_product_ids']) ? $originalCart->data['periodic_product_ids'] : [];
+        $periodicIds = array_map(function ($item) {
+            if (is_array($item) && isset($item['id'])) {
+                return $item['id'];
+            }
+            return $item;
+        }, $periodicIds);
         // product is not purchased periodic
         if (!in_array($product->id, $periodicIds)) {
             throw new AppException(AppException::ERR_OBJECT_NOT_FOUND);
         }
 
         // product does not have periodic purchase info
-        if (!isset($product->data['calucalte_periodic'])) {
-            throw new AppException(AppException::ERR_OBJ_NOT_READY);
+        if (!isset($product->data['calucalte_periodic']) || !isset($product->data['calucalte_periodic']['period_count'])) {
+            return null;
+            // throw new AppException(AppException::ERR_OBJ_NOT_READY);
         }
 
         $alreadyPaidPeriods = isset($originalCart->data['periodic_payments']) ? $originalCart->data['periodic_payments'] : [];
@@ -781,7 +788,7 @@ class BankingService implements IBankingService
             $indexer++;
         }
 
-        if ($payment_index >= 0 && !is_null($paymentInfo) && isset($paymentInfo['amount'])) {
+        if ($payment_index >= 0 && !is_null($paymentInfo) && isset($paymentInfo['amount']) && isset($paymentInfo['payment_at'])) {
             /** @var Cart */
             $cart = Cart::updateOrCreate([
                 'currency' => $originalCart->currency,
@@ -829,6 +836,9 @@ class BankingService implements IBankingService
                         $this->getInstallmentsForCartPeriodicCustom($cart->customer, $cart);
                     } else if (isset($cart->data['periodic_product_ids'])) {
                         foreach ($cart->data['periodic_product_ids'] as $pid) {
+                            if (is_array($pid) && isset($pid['id'])) {
+                                $pid = $pid['id'];
+                            }
                             $product = Product::find($pid);
                             if (!is_null($product)) {
                                 $this->getInstallmentsForProductInCart($cart->customer, $cart, $product);

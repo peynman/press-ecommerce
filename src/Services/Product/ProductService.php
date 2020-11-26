@@ -154,7 +154,7 @@ class ProductService implements IProductService
             $product = Product::with('types')->find($product);
         }
 
-		if ($product->isFree() || (!is_null($user) && $service->isProductOnPurchasedList($user, $domain, $product))) {
+		if ($product->isFree() || (!is_null($user) && $service->isProductOnPurchasedList($user, $product))) {
             /** @var ProductType[] */
             $typeDatas = $product->data['types'];
             $file_ids = [];
@@ -207,7 +207,7 @@ class ProductService implements IProductService
             $product = Product::with('types')->find($product);
         }
 
-		if ($product->isFree() || (!is_null($user) && $service->isProductOnPurchasedList($user, $domain, $product))) {
+		if ($product->isFree() || (!is_null($user) && $service->isProductOnPurchasedList($user, $product))) {
             /** @var ProductType[] */
             $typeDatas = $product->data['types'];
             $file_ids = [];
