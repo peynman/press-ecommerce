@@ -162,6 +162,13 @@ class ProductService implements IProductService
                 if (isset($typeData['file_id'])) {
                     $file_ids[] = $typeData['file_id'];
                 }
+                if (isset($typeData['extras']) && is_array($typeData['extras'])) {
+                    foreach ($typeData['extras'] as $extra) {
+                        if (isset($extra['file_id'])) {
+                            $file_ids[] = $extra['file_id'];
+                        }
+                    }
+                }
             }
 
             $link_id = is_numeric($link) ? $link : $link->id;

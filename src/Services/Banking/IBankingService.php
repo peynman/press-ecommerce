@@ -203,7 +203,6 @@ interface IBankingService
      * Undocumented function
      *
      * @param IECommerceUser $user
-     * @param Domain $domain
      * @return array
      */
     public function getPurchasedItemIds(IECommerceUser $user);
@@ -213,7 +212,6 @@ interface IBankingService
      * Undocumented function
      *
      * @param IECommerceUser $user
-     * @param Domain $domain
      * @return array
      */
     public function getPurchasedCarts(IECommerceUser $user);
@@ -224,7 +222,6 @@ interface IBankingService
      * Undocumented function
      *
      * @param IECommerceUser $user
-     * @param Domain $domain
      * @param integer|Product $productId
      * @return boolean
      */

@@ -84,8 +84,8 @@ class AzmoonService implements IAzmoonService
 
         if ($canSeeAnswerSheet !== true && !is_null($user_history)) {
             $now = Carbon::now();
-            $release = Carbon::createFromFormat(config('larapress.crud.datetime-format'), $canSeeAnswerSheet);
-            $canSeeAnswerSheet = $now > $release;
+            $release = Carbon::parse($canSeeAnswerSheet);
+            $canSeeAnswerSheet = $now >= $release;
         }
         if (!is_null($product->parent) && $canSeeAnswerSheet) {
             /** @var Product */
@@ -221,8 +221,8 @@ class AzmoonService implements IAzmoonService
 
         if ($canSeeAnswerSheet !== true) {
             $now = Carbon::now();
-            $release = Carbon::createFromFormat(config('larapress.crud.datetime-format'), $canSeeAnswerSheet);
-            $canSeeAnswerSheet = $now > $release;
+            $release = Carbon::parse($canSeeAnswerSheet);
+            $canSeeAnswerSheet = $now >= $release;
         }
         if (!is_null($product->parent) && $canSeeAnswerSheet) {
             /** @var Product */
