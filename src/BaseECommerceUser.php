@@ -59,7 +59,7 @@ trait BaseECommerceUser {
      * @return void
      */
     public function getProfileAttribute() {
-        if ($this->hasRole(config('larapress.profiles.security.roles.super-role'))) {
+        if ($this->hasRole(config('larapress.profiles.security.roles.affiliate'))) {
             return $this->form_profile_support;
         }
 
