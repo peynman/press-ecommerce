@@ -8,10 +8,12 @@ use Larapress\ECommerce\Controllers\ProductController;
 use Larapress\ECommerce\Controllers\ProductTypeController;
 use Larapress\ECommerce\Controllers\WalletTransactionController;
 use Larapress\ECommerce\Controllers\FileUploadController;
+use Larapress\ECommerce\Controllers\GiftCodeController;
 use Larapress\ECommerce\CRUD\BankGatewayCRUDProvider;
 use Larapress\ECommerce\CRUD\BankGatewayTransactionCRUDProvider;
 use Larapress\ECommerce\CRUD\CartCRUDProvider;
 use Larapress\ECommerce\CRUD\FileUploadCRUDProvider;
+use Larapress\ECommerce\CRUD\GiftCodeCRUDProvider;
 use Larapress\ECommerce\CRUD\ProductCategoryCRUDProvider;
 use Larapress\ECommerce\CRUD\ProductCRUDProvider;
 use Larapress\ECommerce\CRUD\ProductTypeCRUDProvider;
@@ -59,6 +61,7 @@ return [
         WalletTransactionCRUDProvider::class,
         CartCRUDProvider::class,
         FileUploadCRUDProvider::class,
+        GiftCodeCRUDProvider::class,
     ],
 
     'controllers' => [
@@ -70,6 +73,7 @@ return [
         WalletTransactionController::class,
         CartController::class,
         FileUploadController::class,
+        GiftCodeController::class,
     ],
 
     'file_upload_processors' => [
@@ -117,5 +121,6 @@ return [
         'support_group_default_form_id' => 4,
         'course_presense_default_form_id' => 3,
         'support_profile_form_id' => 0,
+        'profile_form_id' => 1,
     ]
 ];

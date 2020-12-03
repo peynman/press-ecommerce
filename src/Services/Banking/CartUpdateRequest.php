@@ -28,7 +28,7 @@ class CartUpdateRequest extends FormRequest
         return [
             'currency' => 'required|numeric',
             'periods' => 'nullable',
-            'gateway' => 'required|exists:bank_gateways,id',
+            'gateway' => is_null(config('larapress.ecommerce.banking.default_gateway')) ? 'nullable' : 'required|exists:bank_gateways,id',
             'gift_code' => 'nullable|exists:gift_codes,code',
             'use_balance' => 'nullable|boolean',
         ];

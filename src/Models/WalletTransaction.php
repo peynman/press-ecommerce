@@ -29,6 +29,7 @@ class WalletTransaction extends Model
 {
     const TYPE_VIRTUAL_MONEY = 1;
     const TYPE_REAL_MONEY = 2;
+    const TYPE_UNVERIFIED = 3;
 
     const FLAGS_REGISTRATION_GIFT = 1;
 

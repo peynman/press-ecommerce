@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Larapress\CRUD\CRUDControllers\BaseCRUDController;
 use Larapress\ECommerce\CRUD\CartCRUDProvider;
+use Larapress\ECommerce\Models\Cart;
 use Larapress\ECommerce\Services\Banking\CartGiftCodeRequest;
 use Larapress\ECommerce\Services\Banking\CartModifyRequest;
 use Larapress\ECommerce\Services\Banking\CartUpdateRequest;
@@ -24,39 +25,38 @@ class CartController extends BaseCRUDController
 
         Route::post(
             '/me/all/installments',
-            '\\'.self::class.'@getAllInstallments'
-        )->name(config('larapress.ecommerce.routes.carts.name').'.any.purchasing.installments.all');
+            '\\' . self::class . '@getAllInstallments'
+        )->name(config('larapress.ecommerce.routes.carts.name') . '.any.purchasing.installments.all');
 
         Route::post(
             '/me/{cart_id}/installments/{product_id}',
-            '\\'.self::class.'@getCartInstallments'
-        )->name(config('larapress.ecommerce.routes.carts.name').'.any.purchasing.installments');
+            '\\' . self::class . '@getCartInstallments'
+        )->name(config('larapress.ecommerce.routes.carts.name') . '.any.purchasing.installments');
 
         Route::post(
             '/me/{cart_id}/custom-installment',
-            '\\'.self::class.'@getCartInstallmentCustom'
-        )->name(config('larapress.ecommerce.routes.carts.name').'.any.purchasing.installments.custom');
+            '\\' . self::class . '@getCartInstallmentCustom'
+        )->name(config('larapress.ecommerce.routes.carts.name') . '.any.purchasing.installments.custom');
 
         Route::post(
             '/me/{cart_id}/update',
-            '\\'.self::class.'@updatePurchasingCart'
-        )->name(config('larapress.ecommerce.routes.carts.name').'.any.purchasing.update');
+            '\\' . self::class . '@updatePurchasingCart'
+        )->name(config('larapress.ecommerce.routes.carts.name') . '.any.purchasing.update');
 
         Route::post(
             '/me/current-cart/add',
-            '\\'.self::class.'@addToPurchasingCart'
-        )->name(config('larapress.ecommerce.routes.carts.name').'.any.purchasing.add');
+            '\\' . self::class . '@addToPurchasingCart'
+        )->name(config('larapress.ecommerce.routes.carts.name') . '.any.purchasing.add');
 
         Route::post(
             '/me/current-cart/remove',
-            '\\'.self::class.'@removeFromPurchasingCart'
-        )->name(config('larapress.ecommerce.routes.carts.name').'.any.purchasing.remove');
+            '\\' . self::class . '@removeFromPurchasingCart'
+        )->name(config('larapress.ecommerce.routes.carts.name') . '.any.purchasing.remove');
 
         Route::post(
             '/me/current-cart/apply/gift-code',
-            '\\'.self::class.'@checkPurchasingCartGiftCode'
-        )->name(config('larapress.ecommerce.routes.carts.name').'.any.purchasing.gift-code');
-
+            '\\' . self::class . '@checkPurchasingCartGiftCode'
+        )->name(config('larapress.ecommerce.routes.carts.name') . '.any.purchasing.gift-code');
     }
 
     /**
@@ -66,7 +66,8 @@ class CartController extends BaseCRUDController
      * @param int $cart_id
      * @return void
      */
-    public function checkPurchasingCartGiftCode(IBankingService $service, CartGiftCodeRequest $request) {
+    public function checkPurchasingCartGiftCode(IBankingService $service, CartGiftCodeRequest $request)
+    {
         return $service->checkGiftCodeForPurchasingCart($request, Auth::user(), $request->getCurrency(), $request->getGiftCode());
     }
 
@@ -76,10 +77,10 @@ class CartController extends BaseCRUDController
      * @param Request $request
      * @return Response
      */
-    public function updatePurchasingCart(IBankingService $service, CartUpdateRequest $request, $cart_id) {
+    public function updatePurchasingCart(IBankingService $service, CartUpdateRequest $request, $cart_id)
+    {
         return $service->updatePurchasingCart($request, Auth::user(), $request->getCurrency(), $cart_id);
     }
-
 
     /**
      * Undocumented function
@@ -87,7 +88,8 @@ class CartController extends BaseCRUDController
      * @param Request $request
      * @return Response
      */
-    public function addToPurchasingCart(IBankingService $service, CartModifyRequest $request) {
+    public function addToPurchasingCart(IBankingService $service, CartModifyRequest $request)
+    {
         return $service->addItemToPurchasingCart($request, Auth::user(), $request->getProduct());
     }
 
@@ -98,7 +100,8 @@ class CartController extends BaseCRUDController
      * @param Request $request
      * @return Response
      */
-    public function removeFromPurchasingCart(IBankingService $service, CartModifyRequest $request) {
+    public function removeFromPurchasingCart(IBankingService $service, CartModifyRequest $request)
+    {
         return $service->removeItemFromPurchasingCart($request, Auth::user(), $request->getProduct());
     }
 
@@ -111,7 +114,8 @@ class CartController extends BaseCRUDController
      * @param int $product_id
      * @return Response
      */
-    public function getCartInstallments(IBankingService $service, $cart_id, $product_id) {
+    public function getCartInstallments(IBankingService $service, $cart_id, $product_id)
+    {
         return $service->getInstallmentsForProductInCart(Auth::user(), $cart_id, $product_id);
     }
 
@@ -122,7 +126,8 @@ class CartController extends BaseCRUDController
      * @param int $cart_id
      * @return Response
      */
-    public function getCartInstallmentCustom(IBankingService $service, $cart_id) {
+    public function getCartInstallmentCustom(IBankingService $service, $cart_id)
+    {
         return $service->getInstallmentsForCartPeriodicCustom(Auth::user(), $cart_id);
     }
 
@@ -134,7 +139,8 @@ class CartController extends BaseCRUDController
      * @param int $product_id
      * @return Response
      */
-    public function getAllInstallments(IBankingService $service) {
+    public function getAllInstallments(IBankingService $service)
+    {
         return [
             'message' => 'not implemented!'
         ];

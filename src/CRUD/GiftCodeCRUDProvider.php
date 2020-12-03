@@ -26,20 +26,28 @@ class GiftCodeCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         self::DELETE,
     ];
     public $model = GiftCode::class;
-    public $createValidations = [
-        'amount' => 'required|numeric',
-        'currency' => 'required|numeric|exists:filters,id',
-        'status' => 'required|numeric',
-        'code' => 'required|string|min:6|regex:/(^[A-Za-z0-9-_.]+$)+/',
-        'data.type' => 'required|string|in:percent,fixed',
-    ];
-    public $updateValidations = [
-        'amount' => 'required|numeric',
-        'currency' => 'required|numeric|exists:filters,id',
-        'status' => 'required|numeric',
-        'code' => 'required|string|min:6|regex:/(^[A-Za-z0-9-_.]+$)+/',
-        'data.type' => 'required|string|in:percent,fixed',
-    ];
+    public function getCreateRules(Request $request)
+    {
+        return [
+            'amount' => 'required|numeric',
+            'currency' => 'required|numeric|in:'.implode(',', [config('larapress.ecommerce.banking.currency.id')]),
+            'status' => 'required|numeric',
+            'code' => 'required|string|min:6|regex:/(^[A-Za-z0-9-_.]+$)+/',
+            'data.type' => 'required|string|in:percent,fixed',
+        ];
+    }
+
+    public function getUpdateRules(Request $request)
+    {
+        return [
+            'amount' => 'required|numeric',
+            'currency' => 'required|numeric|in:'.implode(',', [config('larapress.ecommerce.banking.currency.id')]),
+            'status' => 'required|numeric',
+            'code' => 'required|string|min:6|regex:/(^[A-Za-z0-9-_.]+$)+/',
+            'data.type' => 'required|string|in:percent,fixed',
+        ];
+    }
+
     public $searchColumns = [
         'code'
     ];

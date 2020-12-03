@@ -127,17 +127,10 @@ class BankingService implements IBankingService
             return $onAlreadyPurchased($request, $cart);
         }
 
-        $avPorts = config('larapress.ecommerce.banking.ports');
-        $gatewayData = BankGateway::find($gateway_id);
-        /** @var IBankPortInterface */
-        $port = new $avPorts[$gatewayData->type]($gatewayData);
-
-        [$portPrice, $portCurrency] = $port->convertForPriceAndCurrency(floatval($cart->amount), $cart->currency);
-
         $domain = $user->getMembershipDomain();
         $balance = $this->getUserBalance($user, $cart->currency);
 
-        if ((isset($cart->data['use_balance']) && $cart->data['use_balance'] && floatval($balance['amount']) >= floatval($cart->amount)) || $portPrice == 0) {
+        if ((isset($cart->data['use_balance']) && $cart->data['use_balance'] && floatval($balance['amount']) >= floatval($cart->amount)) || $cart->amount === 0) {
             try {
                 DB::beginTransaction();
                 $this->markCartPurchased($request, $cart);
@@ -155,7 +148,20 @@ class BankingService implements IBankingService
 
             $this->resetPurchasedCache($cart->customer_id);
             return $onAlreadyPurchased($request, $cart);
-        } else if (isset($cart->data['use_balance']) && $cart->data['use_balance'] && floatval($balance['amount']) < $cart->amount) {
+        }
+
+        $avPorts = config('larapress.ecommerce.banking.ports');
+        $gatewayData = BankGateway::find($gateway_id);
+
+        if (is_null($gatewayData)) {
+            throw new AppException(AppException::ERR_OBJECT_NOT_FOUND);
+        }
+
+        /** @var IBankPortInterface */
+        $port = new $avPorts[$gatewayData->type]($gatewayData);
+
+        [$portPrice, $portCurrency] = $port->convertForPriceAndCurrency(floatval($cart->amount), $cart->currency);
+        if (isset($cart->data['use_balance']) && $cart->data['use_balance'] && floatval($balance['amount']) < $cart->amount) {
             $portPrice = $portPrice - floatval($balance['amount']);
         }
 

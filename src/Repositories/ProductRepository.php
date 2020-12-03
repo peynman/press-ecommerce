@@ -233,7 +233,7 @@ class ProductRepository implements IProductRepository
         /** @var IBankingService */
         $service = app(IBankingService::class);
         $purchases = is_null($user) ? [] : $service->getPurchasedItemIds($user);
-        $locked = $service->getPeriodicInstallmentsLockedProducts($user);
+        $locked = is_null($user) ? [] : $service->getPeriodicInstallmentsLockedProducts($user);
 
         $product['available'] = in_array($product->id, $purchases) || $product->isFree();
         $product['locked'] = in_array($product->id, $locked) && !$product->isFree();

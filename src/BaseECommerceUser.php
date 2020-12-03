@@ -50,6 +50,7 @@ trait BaseECommerceUser {
         return $this->wallet()
             ->selectRaw('user_id, sum(amount) as balance')
             ->where('currency', config('larapress.ecommerce.banking.currency.id'))
+            ->where('type', '!=', WalletTransaction::TYPE_UNVERIFIED)
             ->groupBy('user_id');
     }
 
