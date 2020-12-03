@@ -556,7 +556,15 @@ class BankingService implements IBankingService
                 foreach ($carts as $cart) {
                     if (BaseFlags::isActive($cart->flags, Cart::FLAGS_HAS_PERIODS) && !BaseFlags::isActive($cart->flags, Cart::FLAGS_PERIODIC_COMPLETED)) {
                         if (isset($cart->data['periodic_custom'])) {
-                            $periodConfig = array_reverse($cart->data['periodic_custom']);
+                            $periodConfig = array_map(function ($data) {
+                                $data['payment_at'] = Carbon::parse($data['payment_at']);
+                                return $data;
+                            }, array_filter($cart->data['periodic_custom'], function($data) {
+                                return isset($data['payment_at']) && !is_null($data['payment_at']);
+                            }));
+                            usort($periodConfig, function($a, $b) {
+                                return $a['payment_at']->diffInDays($b['payment_at']);
+                            });
                             $paymentInfo = null;
                             foreach ($periodConfig as $custom) {
                                 if (isset($custom['status']) && $custom['status'] == 2) {
@@ -566,7 +574,7 @@ class BankingService implements IBankingService
                             }
 
                             if (!is_null($paymentInfo) && isset($paymentInfo['payment_at'])) {
-                                $payment_at = Carbon::createFromFormat(config('larapress.crud.datetime-format'), $paymentInfo['payment_at']);
+                                $payment_at = Carbon::parse($paymentInfo['payment_at']);
                                 if ($now > $payment_at) {
                                     foreach ($cart->products as $product) {
                                         $ids[] = $product->id;
@@ -774,7 +782,15 @@ class BankingService implements IBankingService
             throw new AppException(AppException::ERR_OBJ_NOT_READY);
         }
 
-        $periodConfig = array_reverse($originalCart->data['periodic_custom']);
+        $periodConfig = array_map(function ($data) {
+            $data['payment_at'] = Carbon::parse($data['payment_at']);
+            return $data;
+        }, array_filter($originalCart->data['periodic_custom'], function($data) {
+            return isset($data['payment_at']) && !is_null($data['payment_at']);
+        }));
+        usort($periodConfig, function($a, $b) {
+            return $a['payment_at']->diffInDays($b['payment_at'], 'days');
+        });
         $payment_index = -1;
         $paymentInfo = null;
         $totalPeriods = count($periodConfig);

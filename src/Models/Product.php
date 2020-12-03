@@ -198,7 +198,11 @@ class Product extends Model implements ICartItem
      */
     public function setExpiresAtAttribute($value)
     {
-        $this->attributes['expires_at'] =  Carbon::parse($value);
+        if (empty($value) || is_null($value)) {
+            $this->attributes['expires_at'] = null;
+        } else {
+            $this->attributes['expires_at'] = Carbon::parse($value);
+        }
     }
 
     /**
@@ -209,6 +213,10 @@ class Product extends Model implements ICartItem
      */
     public function setPublishAtAttribute($value)
     {
-        $this->attributes['publish_at'] =  Carbon::parse($value);
+        if (empty($value) || is_null($value)) {
+            $this->attributes['publish_at'] = null;
+        } else {
+            $this->attributes['publish_at'] = Carbon::parse($value);
+        }
     }
 }
