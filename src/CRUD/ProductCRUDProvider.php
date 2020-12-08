@@ -199,8 +199,10 @@ class ProductCRUDProvider implements ICRUDProvider, IPermissionsMetadata
 
         // remove ancestors cache
         if (!is_null($object->parent_id)) {
-            Cache::tags(['product.ancestors:'.$object->id]);
+            Cache::tags(['product.ancestors:'.$object->id])->flush();
         }
+
+        Cache::tags(['product:'.$object->id])->flush();
     }
 
     /**
@@ -224,7 +226,9 @@ class ProductCRUDProvider implements ICRUDProvider, IPermissionsMetadata
 
         // remove ancestors cache
         if (!is_null($object->parent_id)) {
-            Cache::tags(['product.ancestors:'.$object->id]);
+            Cache::tags(['product.ancestors:'.$object->id])->flush();
         }
+
+        Cache::tags(['product:'.$object->id])->flush();
     }
 }

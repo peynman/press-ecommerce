@@ -14,6 +14,7 @@ use Larapress\ECommerce\Services\Banking\IBankingService;
 use Larapress\Profiles\Repository\Domain\IDomainRepository;
 use Larapress\Profiles\IProfileUser;
 use Illuminate\Support\Str;
+use Larapress\CRUD\Exceptions\AppException;
 
 class LiveStreamService implements ILiveStreamService
 {
@@ -35,6 +36,10 @@ class LiveStreamService implements ILiveStreamService
         }
         // nginx passes stream name in request name
         $product = $this->getLiveStreamProduct($request->get('name'));
+        if (is_null($product)) {
+            throw new AppException(AppException::ERR_OBJECT_NOT_FOUND);
+        }
+
         $secret = isset($params['secret']) ? $params['secret'] : null;
         $product_secret = $product->data['types']['livestream']['secret'];
         return $product_secret == $secret;
@@ -165,7 +170,7 @@ class LiveStreamService implements ILiveStreamService
                 ->where('data->types->livestream->key', $upstreamName)
                 ->first();
             if (!is_null($product)) {
-                Cache::tags(['product:'.$product->id, 'product'])->put($cacheName, $product, Carbon::now()->addDay(1));
+                Cache::tags(['product:'.$product->id])->put($cacheName, $product, Carbon::now()->addDay(1));
             }
         }
 

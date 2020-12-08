@@ -45,7 +45,6 @@ class LiveStreamController extends Controller
      */
     public function onAuthenticate(ILiveStreamService $service, Request $request)
     {
-        Log::debug('auth:', [Auth::user(), $request->headers->all()]);
         if (!$service->canWatchLiveStream($request)) {
             throw new AppException(AppException::ERR_OBJ_ACCESS_DENIED);
         }
@@ -60,7 +59,6 @@ class LiveStreamController extends Controller
      */
     public function onPublish(ILiveStreamService $service, Request $request)
     {
-        Log::debug('can publish', [$request->all(), $request->headers->all()]);
         if (!$service->canStartLiveStream($request)) {
             throw new AppException(AppException::ERR_OBJ_ACCESS_DENIED);
         }
@@ -72,7 +70,6 @@ class LiveStreamController extends Controller
      */
     public function onPublishDone(ILiveStreamService $service, Request $request)
     {
-        Log::debug('publish done', $request->all());
         return $service->liveStreamEnded($request);
     }
 
@@ -81,8 +78,6 @@ class LiveStreamController extends Controller
      */
     public function onUpdate(Request $request)
     {
-        Log::debug('publish update', $request->all());
-
         return response();
     }
 }
