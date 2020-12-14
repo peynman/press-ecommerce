@@ -1034,15 +1034,27 @@ class BankingService implements IBankingService
                     'payment_date' => $now,
                 ];
 
-                // reverse index
-                $payment_index = $cart->data['periodic_pay']['total'] - $cart->data['periodic_pay']['index'] - 1;
+                $payment_index = $cart->data['periodic_pay']['index'];
                 $flags = $originalCart->flags;
                 if ($payment_index == 0) { // last period index
                     $flags |= Cart::FLAGS_PERIODIC_COMPLETED;
                 }
 
-                $origData['periodic_custom'][$payment_index]['status'] = 1;
-                $origData['periodic_custom'][$payment_index]['payment_paid_at'] = $now;
+                $map_indexer = 0;
+                $periodConfig = array_map(function ($data) use(&$map_indexer) {
+                    $data['payment_at'] = Carbon::parse($data['payment_at']);
+                    $data['orig_index'] = $map_indexer++;
+                    return $data;
+                }, array_filter($originalCart->data['periodic_custom'], function($data) {
+                    return isset($data['payment_at']) && !is_null($data['payment_at']);
+                }));
+                usort($periodConfig, function($a, $b) {
+                    return $a['payment_at']->diffInDays($b['payment_at'], 'days');
+                });
+                $unsorted_index = $periodConfig[$payment_index]['orig_index'];
+
+                $origData['periodic_custom'][$unsorted_index]['status'] = 1;
+                $origData['periodic_custom'][$unsorted_index]['payment_paid_at'] = $now;
 
                 $originalCart->update([
                     'flags' => $flags,
