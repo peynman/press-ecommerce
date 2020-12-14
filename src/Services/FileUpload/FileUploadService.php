@@ -204,6 +204,7 @@ class FileUploadService implements IFileUploadService
             }
         }, 200, [
             'Content-Type' => $link->mime,
+            'Cache-Control' => 'max_age=592200, public'
         ]);
     }
 
