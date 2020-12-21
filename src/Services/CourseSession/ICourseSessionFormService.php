@@ -3,6 +3,7 @@
 namespace Larapress\ECommerce\Services\CourseSession;
 
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 interface ICourseSessionFormService
 {
@@ -16,6 +17,17 @@ interface ICourseSessionFormService
      */
     public function receiveCourseForm(CourseSessionFormRequest $request, $sessionId, $upload);
 
+
+    /**
+     * Undocumented function
+     *
+     * @param Request $request
+     * @param int $sessionId
+     * @param int $entryId
+     * @param int $fileId
+     * @return Response
+     */
+    public function serveSessionFormFile($request, $sessionId, $entryId, $fileId);
 
     /**
      * Undocumented function

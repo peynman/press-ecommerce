@@ -14,6 +14,7 @@ use Larapress\ECommerce\Models\FileUpload;
 use Larapress\Profiles\IProfileUser;
 use Larapress\Profiles\Models\Domain;
 use Larapress\Profiles\Models\FormEntry;
+use Larapress\ECommerce\IECommerceUser;
 
 class FileUploadCRUDProvider implements ICRUDProvider, IPermissionsMetadata
 {
@@ -53,7 +54,7 @@ class FileUploadCRUDProvider implements ICRUDProvider, IPermissionsMetadata
     {
         /** @var IProfileUser|ICRUDUser $user */
         $user = Auth::user();
-        if (! $user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
+        if (!$user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
             $query->where('uploader_id', $user->id);
         }
 
@@ -67,15 +68,27 @@ class FileUploadCRUDProvider implements ICRUDProvider, IPermissionsMetadata
      */
     public function onBeforeAccess($object)
     {
-        /** @var ICRUDUser|IProfileUser $user */
+        /** @var IECommerceUser $user */
         $user = Auth::user();
-        if (! $user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
-            return $object->uploader_id === $user->id ||
-                FormEntry::query()
-                    ->where('user_id', $object->uploader_id)
-                    ->where('form_id', config('larapress.ecommerce.lms.support_group_default_form_id'))
-                    ->where('tags', 'support-group-'.$user->id)
-                    ->count() > 0;
+        if (!$user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
+            if (
+                !is_null(config('larapress.ecommerce.lms.teacher_support_form_id')) &&
+                $user->hasRole(config('larapress.ecommerce.lms.owner_role_id'))
+            ) {
+
+                return in_array($object->id, $user->getOwenedProductsIds());
+            } else if (
+                !is_null(config('larapress.ecommerce.lms.support_group_default_form_id')) &&
+                $user->hasRole(config('larapress.ecommerce.lms.support_role_id'))
+            ) {
+                return FormEntry::query()
+                ->where('user_id', $object->uploader_id)
+                ->where('form_id', config('larapress.ecommerce.lms.support_group_default_form_id'))
+                ->where('tags', 'support-group-' . $user->id)
+                ->count() > 0;
+            } else {
+                return $object->uploader_id === $user->id;
+            }
         }
 
         return true;

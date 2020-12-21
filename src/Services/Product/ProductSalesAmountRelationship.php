@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Larapress\ECommerce\Models\WalletTransaction;
 use Larapress\Reports\Models\MetricCounter;
 use Larapress\ECommerce\IECommerceUser;
+use Larapress\Profiles\Models\FormEntry;
 
 class ProductSalesAmountRelationship extends Relation
 {
@@ -59,15 +60,21 @@ class ProductSalesAmountRelationship extends Relation
         /** @var IECommerceUser */
         $user = Auth::user();
 
+        $models = collect($models);
         if (!$user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
-            if ($user->hasRole(config('larapress.profiles.security.roles.affiliate'))) {
-                $domains = $user->getAffiliateDomainIds();
-            } else {
+            if ($user->hasRole(config('larapress.ecommerce.lms.support_role_id'))) {
                 $suffix = $suffix . ".$user->id";
+            } else if ($user->hasRole(config('larapress.ecommerce.lms.owner_role_id'))) {
+                $ownerEntries = $user->getOwenedProductsIds();
+                $models = $models->filter(function($model) use($ownerEntries) {
+                    return in_array($model->id, $ownerEntries);
+                });
+            } else {
+                $domains = $user->getAffiliateDomainIds();
             }
         }
         $this->query
-            ->whereIn('metrics_counters.key', $flatten_array(collect($models)->map(function ($model)  use ($suffix) {
+            ->whereIn('metrics_counters.key', $flatten_array($models->map(function ($model)  use ($suffix) {
                 if (!is_null($this->filterType)) {
                     return "product.$model->id.sales." . $this->filterType . ".amount";
                 } else {

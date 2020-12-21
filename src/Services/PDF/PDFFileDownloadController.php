@@ -33,7 +33,7 @@ class PDFFileDownloadController extends Controller
             $session_id,
             $file_id,
             function ($request, $product, $link) use ($fileService) {
-                return $fileService->serveFile($request, $link);
+                return $fileService->serveFile($request, $link, false);
             }
         );
     }

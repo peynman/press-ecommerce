@@ -10,7 +10,10 @@ use Larapress\CRUD\Services\ICRUDProvider;
 use Larapress\CRUD\Services\IPermissionsMetadata;
 use Larapress\ECommerce\Models\Product;
 use Larapress\ECommerce\Services\Azmoon\IAzmoonService;
+use Larapress\ECommerce\Services\Product\ProductReports;
+use Larapress\Profiles\Models\FormEntry;
 use Larapress\Profiles\Services\FormEntry\IFormEntryService;
+use Larapress\ECommerce\IECommerceUser;
 
 use Larapress\Reports\Services\IReportsService;
 
@@ -25,6 +28,7 @@ class ProductCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         self::EDIT,
         self::DELETE,
         self::REPORTS,
+        'sales',
     ];
     public $model = Product::class;
     public $createValidations = [
@@ -103,6 +107,7 @@ class ProductCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         /** @var IReportsService */
         $service = app(IReportsService::class);
         return [
+            new ProductReports($service)
         ];
     }
 
@@ -153,10 +158,14 @@ class ProductCRUDProvider implements ICRUDProvider, IPermissionsMetadata
      */
     public function onBeforeQuery($query)
     {
-        /** @var ICRUDUser $user */
+        /** @var IECommerceUser $user */
         $user = Auth::user();
         if (! $user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
-            $query->where('author_id', $user->id);
+            if ($user->hasRole(config('larapress.ecommerce.lms.owner_role_id'))) {
+                $query->whereIn('id', $user->getOwenedProductsIds());
+            } else {
+                $query->where('author_id', $user->id);
+            }
         }
 
         return $query;
@@ -169,10 +178,14 @@ class ProductCRUDProvider implements ICRUDProvider, IPermissionsMetadata
      */
     public function onBeforeAccess($object)
     {
-        /** @var ICRUDUser|IProfileUser $user */
+        /** @var IECommerceUser $user */
         $user = Auth::user();
         if (! $user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
-            return $user->id === $object->author_id;
+            if ($user->hasRole(config('larapress.ecommerce.lms.owner_role_id'))) {
+                return in_array($object->id, $user->getOwenedProductsIds());
+            } else {
+                return $user->id === $object->author_id;
+            }
         }
 
         return true;

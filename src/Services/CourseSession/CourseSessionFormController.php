@@ -22,6 +22,11 @@ class CourseSessionFormController extends Controller
             ->name(config('larapress.ecommerce.routes.products.name').'.reports.presence');
     }
 
+    public static function registerWebRoutes() {
+        Route::any('course-session/{session_id}/entry/{entry_id}/download/{file_id}', '\\' . self::class . '@serveCourseFormFile')
+            ->name('file-uploads.view.session.file');
+    }
+
     /**
      * Undocumented function
      *
@@ -29,7 +34,7 @@ class CourseSessionFormController extends Controller
      * @param IFileUploadService $service
      * @param CourseSessionFormRequest $request
      * @param int $session_id
-    * @return Response
+     * @return Response
      */
     public function receiveCourseForm(ICourseSessionFormService $courseService, IFileUploadService $service, CourseSessionFormRequest $request, $session_id)
     {
@@ -38,6 +43,22 @@ class CourseSessionFormController extends Controller
             return $courseService->receiveCourseForm($request, $session_id, $upload);
         });
     }
+
+
+    /**
+     * Undocumented function
+     *
+     * @param ICourseSessionFormService $courseService
+     * @param IFileUploadService $service
+     * @param CourseSessionFormRequest $request
+     * @param int $session_id
+     * @return Response
+     */
+    public function serveCourseFormFile(ICourseSessionFormService $courseService, Request $request, $session_id, $entry_id, $file_id)
+    {
+        return $courseService->serveSessionFormFile($request, $session_id, $entry_id, $file_id);
+    }
+
 
     /**
      * Undocumented function

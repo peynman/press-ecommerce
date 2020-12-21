@@ -29,6 +29,7 @@ use Larapress\ECommerce\Services\Banking\Events\BankGatewayTransactionEvent;
 use Larapress\ECommerce\Services\Banking\Events\CartPurchasedEvent;
 use Larapress\ECommerce\Services\Banking\Events\WalletTransactionEvent;
 use Larapress\Profiles\IProfileUser;
+use Larapress\Profiles\Models\FormEntry;
 
 class BankingService implements IBankingService
 {
@@ -532,11 +533,20 @@ class BankingService implements IBankingService
                     }
                 }
 
+
+                if (
+                    !is_null(config('larapress.ecommerce.lms.teacher_support_form_id')) &&
+                    $user->hasRole(config('larapress.ecommerce.lms.owner_role_id'))
+                ) {
+                    $ids = array_merge($ids, $user->getOwenedProductsIds());
+                }
+
                 if (count($groups) > 0) {
                     // include product ids with same group
                     $groupedIds = Product::select('id')->whereIn('group', $groups)->get()->pluck('id')->toArray();
                     $ids = array_merge($ids, $groupedIds);
                 }
+
                 return $ids;
             },
             ['purchased-cart:' . $user->id],

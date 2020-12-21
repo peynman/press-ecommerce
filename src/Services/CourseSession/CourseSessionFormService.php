@@ -12,6 +12,10 @@ use Larapress\CRUD\Services\ICRUDProvider;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Larapress\CRUD\Services\ICRUDService;
+use Larapress\ECommerce\CRUD\FileUploadCRUDProvider;
+use Larapress\ECommerce\IECommerceUser;
+use Larapress\Ecommerce\Services\FileUpload\IFileUploadService;
+use Larapress\Profiles\Models\FormEntry;
 
 class CourseSessionFormService implements ICourseSessionFormService
 {
@@ -57,6 +61,67 @@ class CourseSessionFormService implements ICourseSessionFormService
                 return $newValues;
             }
         );
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param Request $request
+     * @param int $sessionId
+     * @param int $entryId
+     * @param int $fileId
+     * @return Response
+     */
+    public function serveSessionFormFile($request, $sessionId, $entryId, $fileId) {
+        $session = Product::with('types')->find($sessionId);
+        if (is_null($session)) {
+            throw new AppException(AppException::ERR_OBJECT_NOT_FOUND);
+        }
+
+        /** @var FormEntry $entry */
+        $entry = FormEntry::find($entryId);
+
+        if (is_null($entry)) {
+            throw new AppException(AppException::ERR_OBJECT_NOT_FOUND);
+        }
+
+        if ($entry->tags !== 'course-'.$sessionId.'-taklif') {
+            throw new AppException(AppException::ERR_INVALID_QUERY);
+        }
+
+        if (!isset($entry->data['values']['file_ids']) || !in_array($fileId, $entry->data['values']['file_ids'])) {
+            throw new AppException(AppException::ERR_INVALID_QUERY);
+        }
+
+        $file = FileUpload::find($fileId);
+        if (is_null($file)) {
+            throw new AppException(AppException::ERR_OBJECT_NOT_FOUND);
+        }
+
+        /** @var IECommerceUser */
+        $user = Auth::user();
+
+        if (is_null($user)) {
+            throw new AppException(AppException::ERR_OBJ_ACCESS_DENIED);
+        }
+
+        if (!$user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
+            if ($user->hasRole(config('larapress.ecommerce.lms.owner_role_id'))) {
+                if (!in_array($sessionId, $user->getOwenedProductsIds())) {
+                    throw new AppException(AppException::ERR_OBJ_ACCESS_DENIED);
+                }
+            } else {
+                $provider = new FileUploadCRUDProvider();
+                if (!$provider->onBeforeAccess($file)) {
+                    throw new AppException(AppException::ERR_OBJ_ACCESS_DENIED);
+                }
+            }
+        }
+
+        /** @var IFileUploadService $fileService */
+        $fileService = app(IFileUploadService::class);
+
+        return $fileService->serveFile($request, $file, false);
     }
 
     /**
@@ -133,8 +198,6 @@ class CourseSessionFormService implements ICourseSessionFormService
                 'form_entries' => function ($q) use ($sessionId) {
                     $q->where('tags', 'course-' . $sessionId . '-presence');
                 },
-                'phones',
-                'domains',
             ]);
         });
 
