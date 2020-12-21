@@ -1153,16 +1153,18 @@ class BankingService implements IBankingService
                 BaseFlags::isActive($cart->flags, Cart::FLAGS_PERIOD_PAYMENT_CART) ||
                 count($items) === 1
             ) {
-                $eachVirtaulShare = floor($virtualMoneyDecrease / count($items));
-                $eachRealShare = floor($realMoneyDecrese / count($items));
-                if ($eachVirtaulShare > 0) {
-                    foreach ($items as $item) {
-                        $virtualShare[$item->id] = $eachVirtaulShare;
+                if (count($items) > 0) {
+                    $eachVirtaulShare = floor($virtualMoneyDecrease / count($items));
+                    $eachRealShare = floor($realMoneyDecrese / count($items));
+                    if ($eachVirtaulShare > 0) {
+                        foreach ($items as $item) {
+                            $virtualShare[$item->id] = $eachVirtaulShare;
+                        }
                     }
-                }
-                if ($eachRealShare > 0) {
-                    foreach ($items as $item) {
-                        $realShare[$item->id] = $eachRealShare;
+                    if ($eachRealShare > 0) {
+                        foreach ($items as $item) {
+                            $realShare[$item->id] = $eachRealShare;
+                        }
                     }
                 }
             } else {
