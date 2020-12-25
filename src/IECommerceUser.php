@@ -95,6 +95,14 @@ interface IECommerceUser extends IProfileUser {
      */
     public function getBalanceAttribute();
 
+
+    /**
+     * Undocumented function
+     *
+     * @return array
+     */
+    public function getOwenedProductsIds();
+
     /**
      * Undocumented function
      *

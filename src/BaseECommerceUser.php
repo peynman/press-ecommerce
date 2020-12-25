@@ -8,8 +8,10 @@ use Larapress\ECommerce\Models\WalletTransaction;
 use Larapress\ECommerce\Services\SupportGroup\FormEntryUserSupportProfileRelationship;
 use Larapress\Profiles\Models\FormEntry;
 use Illuminate\Support\Str;
+use Larapress\ECommerce\Models\Product;
 
-trait BaseECommerceUser {
+trait BaseECommerceUser
+{
     /**
      * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
@@ -24,21 +26,24 @@ trait BaseECommerceUser {
     /**
      * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
-    public function purchases() {
+    public function purchases()
+    {
         return $this->carts()->whereIn('status', [Cart::STATUS_ACCESS_COMPLETE, Cart::STATUS_ACCESS_GRANTED]);
     }
 
     /**
      * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
-    public function purchase_cart() {
+    public function purchase_cart()
+    {
         return $this->carts()->whereIn('status', [Cart::STATUS_UNVERIFIED]);
     }
 
     /**
      * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
-    public function wallet() {
+    public function wallet()
+    {
         return $this->hasMany(
             WalletTransaction::class,
             'user_id',
@@ -46,7 +51,8 @@ trait BaseECommerceUser {
     }
 
 
-    public function wallet_balance() {
+    public function wallet_balance()
+    {
         return $this->wallet()
             ->selectRaw('user_id, sum(amount) as balance')
             ->where('currency', config('larapress.ecommerce.banking.currency.id'))
@@ -57,10 +63,11 @@ trait BaseECommerceUser {
     /**
      * Undocumented function
      *
-     * @return void
+     * @return FormEntry
      */
-    public function getProfileAttribute() {
-        if ($this->hasRole(config('larapress.profiles.security.roles.affiliate'))) {
+    public function getProfileAttribute()
+    {
+        if ($this->hasRole(['support', 'support-external'])) {
             return $this->form_profile_support;
         }
 
@@ -70,9 +77,27 @@ trait BaseECommerceUser {
     /**
      * Undocumented function
      *
+     * @return array
+     */
+    public function getOwenedProductsIds()
+    {
+        $ownerEntries = $this->form_entries()
+            ->where('form_id', config('larapress.ecommerce.lms.teacher_support_form_id'))
+            ->get()
+            ->map(function (FormEntry $entry) {
+                return intval(\Illuminate\Support\Str::substr($entry->tags, strlen('product-')));
+            })->toArray();
+        $childIds = Product::select('id')->whereIn('parent_id', $ownerEntries)->pluck('id')->toArray();
+        return array_merge($ownerEntries, $childIds);
+    }
+
+    /**
+     * Undocumented function
+     *
      * @return \Illuminate\Database\Eloquent\Relations\HasOne
      */
-    public function form_profile_default() {
+    public function form_profile_default()
+    {
         return $this->hasOne(
             FormEntry::class,
             'user_id'
@@ -84,7 +109,8 @@ trait BaseECommerceUser {
      *
      * @return \Illuminate\Database\Eloquent\Relations\HasOne
      */
-    public function form_profile_support() {
+    public function form_profile_support()
+    {
         return $this->hasOne(
             FormEntry::class,
             'user_id'
@@ -96,7 +122,8 @@ trait BaseECommerceUser {
      *
      * @return \Illuminate\Database\Eloquent\Relations\HasOne
      */
-    public function form_support_registration_entry() {
+    public function form_support_registration_entry()
+    {
         return $this->hasOne(
             FormEntry::class,
             'user_id'
@@ -109,7 +136,8 @@ trait BaseECommerceUser {
      *
      * @return null|int
      */
-    public function getSupportUserId() {
+    public function getSupportUserId()
+    {
         if (!is_null($this->form_support_registration_entry)) {
             $tags = $this->form_support_registration_entry->tags;
             if (Str::startsWith($tags, 'supporg-group-')) {
@@ -125,7 +153,8 @@ trait BaseECommerceUser {
      *
      * @return \Illuminate\Database\Eloquent\Relations\HasOne
      */
-    public function form_support_introducer_entry() {
+    public function form_support_introducer_entry()
+    {
         return $this->hasOne(
             FormEntry::class,
             'user_id'
@@ -137,7 +166,8 @@ trait BaseECommerceUser {
      *
      * @return \Illuminate\Database\Eloquent\Relations\HasOne
      */
-    public function form_support_user_profile() {
+    public function form_support_user_profile()
+    {
         return new FormEntryUserSupportProfileRelationship($this);
     }
 
@@ -146,7 +176,8 @@ trait BaseECommerceUser {
      *
      * @return void
      */
-    public function getSupportUserProfileAttribute() {
+    public function getSupportUserProfileAttribute()
+    {
         return $this->form_support_user_profile;
     }
 
@@ -155,7 +186,8 @@ trait BaseECommerceUser {
      *
      * @return array
      */
-    public function getBalanceAttribute() {
+    public function getBalanceAttribute()
+    {
         $wallet_balance = $this->wallet_balance;
         if (count($wallet_balance) === 0) {
             $wallet_balance = 0;
@@ -174,21 +206,22 @@ trait BaseECommerceUser {
      *
      * @return void
      */
-    public function getIntroducerDataAttribute() {
+    public function getIntroducerDataAttribute()
+    {
         return Helpers::getCachedValue(
-            'larapress.users.'.$this->id.'.introducer',
+            'larapress.users.' . $this->id . '.introducer',
             function () {
                 $entry = $this->form_entries()
-                                ->where('form_id', config('larapress.ecommerce.lms.introducer_default_form_id'))
-                                ->first();
-                if (! is_null($entry)) {
-                    $introducer_id = explode('-',$entry->tags)[2];
+                    ->where('form_id', config('larapress.ecommerce.lms.introducer_default_form_id'))
+                    ->first();
+                if (!is_null($entry)) {
+                    $introducer_id = explode('-', $entry->tags)[2];
                     $class = config('larapress.crud.user.class');
                     $introducer = call_user_func([$class, 'find'], $introducer_id);
                     return [$introducer, $entry];
                 }
             },
-            ['user.introducer:'.$this->id],
+            ['user.introducer:' . $this->id],
             null
         );
     }

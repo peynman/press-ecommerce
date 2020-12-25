@@ -34,6 +34,7 @@ Route::middleware(config('larapress.pages.middleware'))
 
         PDFFileDownloadController::registerWebRoutes();
         FileUploadController::registerWebRoutes();
+        CourseSessionFormController::registerWebRoutes();
 
         // alwayes put PageRenderController at last
         PageRenderController::registerPublicWebRoutes();

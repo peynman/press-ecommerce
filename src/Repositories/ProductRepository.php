@@ -210,6 +210,17 @@ class ProductRepository implements IProductRepository
      */
     public function getProductDetails($user, $product_id)
     {
+        $includeReports = false;
+        if (!is_null($user)) {
+            if ($user->hasPermission(config('larapress.ecommerce.routes.products.name').'.sales')) {
+                if ($user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
+                    $includeReports = true;
+                } else if ($user->hasRole(config('larapress.ecommerce.lms.owner_role_id'))) {
+                    $includeReports = in_array(intval($product_id), $user->getOwenedProductsIds());
+                }
+            }
+        }
+
         /** @var Product */
         $product = Product::with([
             'children' => function ($q) {
@@ -237,6 +248,7 @@ class ProductRepository implements IProductRepository
 
         $product['available'] = in_array($product->id, $purchases) || $product->isFree();
         $product['locked'] = in_array($product->id, $locked) && !$product->isFree();
+        /** @var array $children */
         $children = $product['children'];
 
         foreach ($children as &$child) {
@@ -267,14 +279,12 @@ class ProductRepository implements IProductRepository
             }
         }
 
-        if (!is_null($user)) {
-            if ($user->hasPermission(config('larapress.ecommerce.routes.products.name').'.'.IPermissionsMetadata::REPORTS)) {
-                $product->sales_fixed;
-                $product->sales_periodic;
-                $product->sales_periodic_payment;
-                $product->sales_real_amount;
-                $product->sales_virtual_amount;
-            }
+        if ($includeReports) {
+            $product->sales_fixed;
+            $product->sales_periodic;
+            $product->sales_periodic_payment;
+            $product->sales_real_amount;
+            $product->sales_virtual_amount;
         }
 
         return $product;
@@ -352,7 +362,6 @@ class ProductRepository implements IProductRepository
     }
 
     protected function applyPublishExpireWindow($query) {
-        /*
         $query->where(function ($q) {
             $q->whereNull('publish_at');
             $q->orWhereDate('publish_at', '<=', Carbon::now());
@@ -361,7 +370,6 @@ class ProductRepository implements IProductRepository
             $q->whereNull('expires_at');
             $q->orWhereDate('expires_at', '>', Carbon::now());
         });
-        */
         return $query;
     }
 }
