@@ -16,7 +16,7 @@ class PDFFileDownloadController extends Controller
 
     public static function registerWebRoutes()
     {
-        Route::any('session/{session_id}/pdf/{file_id}/download', '\\' . self::class . '@downloadPDF')
+        Route::any('session/{session_id}/{file_type}/{file_id}/download', '\\' . self::class . '@downloadPDF')
             ->name('session.any.pdf.download');
     }
 
@@ -26,14 +26,14 @@ class PDFFileDownloadController extends Controller
      *
      * @return Response
      */
-    public function downloadPDF(IProductService $service, IFileUploadService $fileService, Request $request, $session_id, $file_id)
+    public function downloadPDF(IProductService $service, IFileUploadService $fileService, Request $request, $session_id, $file_type, $file_id)
     {
         return $service->checkProductLinkAccess(
             $request,
             $session_id,
             $file_id,
             function ($request, $product, $link) use ($fileService) {
-                return $fileService->serveFile($request, $link);
+                return $fileService->serveFile($request, $link, false);
             }
         );
     }
