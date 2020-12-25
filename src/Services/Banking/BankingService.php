@@ -805,7 +805,7 @@ class BankingService implements IBankingService
             return isset($data['payment_at']) && !is_null($data['payment_at']);
         }));
         usort($periodConfig, function($a, $b) {
-            return $a['payment_at']->diffInDays($b['payment_at'], 'days');
+            return $a['payment_at']->getTimestamp() - $b['payment_at']->getTimestamp();
         });
         $payment_index = -1;
         $paymentInfo = null;
@@ -1046,22 +1046,32 @@ class BankingService implements IBankingService
 
                 $payment_index = $cart->data['periodic_pay']['index'];
                 $flags = $originalCart->flags;
-                if ($payment_index == 0) { // last period index
-                    $flags |= Cart::FLAGS_PERIODIC_COMPLETED;
+
+                if (!isset($originalCart->data['periodic_custom']) || count($originalCart->data['periodic_custom']) === 0) {
+                    Log::critical('Cart custom periodic payment with id '.$cart->id.' original cart id '.$originalCart->id.' is not custom payment');
+                    return $cart;
                 }
 
+                $customPeriods = array_filter($originalCart->data['periodic_custom'], function($data) {
+                    return isset($data['payment_at']) && !is_null($data['payment_at']);
+                });
                 $map_indexer = 0;
                 $periodConfig = array_map(function ($data) use(&$map_indexer) {
                     $data['payment_at'] = Carbon::parse($data['payment_at']);
                     $data['orig_index'] = $map_indexer++;
                     return $data;
-                }, array_filter($originalCart->data['periodic_custom'], function($data) {
-                    return isset($data['payment_at']) && !is_null($data['payment_at']);
-                }));
-                usort($periodConfig, function($a, $b) {
-                    return $a['payment_at']->diffInDays($b['payment_at'], 'days');
+                }, $customPeriods);
+                $now = Carbon::now();
+                usort($periodConfig, function($a, $b) use($now) {
+                    return $a['payment_at']->getTimestamp() - $b['payment_at']->getTimestamp();
                 });
+
                 $unsorted_index = $periodConfig[$payment_index]['orig_index'];
+                if ($payment_index == count($customPeriods)  - 1) { // last period index
+                    $flags |= Cart::FLAGS_PERIODIC_COMPLETED;
+                } else {
+                    $flags = ($flags & ~Cart::FLAGS_PERIODIC_COMPLETED);
+                }
 
                 $origData['periodic_custom'][$unsorted_index]['status'] = 1;
                 $origData['periodic_custom'][$unsorted_index]['payment_paid_at'] = $now;
