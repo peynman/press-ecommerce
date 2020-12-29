@@ -45,6 +45,8 @@ class WalletTransaction extends Model
         'type',
         'data',
         'flags',
+        'created_at',
+        'updated_at',
     ];
 
     protected $casts = [

@@ -62,7 +62,7 @@ interface IBankingService
      * @param Cart $cart
      * @return Cart
      */
-    public function markCartPurchased($request, Cart $cart);
+    public function markCartPurchased($request, Cart $cart, $walletTimestamp = null);
 
     /**
      * Undocumented function

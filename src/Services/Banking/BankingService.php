@@ -981,8 +981,12 @@ class BankingService implements IBankingService
      * @param Cart $cart
      * @return void
      */
-    public function markCartPurchased($request, Cart $cart)
+    public function markCartPurchased($request, Cart $cart, $walletTimestamp = null)
     {
+        if (is_null($walletTimestamp)) {
+            $walletTimestamp = Carbon::now();
+        }
+
         $periodicFlag = isset($cart->data['periodic_product_ids']) && count($cart->data['periodic_product_ids']) > 0 ? Cart::FLAGS_HAS_PERIODS : 0;
         $data = $cart->data;
         if (!isset($data['period_start']) || is_null($data['period_start'])) {
@@ -1232,6 +1236,8 @@ class BankingService implements IBankingService
                     'amount' => -1 * $virtualMoneyDecrease,
                     'currency' => $cart->currency,
                     'type' => WalletTransaction::TYPE_VIRTUAL_MONEY,
+                    'created_at' => $walletTimestamp,
+                    'updated_at' => $walletTimestamp,
                     'data' => [
                         'cart_id' => $cart->id,
                         'period_start' => $purchasedAt,
@@ -1252,6 +1258,8 @@ class BankingService implements IBankingService
                     'amount' => -1 * $realMoneyDecrese,
                     'currency' => $cart->currency,
                     'type' => WalletTransaction::TYPE_REAL_MONEY,
+                    'created_at' => $walletTimestamp,
+                    'updated_at' => $walletTimestamp,
                     'data' => [
                         'cart_id' => $cart->id,
                         'period_start' => $purchasedAt,
