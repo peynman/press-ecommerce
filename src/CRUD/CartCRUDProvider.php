@@ -94,6 +94,7 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         'products_count' => 'has-count:products:>=',
         'flags' => 'bitwise:flags',
         'amount' => 'equals:amount',
+        'hasDescription' => 'not-null:data->description'
     ];
 
 
@@ -205,7 +206,10 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         $data = [
             'periodic_product_ids' => $periodic_ids,
             'description' => isset($args['data']['description']) ? $args['data']['description'] : null,
+            'periodic_payments' => isset($args['data']['periodic_payments']) ? $args['data']['periodic_payments']: [],
+            'gift_code' => isset($args['data']['gift_code']) ? $args['data']['gift_code']: [],
         ];
+
         if (isset($args['data']['periodic_custom']) && count($args['data']['periodic_custom']) > 0) {
             $data['periodic_custom'] = $args['data']['periodic_custom'];
         }

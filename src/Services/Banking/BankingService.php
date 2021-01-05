@@ -829,7 +829,6 @@ class BankingService implements IBankingService
                 'flags' => Cart::FLAGS_PERIOD_PAYMENT_CART,
                 'status' => Cart::STATUS_UNVERIFIED,
                 'data->periodic_pay->originalCart' => $originalCart->id,
-                'data->periodic_pay->index' => $payment_index,
             ], [
                 'amount' => $paymentInfo['amount'],
                 'data' => [
@@ -1101,6 +1100,8 @@ class BankingService implements IBankingService
                 $flags = $originalCart->flags;
                 if (count($origData['periodic_payments'][$originalProductId]) >= $cart->data['periodic_pay']['total']) {
                     $flags |= Cart::FLAGS_PERIODIC_COMPLETED;
+                } else {
+                    $flags = ($flags & ~Cart::FLAGS_PERIODIC_COMPLETED);
                 }
 
                 $originalCart->update([

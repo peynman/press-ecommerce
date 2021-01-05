@@ -84,13 +84,26 @@ class ProductCRUDProvider implements ICRUDProvider, IPermissionsMetadata
     public $defaultShowRelations = [
         'types',
         'categories',
-        'sales_real_amount',
-        'sales_virtual_amount',
-        'sales_fixed',
-        'sales_periodic',
-        'sales_periodic_payment',
     ];
     public $filterFields = [
+        'relations' => [
+            'sales_real_amount' => [
+                'sales_from' => 'after:created_at',
+                'sales_to' => 'before:created_at',
+            ],
+            'sales_virtual_amount' => [
+                'sales_from' => 'after:created_at',
+                'sales_to' => 'before:created_at',
+            ],
+            'sales_fixed' => [
+                'sales_from' => 'after:created_at',
+                'sales_to' => 'before:created_at',
+            ],
+            'sales_periodic' => [
+                'sales_from' => 'after:created_at',
+                'sales_to' => 'before:created_at',
+            ],
+        ],
         'types' => 'has:types',
         'categories' => 'has:categories',
         'parent_id' => 'equals:parent_id',
