@@ -65,7 +65,11 @@ class Product extends Model implements ICartItem
     ];
 
     public $hidden = [
-        'sales'
+        // 'sales_real_amount',
+        // 'sales_virtual_amount',
+        // 'sales_fixed',
+        // 'sales_periodic',
+        // 'sales_periodic_payment',
     ];
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo

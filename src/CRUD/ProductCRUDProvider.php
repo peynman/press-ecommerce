@@ -14,7 +14,7 @@ use Larapress\ECommerce\Services\Product\ProductReports;
 use Larapress\Profiles\Models\FormEntry;
 use Larapress\Profiles\Services\FormEntry\IFormEntryService;
 use Larapress\ECommerce\IECommerceUser;
-
+use Larapress\Reports\Services\IMetricsService;
 use Larapress\Reports\Services\IReportsService;
 
 class ProductCRUDProvider implements ICRUDProvider, IPermissionsMetadata
@@ -56,13 +56,6 @@ class ProductCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         'types' => 'nullable|array|min:1',
         'types.*.id' => 'nullable|exists:product_types,id',
         'categories.*.id' => 'nullable|exists:product_categories,id',
-    ];
-    public $autoSyncRelations = [];
-    public $validSortColumns = [
-        'id',
-        'name',
-        'publish_at',
-        'expires_at'
     ];
     public $searchColumns = [
         'name',
@@ -111,16 +104,28 @@ class ProductCRUDProvider implements ICRUDProvider, IPermissionsMetadata
     ];
     public $filterDefaults = [];
 
+    public function getValidSortColumns()
+    {
+        return [
+            'id' => 'id',
+            'name' => 'name',
+            'publish_at' => 'publish_at',
+            'expires_at' => 'expires_at',
+            'created_at' => 'created_at',
+            'updated_at' => 'updated_at',
+            'starts_at' => function($query, $dir) {
+                $query->orderBy('data->types->session->start_at', $dir);
+            },
+        ];
+    }
 
     /**
      *
      */
     public function getReportSources()
     {
-        /** @var IReportsService */
-        $service = app(IReportsService::class);
         return [
-            new ProductReports($service)
+            new ProductReports(app(IReportsService::class), app(IMetricsService::class))
         ];
     }
 

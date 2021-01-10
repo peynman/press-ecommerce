@@ -22,7 +22,9 @@ use Larapress\Reports\Models\MetricCounter;
 use Larapress\Reports\Services\IMetricsService;
 use Larapress\Reports\Services\IReportsService;
 
-class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
+class CartCRUDProvider implements
+    ICRUDProvider,
+    IPermissionsMetadata
 {
     use BaseCRUDProvider;
 
@@ -65,15 +67,6 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         'has_exact:customer,name',
         'has_exact:customer.phones,number',
     ];
-    public $validSortColumns = [
-        'id',
-        'customer_id',
-        'domain_id',
-        'amount',
-        'currency',
-        'status',
-        'flags',
-    ];
     public $validRelations = [
         'customer',
         'domain',
@@ -98,6 +91,22 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
     ];
 
 
+    public function getValidSortColumns()
+    {
+        return [
+            'id' => 'id',
+            'customer_id' => 'customer_id',
+            'domain_id' => 'domain_id',
+            'amount' => 'amount',
+            'currency' => 'currency',
+            'status' => 'status',
+            'flags' => 'flags',
+            'period_start' => function ($query, string $dir) {
+                $query->orderBy('data->period_start', $dir);
+            }
+        ];
+    }
+
     /**
      *
      */
@@ -119,7 +128,7 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
      */
     public function onBeforeQuery($query)
     {
-        /** @var IProfileUser|ICRUDUser $user */
+        /** @var IProfileUser $user */
         $user = Auth::user();
         if (!$user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
             $query->orWhereIn('domain_id', $user->getAffiliateDomainIds());
@@ -138,7 +147,7 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
      */
     public function onBeforeAccess($object)
     {
-        /** @var ICRUDUser|IProfileUser $user */
+        /** @var IProfileUser $user */
         $user = Auth::user();
         if (!$user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
             return in_array($object->domain_id, $user->getAffiliateDomainIds());
@@ -206,8 +215,8 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         $data = [
             'periodic_product_ids' => $periodic_ids,
             'description' => isset($args['data']['description']) ? $args['data']['description'] : null,
-            'periodic_payments' => isset($args['data']['periodic_payments']) ? $args['data']['periodic_payments']: [],
-            'gift_code' => isset($args['data']['gift_code']) ? $args['data']['gift_code']: [],
+            'periodic_payments' => isset($args['data']['periodic_payments']) ? $args['data']['periodic_payments'] : [],
+            'gift_code' => isset($args['data']['gift_code']) ? $args['data']['gift_code'] : [],
         ];
 
         if (isset($args['data']['periodic_custom']) && count($args['data']['periodic_custom']) > 0) {
@@ -313,14 +322,14 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
 
         // remove metrics about this cart
         MetricCounter::query()
-            ->where('group', 'cart:'.$object->id)
+            ->where('group', 'cart:' . $object->id)
             ->delete();
 
         if ($object->status == Cart::STATUS_ACCESS_COMPLETE) {
             $object->flags |= Cart::FLAGS_USER_CART;
 
             // accept purchase again
-                // add metrics again
+            // add metrics again
             /** @var IBankingService */
             $banking = app(IBankingService::class);
             $banking->markCartPurchased(
@@ -358,7 +367,7 @@ class CartCRUDProvider implements ICRUDProvider, IPermissionsMetadata
 
         // remove metrics about this cart
         MetricCounter::query()
-            ->where('group', 'cart:'.$object->id)
+            ->where('group', 'cart:' . $object->id)
             ->delete();
 
         Cache::tags(['purchasing-cart:' . $object->customer_id])->flush();

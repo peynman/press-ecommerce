@@ -30,8 +30,10 @@ use Larapress\ECommerce\Services\Banking\Events\CartPurchasedEvent;
 use Larapress\ECommerce\Services\Banking\Events\WalletTransactionEvent;
 use Larapress\Profiles\IProfileUser;
 use Larapress\Profiles\Models\FormEntry;
+use Symfony\Component\Console\Helper\Helper;
 
-class BankingService implements IBankingService
+class BankingService implements
+    IBankingService
 {
     /**
      * Undocumented function
@@ -575,11 +577,11 @@ class BankingService implements IBankingService
                             $periodConfig = array_map(function ($data) {
                                 $data['payment_at'] = Carbon::parse($data['payment_at']);
                                 return $data;
-                            }, array_filter($cart->data['periodic_custom'], function($data) {
+                            }, array_filter($cart->data['periodic_custom'], function ($data) {
                                 return isset($data['payment_at']) && !is_null($data['payment_at']);
                             }));
-                            usort($periodConfig, function($a, $b) {
-                                return $a['payment_at']->diffInDays($b['payment_at']);
+                            usort($periodConfig, function ($a, $b) {
+                                return $a['payment_at']->getTimestamp() - $b['payment_at']->getTimestamp();
                             });
                             $paymentInfo = null;
                             foreach ($periodConfig as $custom) {
@@ -801,10 +803,10 @@ class BankingService implements IBankingService
         $periodConfig = array_map(function ($data) {
             $data['payment_at'] = Carbon::parse($data['payment_at']);
             return $data;
-        }, array_filter($originalCart->data['periodic_custom'], function($data) {
+        }, array_filter($originalCart->data['periodic_custom'], function ($data) {
             return isset($data['payment_at']) && !is_null($data['payment_at']);
         }));
-        usort($periodConfig, function($a, $b) {
+        usort($periodConfig, function ($a, $b) {
             return $a['payment_at']->getTimestamp() - $b['payment_at']->getTimestamp();
         });
         $payment_index = -1;
@@ -1035,7 +1037,7 @@ class BankingService implements IBankingService
         if (BaseFlags::isActive($cart->flags, Cart::FLAGS_PERIOD_PAYMENT_CART)) {
             $originalCart = Cart::with('products')->find($cart->data['periodic_pay']['originalCart']);
             $origData = $originalCart->data;
-            $now = Carbon::now();
+            $now = $cart->data['period_start'];
 
             // custom cart with periodic payments or
             if (isset($cart->data['periodic_pay']['custom'])) {
@@ -1051,23 +1053,28 @@ class BankingService implements IBankingService
                 $flags = $originalCart->flags;
 
                 if (!isset($originalCart->data['periodic_custom']) || count($originalCart->data['periodic_custom']) === 0) {
-                    Log::critical('Cart custom periodic payment with id '.$cart->id.' original cart id '.$originalCart->id.' is not custom payment');
+                    Log::critical('Cart custom periodic payment with id ' . $cart->id . ' original cart id ' . $originalCart->id . ' is not custom payment');
                     return $cart;
                 }
 
-                $customPeriods = array_filter($originalCart->data['periodic_custom'], function($data) {
+                $customPeriods = array_filter($originalCart->data['periodic_custom'], function ($data) {
                     return isset($data['payment_at']) && !is_null($data['payment_at']);
                 });
                 $map_indexer = 0;
-                $periodConfig = array_map(function ($data) use(&$map_indexer) {
+                $periodConfig = array_map(function ($data) use (&$map_indexer) {
                     $data['payment_at'] = Carbon::parse($data['payment_at']);
                     $data['orig_index'] = $map_indexer++;
                     return $data;
                 }, $customPeriods);
                 $now = Carbon::now();
-                usort($periodConfig, function($a, $b) use($now) {
+                usort($periodConfig, function ($a, $b) use ($now) {
                     return $a['payment_at']->getTimestamp() - $b['payment_at']->getTimestamp();
                 });
+
+                if (!isset($periodConfig[$payment_index]['orig_index'])) {
+                    Log::critical('Cart custom periodic payment with id ' . $cart->id . ' original cart id ' . $originalCart->id . ' payment index not found');
+                    return $cart;
+                }
 
                 $unsorted_index = $periodConfig[$payment_index]['orig_index'];
                 if ($payment_index == count($customPeriods)  - 1) { // last period index
@@ -1095,7 +1102,7 @@ class BankingService implements IBankingService
                 }
                 $origData['periodic_payments'][$originalProductId][] = [
                     'payment_cart' => $cart->id,
-                    'payment_date' => Carbon::now(),
+                    'payment_date' => $now,
                 ];
                 $flags = $originalCart->flags;
                 if (count($origData['periodic_payments'][$originalProductId]) >= $cart->data['periodic_pay']['total']) {
@@ -1208,13 +1215,14 @@ class BankingService implements IBankingService
                     }
 
                     if ($virtualMoneyDecrease > 0 && $virtualMoneyDecrease > $usedVirtual) {
-                        if ($virtualMoneyDecrease >= $itemPrice) {
+                        $remainingVirtual = $virtualMoneyDecrease - $usedVirtual;
+                        if ($remainingVirtual >= $itemPrice) {
                             $usedVirtual += $itemPrice;
                             $virtualShare[$item->id] = $itemPrice;
                         } else {
-                            $usedVirtual = $virtualMoneyDecrease;
-                            $virtualShare[$item->id] = $virtualMoneyDecrease;
-                            $itemRealShare = $itemPrice - $virtualMoneyDecrease;
+                            $usedVirtual += $remainingVirtual;
+                            $virtualShare[$item->id] = $remainingVirtual;
+                            $itemRealShare = $itemPrice - $remainingVirtual;
                             $realShare[$item->id] = $itemRealShare;
                         }
                     } else if ($realMoneyDecrese > 0 && $realMoneyDecrese > $usedReal) {
@@ -1393,6 +1401,14 @@ class BankingService implements IBankingService
         $multiUsePerUser = isset($code->data['multi_time_use']) && $code->data['multi_time_use'] ? true : false;
         if (in_array($user->id, $code->use_list->pluck('user_id')->toArray()) && !in_array($user->id, $avUsersIds) && !$multiUsePerUser) {
             throw new AppException(AppException::ERR_INVALID_PARAMS);
+        }
+
+        $suppUserId = isset($code->data['support_id']) ? $code->data['support_id'] : "";
+        if (is_numeric($suppUserId)) {
+            $userSupport = $user->getSupportUserId();
+            if ($user->getSupportUserId() != $suppUserId) {
+                throw new AppException(AppException::ERR_GIFT_LOCKED_TO_SUPPORT);
+            }
         }
 
         $cart = $this->getPurchasingCart($user, $currency);
@@ -1585,13 +1601,19 @@ class BankingService implements IBankingService
         }
 
         $data = $giftCode->toArray();
-        $data['code'] = Helpers::randomString(10);
         unset($data['id']);
-        /** @var GiftCode */
-        $duplicate = GiftCode::create($data);
 
-        CRUDCreated::dispatch(Auth::user(), $duplicate, GiftCodeCRUDProvider::class, Carbon::now());
+        $count = $request->get('duplicate', 1);
+        $duplicates = [];
 
-        return $duplicate;
+        for ($i = 0; $i < $count; $i++) {
+            $data['code'] = Helpers::randomNumbers(8);
+            /** @var GiftCode */
+            $duplicate = GiftCode::create($data);
+            CRUDCreated::dispatch(Auth::user(), $duplicate, GiftCodeCRUDProvider::class, Carbon::now());
+            $duplicates[] = $duplicate;
+        }
+
+        return collect($duplicates)->pluck('code');
     }
 }

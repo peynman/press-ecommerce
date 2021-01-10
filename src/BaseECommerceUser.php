@@ -140,8 +140,8 @@ trait BaseECommerceUser
     {
         if (!is_null($this->form_support_registration_entry)) {
             $tags = $this->form_support_registration_entry->tags;
-            if (Str::startsWith($tags, 'supporg-group-')) {
-                return Str::substr($tags, Str::length('supporg-group-'));
+            if (Str::startsWith($tags, 'support-group-')) {
+                return Str::substr($tags, Str::length('support-group-'));
             }
         }
 
