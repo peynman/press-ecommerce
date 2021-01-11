@@ -65,6 +65,8 @@ class WalletTransactionReport implements IReportSource, ShouldQueue
         ])->find($event->transactionId);
 
         $supportProfileId = $transaction->user->getSupportUserId();
+        $supportProfileTimestamp = $transaction->user->getSupportUserStartedDate();
+        $supportRole = $transaction->user->getSupportUserRole();
 
         $tags = [
             'domain' => $transaction->domain_id,
@@ -92,7 +94,7 @@ class WalletTransactionReport implements IReportSource, ShouldQueue
             $purchaseTimestamp
         );
 
-        if (!is_null($supportProfileId)) {
+        if (!is_null($supportProfileId) && $supportProfileTimestamp >= $purchaseTimestamp) {
             $this->metrics->pushMeasurement(
                 $transaction->domain_id,
                 $tags,
@@ -115,12 +117,19 @@ class WalletTransactionReport implements IReportSource, ShouldQueue
                 );
             }
 
-            if (!is_null($supportProfileId)) {
+            if (!is_null($supportProfileId) && $supportProfileTimestamp >= $purchaseTimestamp) {
                 foreach ($shares as $productId => $shareAmount) {
                     $this->metrics->pushMeasurement(
                         $transaction->domain_id,
                         $tags,
                         'product.'.$productId.'.sales.'.$transaction->type.'.amount.'.$supportProfileId,
+                        floatval($shareAmount),
+                        $purchaseTimestamp
+                    );
+                    $this->metrics->pushMeasurement(
+                        $transaction->domain_id,
+                        $tags,
+                        'product.'.$productId.'.sales.'.$transaction->type.'.roles.'.$supportRole->name.'.amount',
                         floatval($shareAmount),
                         $purchaseTimestamp
                     );

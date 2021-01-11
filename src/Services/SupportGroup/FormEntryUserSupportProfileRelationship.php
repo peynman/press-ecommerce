@@ -23,7 +23,7 @@ class FormEntryUserSupportProfileRelationship extends Relation {
      */
     public function addConstraints() {
         $this->query
-            ->select(DB::raw('profile_entries.*, form_entries.updated_at as registrated_at, form_entries.user_id as user_id'))
+            ->select(DB::raw('profile_entries.*, form_entries.updated_at as registrated_at, form_entries.user_id as user_id, profile_entries.user_id as support_user_id'))
             ->join('users', function ($join) {
                 $join->on('tags', '=', DB::raw('CONCAT(\'support-group-\', users.id)'));
             })

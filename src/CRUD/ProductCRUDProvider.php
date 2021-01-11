@@ -73,6 +73,8 @@ class ProductCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         'sales_fixed',
         'sales_periodic',
         'sales_periodic_payment',
+        'sales_role_support_amount',
+        'sales_role_support_ext_amount',
     ];
     public $defaultShowRelations = [
         'types',
@@ -96,6 +98,14 @@ class ProductCRUDProvider implements ICRUDProvider, IPermissionsMetadata
                 'sales_from' => 'after:created_at',
                 'sales_to' => 'before:created_at',
             ],
+            'sales_role_support_amount' => [
+                'sales_from' => 'after:created_at',
+                'sales_to' => 'before:created_at',
+            ],
+            'sales_role_support_ext_amount' => [
+                'sales_from' => 'after:created_at',
+                'sales_to' => 'before:created_at',
+            ]
         ],
         'types' => 'has:types',
         'categories' => 'has:categories',

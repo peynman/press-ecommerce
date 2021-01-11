@@ -999,7 +999,7 @@ class BankingService implements
             'data' => $data,
         ]);
         $this->markGiftCodeUsageForCart($cart);
-        $supportProfileId = isset($cart->customer->supportProfile['id']) ? $cart->customer->supportProfile['id'] : null;
+        $supportProfileId = $cart->customer->getSupportUserId();
         $purchasedAt = isset($cart->data['period_start']) ? Carbon::parse($cart->data['period_start']) : $cart->updated_at;
         $user = $cart->customer;
 
@@ -1158,8 +1158,10 @@ class BankingService implements
                     isset($originalCart->data['periodic_custom']) && count($originalCart->data['periodic_custom']) > 0 &&
                     isset($cart->data['periodic_pay']['custom']) && $cart->data['periodic_pay']['custom']
                 ) {
+                    // for custom items in periodic pay, just use all original cart items
                     $items = $originalItems;
                 } else {
+                    // for system periodic pay, check this payment id is still in the original cart id !?
                     $originalProductId = $cart->data['periodic_pay']['product']['id'];
                     foreach ($originalItems as $origItem) {
                         if ($originalProductId == $origItem->id) {
@@ -1275,6 +1277,7 @@ class BankingService implements
                         'description' => trans('larapress::ecommerce.banking.messages.wallet-descriptions.cart_purchased', ['cart_id' => $cart->id]),
                         'balance' => $this->getUserBalance($cart->customer, $cart->currency),
                         'product_shares' => $realShare,
+                        'support' => $supportProfileId,
                     ]
                 ]);
                 WalletTransactionEvent::dispatch($wallet, time());

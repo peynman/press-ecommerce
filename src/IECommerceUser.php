@@ -77,6 +77,22 @@ interface IECommerceUser extends IProfileUser {
     /**
      * Undocumented function
      *
+     * @return Role|null
+     */
+    public function getSupportUserRole();
+
+
+    /**
+     * Undocumented function
+     *
+     * @return Carbon|null
+     */
+    public function getSupportUserStartedDate();
+
+
+    /**
+     * Undocumented function
+     *
      * @return null|FormEntry
      */
     public function getSupportUserProfileAttribute();

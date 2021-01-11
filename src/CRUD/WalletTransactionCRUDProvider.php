@@ -86,16 +86,29 @@ class WalletTransactionCRUDProvider implements ICRUDProvider, IPermissionsMetada
         'user.wallet_balance',
     ];
     public $defaultShowRelations = [];
-    public $excludeIfNull = [];
-    public $filterFields = [
-        'created_from' => 'after:created_at',
-        'created_to' => 'before:created_at',
-        'domain' => 'has:domain:id',
-        'type' => 'equals:type',
-        'user_id' => 'equals:user_id',
-    ];
-    public $filterDefaults = [];
 
+    /**
+     * Undocumented function
+     *
+     * @return array
+     */
+    public function getFilterFields()
+    {
+        return [
+            'created_from' => 'after:created_at',
+            'created_to' => 'before:created_at',
+            'domain' => 'has:domain:id',
+            'type' => 'equals:type',
+            'user_id' => 'equals:user_id',
+            'amount' => function($query, $value) {
+                if ($value == 1) {
+                    $query->where('amount', '<', 0);
+                } else {
+                    $query->where('amount', '>', 0);
+                }
+            }
+        ];
+    }
     /**
      * Undocumented function
      *

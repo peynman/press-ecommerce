@@ -17,10 +17,12 @@ class ProductSalesAmountRelationship extends Relation
 
     protected $filterType = null;
     protected $isReadyToLoad = false;
-    public function __construct(Model $parent, $filterType = null)
+    protected $extraSuffix = "";
+    public function __construct(Model $parent, $filterType = null, $extraSuffix = "")
     {
         parent::__construct(MetricCounter::query(), $parent);
         $this->filterType = $filterType;
+        $this->extraSuffix = $extraSuffix;
     }
 
     /**
@@ -76,11 +78,11 @@ class ProductSalesAmountRelationship extends Relation
         $this->query
             ->whereIn('metrics_counters.key', $flatten_array($models->map(function ($model)  use ($suffix) {
                 if (!is_null($this->filterType)) {
-                    return "product.$model->id.sales." . $this->filterType . ".amount";
+                    return "product.$model->id.sales." . $this->filterType  . $this->extraSuffix . $suffix;
                 } else {
                     return [
-                        "product.$model->id.sales." . WalletTransaction::TYPE_REAL_MONEY . $suffix,
-                        "product.$model->id.sales." . WalletTransaction::TYPE_VIRTUAL_MONEY . $suffix,
+                        "product.$model->id.sales." . WalletTransaction::TYPE_REAL_MONEY  . $this->extraSuffix . $suffix,
+                        "product.$model->id.sales." . WalletTransaction::TYPE_VIRTUAL_MONEY   . $this->extraSuffix . $suffix,
                     ];
                 }
             })));
@@ -141,8 +143,8 @@ class ProductSalesAmountRelationship extends Relation
         foreach ($models as $model) {
             $resultset = array_values($results->filter(function (Model $contract) use ($model, $suffix) {
                 return in_array($contract->key, [
-                    "product.$model->id.sales." . WalletTransaction::TYPE_REAL_MONEY . $suffix,
-                    "product.$model->id.sales." . WalletTransaction::TYPE_VIRTUAL_MONEY . $suffix,
+                    "product.$model->id.sales." . WalletTransaction::TYPE_REAL_MONEY. $this->extraSuffix . $suffix,
+                    "product.$model->id.sales." . WalletTransaction::TYPE_VIRTUAL_MONEY . $this->extraSuffix . $suffix,
                 ]);
             })->toArray());
             $model->setRelation(

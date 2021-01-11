@@ -170,6 +170,24 @@ class Product extends Model implements ICartItem
     /**
      * Undocumented function
      *
+     * @return ProductSalesAmountRelationship
+     */
+    public function sales_role_support_amount() {
+        return new ProductSalesAmountRelationship($this, WalletTransaction::TYPE_REAL_MONEY, ".roles.support");
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return ProductSalesAmountRelationship
+     */
+    public function sales_role_support_ext_amount() {
+        return new ProductSalesAmountRelationship($this, WalletTransaction::TYPE_REAL_MONEY, ".roles.support-external");
+    }
+
+    /**
+     * Undocumented function
+     *
      * @return ProductSalesCountRelationship
      */
     public function sales_fixed() {

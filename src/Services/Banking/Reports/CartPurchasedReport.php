@@ -74,6 +74,7 @@ class CartPurchasedReport implements IReportSource, ShouldQueue
         }
 
         $supportProfileId = $cart->customer->getSupportUserId();
+        $supportProfileTimestamp = $cart->customer->getSupportUserStartedDate();
 
         $tags = [
             'domain' => $cart->domain_id,
@@ -109,7 +110,7 @@ class CartPurchasedReport implements IReportSource, ShouldQueue
                             1, // 1 sale record
                             $purchaseTimestamp
                         );
-                        if (!is_null($supportProfileId)) {
+                        if (!is_null($supportProfileId) && $supportProfileTimestamp >= $purchaseTimestamp) {
                             $this->metrics->pushMeasurement(
                                 $cart->domain_id,
                                 'cart:' . $cart->id,
@@ -126,7 +127,7 @@ class CartPurchasedReport implements IReportSource, ShouldQueue
                             1, // 1 sale record
                             $purchaseTimestamp
                         );
-                        if (!is_null($supportProfileId)) {
+                        if (!is_null($supportProfileId) && $supportProfileTimestamp > $purchaseTimestamp) {
                             $this->metrics->pushMeasurement(
                                 $cart->domain_id,
                                 'cart:' . $cart->id,
@@ -137,24 +138,34 @@ class CartPurchasedReport implements IReportSource, ShouldQueue
                         }
                     }
                 }
-            } else if (BaseFlags::isActive($cart->flags, Cart::FLAGS_PERIOD_PAYMENT_CART)) {
-                foreach ($items as $item) {
+            }
+        }
+
+        if (BaseFlags::isActive($cart->flags, Cart::FLAGS_PERIOD_PAYMENT_CART)) {
+            $prod_ids = [];
+            if (isset($cart->data['periodic_pay']['custom']) && $cart->data['periodic_pay']['custom']) {
+                $originalCart = Cart::with('products')->find($cart->data['periodic_pay']['originalCart']);
+                $prod_ids = $originalCart->products->pluck('id');
+            } else if (isset($cart->data['periodic_pay']['product']['id'])) {
+                $prod_ids[] = $cart->data['periodic_pay']['product']['id'];
+            }
+
+            foreach ($prod_ids as $prod_id) {
+                $this->metrics->pushMeasurement(
+                    $cart->domain_id,
+                    'cart:' . $cart->id,
+                    'product.' . $prod_id . '.periodic_payment',
+                    1, // 1 periodic payment record
+                    $purchaseTimestamp
+                );
+                if (!is_null($supportProfileId) && $supportProfileTimestamp >= $purchaseTimestamp) {
                     $this->metrics->pushMeasurement(
                         $cart->domain_id,
                         'cart:' . $cart->id,
-                        'product.' . $item->id . '.periodic_payment',
+                        'product.' . $prod_id . '.periodic_payment.' . $supportProfileId,
                         1, // 1 periodic payment record
                         $purchaseTimestamp
                     );
-                    if (!is_null($supportProfileId)) {
-                        $this->metrics->pushMeasurement(
-                            $cart->domain_id,
-                            'cart:' . $cart->id,
-                            'product.' . $item->id . '.periodic_payment.' . $supportProfileId,
-                            1, // 1 periodic payment record
-                            $purchaseTimestamp
-                        );
-                    }
                 }
             }
         }

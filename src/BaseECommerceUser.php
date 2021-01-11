@@ -2,12 +2,15 @@
 
 namespace Larapress\ECommerce;
 
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Larapress\CRUD\Extend\Helpers;
 use Larapress\ECommerce\Models\Cart;
 use Larapress\ECommerce\Models\WalletTransaction;
 use Larapress\ECommerce\Services\SupportGroup\FormEntryUserSupportProfileRelationship;
 use Larapress\Profiles\Models\FormEntry;
 use Illuminate\Support\Str;
+use Larapress\CRUD\Models\Role;
 use Larapress\ECommerce\Models\Product;
 
 trait BaseECommerceUser
@@ -143,6 +146,41 @@ trait BaseECommerceUser
             if (Str::startsWith($tags, 'support-group-')) {
                 return Str::substr($tags, Str::length('support-group-'));
             }
+        }
+
+        return null;
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return Carbon|null
+     */
+    public function getSupportUserStartedDate() {
+        if (!is_null($this->form_support_registration_entry)) {
+            if (isset($this->form_support_registration_entry->data['values']['support_ids'])) {
+                $suppIds = $this->form_support_registration_entry->data['values']['support_ids'];
+                if (count($suppIds) > 0 && isset($suppIds[count($suppIds) - 1]['updated_at'])) {
+                    return Carbon::parse($suppIds[count($suppIds) - 1]['updated_at']);
+                }
+            } else {
+                return $this->form_support_registration_entry->created_at;
+            }
+        }
+
+        return null;
+    }
+
+
+    /**
+     * Undocumented function
+     *
+     * @return Role|null
+     */
+    public function getSupportUserRole() {
+        $userRole = DB::table('user_role')->where('user_id', $this->getSupportUserId())->first();
+        if (!is_null($userRole)) {
+            return Role::find($userRole->role_id);
         }
 
         return null;
