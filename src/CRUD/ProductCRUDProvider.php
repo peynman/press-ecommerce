@@ -17,7 +17,9 @@ use Larapress\ECommerce\IECommerceUser;
 use Larapress\Reports\Services\IMetricsService;
 use Larapress\Reports\Services\IReportsService;
 
-class ProductCRUDProvider implements ICRUDProvider, IPermissionsMetadata
+class ProductCRUDProvider implements
+    ICRUDProvider,
+    IPermissionsMetadata
 {
     use BaseCRUDProvider;
 
@@ -35,10 +37,10 @@ class ProductCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         'parent_id' => 'nullable|numeric|exists:products,id',
         'name' => 'required|string|unique:products,name',
         'group' => 'nullable|string',
-	    'data.title' => 'required',
+        'data.title' => 'required',
         'priority' => 'nullable|numeric',
-	    'flags' => 'nullable|numeric',
-	    'publish_at' => 'nullable|datetime_zoned',
+        'flags' => 'nullable|numeric',
+        'publish_at' => 'nullable|datetime_zoned',
         'expires_at' => 'nullable|datetime_zoned',
         'types' => 'required|array|min:1',
         'types.*.id' => 'required|exists:product_types,id',
@@ -49,10 +51,10 @@ class ProductCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         'name' => 'required|string|unique:products,name',
         'priority' => 'nullable|numeric',
         'group' => 'nullable|string',
-	    'data.title' => 'required',
-	    'flags' => 'nullable|numeric',
-	    'publish_at' => 'nullable|datetime_zoned',
-	    'expires_at' => 'nullable|datetime_zoned',
+        'data.title' => 'required',
+        'flags' => 'nullable|numeric',
+        'publish_at' => 'nullable|datetime_zoned',
+        'expires_at' => 'nullable|datetime_zoned',
         'types' => 'nullable|array|min:1',
         'types.*.id' => 'nullable|exists:product_types,id',
         'categories.*.id' => 'nullable|exists:product_categories,id',
@@ -61,20 +63,6 @@ class ProductCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         'name',
         'id',
         'data',
-    ];
-    public $validRelations = [
-        'author',
-        'types',
-        'categories',
-        'parent',
-        'children',
-        'sales_real_amount',
-        'sales_virtual_amount',
-        'sales_fixed',
-        'sales_periodic',
-        'sales_periodic_payment',
-        'sales_role_support_amount',
-        'sales_role_support_ext_amount',
     ];
     public $defaultShowRelations = [
         'types',
@@ -114,6 +102,54 @@ class ProductCRUDProvider implements ICRUDProvider, IPermissionsMetadata
     ];
     public $filterDefaults = [];
 
+    public function getValidRelations()
+    {
+        return [
+            'author' => function($user) {
+                return $user->hasPermission(config('larapress.profiles.routes.users.name').'.view');
+            },
+            'types' => function($user) {
+                return true;
+            },
+            'categories' => function($user) {
+                return true;
+            },
+            'parent' => function($user) {
+                return true;
+            },
+            'children' => function($user) {
+                return true;
+            },
+            'sales_real_amount' => function($user) {
+                return $user->hasPermission(config('larapress.ecommerce.routes.products.name').'.sales');
+            },
+            'sales_virtual_amount' => function($user) {
+                return $user->hasPermission(config('larapress.ecommerce.routes.products.name').'.sales');
+            },
+            'sales_fixed' => function($user) {
+                return $user->hasPermission(config('larapress.ecommerce.routes.products.name').'.sales');
+            },
+            'sales_periodic' => function($user) {
+                return $user->hasPermission(config('larapress.ecommerce.routes.products.name').'.sales');
+            },
+            'sales_periodic_payment' => function($user) {
+                return $user->hasPermission(config('larapress.ecommerce.routes.products.name').'.sales');
+            },
+            'sales_role_support_amount' => function($user) {
+                return $user->hasPermission(config('larapress.ecommerce.routes.products.name').'.sales');
+            },
+            'sales_role_support_ext_amount' => function($user) {
+                return $user->hasPermission(config('larapress.ecommerce.routes.products.name').'.sales');
+            },
+            'remaining_periodic_count' => function($user) {
+                return $user->hasPermission(config('larapress.ecommerce.routes.products.name').'.sales');
+            },
+            'remaining_periodic_amount' => function($user) {
+                return $user->hasPermission(config('larapress.ecommerce.routes.products.name').'.sales');
+            },
+        ];
+    }
+
     public function getValidSortColumns()
     {
         return [
@@ -123,7 +159,7 @@ class ProductCRUDProvider implements ICRUDProvider, IPermissionsMetadata
             'expires_at' => 'expires_at',
             'created_at' => 'created_at',
             'updated_at' => 'updated_at',
-            'starts_at' => function($query, $dir) {
+            'starts_at' => function ($query, $dir) {
                 $query->orderBy('data->types->session->start_at', $dir);
             },
         ];
@@ -145,7 +181,8 @@ class ProductCRUDProvider implements ICRUDProvider, IPermissionsMetadata
      * @param Request $request
      * @return void
      */
-    public function getUpdateRules(Request $request) {
+    public function getUpdateRules(Request $request)
+    {
         $this->updateValidations['name'] .= ',' . $request->route('id');
         return $this->updateValidations;
     }
@@ -156,7 +193,7 @@ class ProductCRUDProvider implements ICRUDProvider, IPermissionsMetadata
      * @param array $args
      * @return array
      */
-    public function onBeforeCreate( $args )
+    public function onBeforeCreate($args)
     {
         $args['author_id'] = Auth::user()->id;
 
@@ -188,7 +225,7 @@ class ProductCRUDProvider implements ICRUDProvider, IPermissionsMetadata
     {
         /** @var IECommerceUser $user */
         $user = Auth::user();
-        if (! $user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
+        if (!$user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
             if ($user->hasRole(config('larapress.ecommerce.lms.owner_role_id'))) {
                 $query->whereIn('id', $user->getOwenedProductsIds());
             } else {
@@ -208,7 +245,7 @@ class ProductCRUDProvider implements ICRUDProvider, IPermissionsMetadata
     {
         /** @var IECommerceUser $user */
         $user = Auth::user();
-        if (! $user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
+        if (!$user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
             if ($user->hasRole(config('larapress.ecommerce.lms.owner_role_id'))) {
                 return in_array($object->id, $user->getOwenedProductsIds());
             } else {
@@ -240,10 +277,10 @@ class ProductCRUDProvider implements ICRUDProvider, IPermissionsMetadata
 
         // remove ancestors cache
         if (!is_null($object->parent_id)) {
-            Cache::tags(['product.ancestors:'.$object->id])->flush();
+            Cache::tags(['product.ancestors:' . $object->id])->flush();
         }
 
-        Cache::tags(['product:'.$object->id])->flush();
+        Cache::tags(['product:' . $object->id])->flush();
     }
 
     /**
@@ -267,9 +304,9 @@ class ProductCRUDProvider implements ICRUDProvider, IPermissionsMetadata
 
         // remove ancestors cache
         if (!is_null($object->parent_id)) {
-            Cache::tags(['product.ancestors:'.$object->id])->flush();
+            Cache::tags(['product.ancestors:' . $object->id])->flush();
         }
 
-        Cache::tags(['product:'.$object->id])->flush();
+        Cache::tags(['product:' . $object->id])->flush();
     }
 }

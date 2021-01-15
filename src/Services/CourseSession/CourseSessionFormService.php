@@ -17,7 +17,8 @@ use Larapress\ECommerce\IECommerceUser;
 use Larapress\Ecommerce\Services\FileUpload\IFileUploadService;
 use Larapress\Profiles\Models\FormEntry;
 
-class CourseSessionFormService implements ICourseSessionFormService
+class CourseSessionFormService implements
+    ICourseSessionFormService
 {
     /**
      * Undocumented function
@@ -72,7 +73,8 @@ class CourseSessionFormService implements ICourseSessionFormService
      * @param int $fileId
      * @return Response
      */
-    public function serveSessionFormFile($request, $sessionId, $entryId, $fileId) {
+    public function serveSessionFormFile($request, $sessionId, $entryId, $fileId)
+    {
         $session = Product::with('types')->find($sessionId);
         if (is_null($session)) {
             throw new AppException(AppException::ERR_OBJECT_NOT_FOUND);
@@ -85,7 +87,7 @@ class CourseSessionFormService implements ICourseSessionFormService
             throw new AppException(AppException::ERR_OBJECT_NOT_FOUND);
         }
 
-        if ($entry->tags !== 'course-'.$sessionId.'-taklif') {
+        if ($entry->tags !== 'course-' . $sessionId . '-taklif') {
             throw new AppException(AppException::ERR_INVALID_QUERY);
         }
 
@@ -169,26 +171,27 @@ class CourseSessionFormService implements ICourseSessionFormService
         $provider = new $userProviderClass();
         /** @var Builder */
         $crud->useProvider($provider);
-        [$query, $total] = $crud->buildQueryForRequest($request, function ($query) use($request, $productIds, $sessionId) {
-            $query->where(function($query) use ($productIds, $sessionId) {
-                $query->orWhereHas('purchases', function ($q) use ($productIds) {
-                    $q->whereHas('products', function ($q) use ($productIds) {
-                        $q->whereIn('id', $productIds);
-                    });
-                });
-                $query->orWhereHas('form_entries', function($q) use($sessionId) {
+        $filters = $request->get('filters', []);
+
+        [$query, $total] = $crud->buildQueryForRequest($request, function ($query) use ($request, $productIds, $sessionId, $filters) {
+            if (isset($filters['presence']) && $filters['presence'] === 'presence') {
+                $query->whereHas('form_entries', function ($q) use ($sessionId) {
                     $q->where('tags', 'course-' . $sessionId . '-presence');
                 });
-            });
-
-            $filters = $request->get('filters', []);
-            if (isset($filters['presence'])) {
-                if ($filters['presence'] === 'presence') {
-                    $query->whereHas('form_entries', function($q) use($sessionId) {
+            } else {
+                $query->where(function ($query) use ($productIds, $sessionId) {
+                    $query->orWhereHas('purchases', function ($q) use ($productIds) {
+                        $q->whereHas('products', function ($q) use ($productIds) {
+                            $q->whereIn('id', $productIds);
+                        });
+                    });
+                    $query->orWhereHas('form_entries', function ($q) use ($sessionId) {
                         $q->where('tags', 'course-' . $sessionId . '-presence');
                     });
-                } else if ($filters['presence'] === 'absent') {
-                    $query->whereDoesntHave('form_entries', function($q) use($sessionId) {
+                });
+
+                if (isset($filters['presence']) && $filters['presence'] === 'absent') {
+                    $query->whereDoesntHave('form_entries', function ($q) use ($sessionId) {
                         $q->where('tags', 'course-' . $sessionId . '-presence');
                     });
                 }

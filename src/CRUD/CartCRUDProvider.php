@@ -325,6 +325,14 @@ class CartCRUDProvider implements
             ->where('group', 'cart:' . $object->id)
             ->delete();
 
+        // if this is a original cart and there are no installments now remove installments records
+        if (!BaseFlags::isActive($object->flags, Cart::FLAGS_HAS_PERIODS)) {
+            Cart::query()
+                ->where('data->periodic_pay->originalCart', $object->id)
+                ->delete();
+        }
+
+
         if ($object->status == Cart::STATUS_ACCESS_COMPLETE) {
             $object->flags |= Cart::FLAGS_USER_CART;
 
@@ -369,6 +377,13 @@ class CartCRUDProvider implements
         MetricCounter::query()
             ->where('group', 'cart:' . $object->id)
             ->delete();
+
+        // if this is a original cart, remove installments records
+        if (BaseFlags::isActive($object->flags, Cart::FLAGS_HAS_PERIODS)) {
+            Cart::query()
+                ->where('data->periodic_pay->originalCart', $object->id)
+                ->delete();
+        }
 
         Cache::tags(['purchasing-cart:' . $object->customer_id])->flush();
         Cache::tags(['purchased-cart:' . $object->customer_id])->flush();

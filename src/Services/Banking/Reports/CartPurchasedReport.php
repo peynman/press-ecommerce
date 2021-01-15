@@ -95,11 +95,12 @@ class CartPurchasedReport implements IReportSource, ShouldQueue
         /** @var ICartItem[] */
         $items = $cart->products;
         if (!is_null($items) && count($items) > 0) {
+            // add each product sales counter
             if (
                 !BaseFlags::isActive($cart->flags, Cart::FLAGS_PERIOD_PAYMENT_CART) &&
                 BaseFlags::isActive($cart->flags, Cart::FLAGS_USER_CART)
             ) {
-                // add each product sales counter
+                // periodic purchase for product
                 $periodicPurchases = isset($cart->data['periodic_product_ids']) ? $cart->data['periodic_product_ids'] : [];
                 foreach ($items as $item) {
                     if (in_array($item->id, $periodicPurchases)) {
@@ -110,6 +111,46 @@ class CartPurchasedReport implements IReportSource, ShouldQueue
                             1, // 1 sale record
                             $purchaseTimestamp
                         );
+
+                        $totalPeriodsLeft = 0;
+                        $totalPeriodsLeftAmount = 0;
+                        if (isset($cart->data['periodic_pay']['custom'])) {
+                            $periods = $cart->data['periodic_pay']['custom'];
+                            $totalPeriodsLeft = count($periods);
+                            foreach ($periods as $period) {
+                                $totalPeriodsLeftAmount += floatval($period['amount']);
+                            }
+                        } else if (isset($item->data['calucalte_periodic'])) {
+                            $calc = $item->data['calucalte_periodic'];
+                            $count = intval($calc['period_count']);
+                            $amount = floatval($calc['period_amount']);
+                            if (isset($cart->data['gift_code']['percent'])) {
+                                $gifted_products = isset($cart->data['gift_code']['products']) ? $cart->data['gift_code']['products'] : [];
+                                if (in_array($item->id, $gifted_products) || count($gifted_products) === 0) {
+                                    $percent = floatval($cart->data['gift_code']['percent']);
+                                    $amount = ceil((1 - $percent) * $amount);
+                                }
+                            }
+                            $totalPeriodsLeft = $count;
+                            $totalPeriodsLeftAmount = $count * $amount;
+                        }
+                        if ($totalPeriodsLeftAmount > 0) {
+                            $this->metrics->pushMeasurement(
+                                $cart->domain_id,
+                                'cart:' . $cart->id,
+                                'product.' . $item->id . '.remain_amount',
+                                -1 * $totalPeriodsLeftAmount, // remaining periods amount
+                                $purchaseTimestamp
+                            );
+                            $this->metrics->pushMeasurement(
+                                $cart->domain_id,
+                                'cart:' . $cart->id,
+                                'product.' . $item->id . '.remain_count',
+                                -1 * $totalPeriodsLeft, // remaining periods count
+                                $purchaseTimestamp
+                            );
+                        }
+
                         if (!is_null($supportProfileId) && $supportProfileTimestamp >= $purchaseTimestamp) {
                             $this->metrics->pushMeasurement(
                                 $cart->domain_id,
@@ -118,8 +159,26 @@ class CartPurchasedReport implements IReportSource, ShouldQueue
                                 1, // 1 sale record
                                 $purchaseTimestamp
                             );
+                            if ($totalPeriodsLeftAmount > 0) {
+                                $this->metrics->pushMeasurement(
+                                    $cart->domain_id,
+                                    'cart:' . $cart->id,
+                                    'product.' . $item->id . '.remain_amount.'.$supportProfileId,
+                                    -1 * $totalPeriodsLeftAmount, // remaining periods amount
+                                    $purchaseTimestamp
+                                );
+                                $this->metrics->pushMeasurement(
+                                    $cart->domain_id,
+                                    'cart:' . $cart->id,
+                                    'product.' . $item->id . '.remain_count.'.$supportProfileId,
+                                    -1 * $totalPeriodsLeft, // remaining periods count
+                                    $purchaseTimestamp
+                                );
+                            }
                         }
+
                     } else {
+                        // not periodic purchase for product
                         $this->metrics->pushMeasurement(
                             $cart->domain_id,
                             'cart:' . $cart->id,
@@ -158,12 +217,42 @@ class CartPurchasedReport implements IReportSource, ShouldQueue
                     1, // 1 periodic payment record
                     $purchaseTimestamp
                 );
+                $this->metrics->pushMeasurement(
+                    $cart->domain_id,
+                    'cart:' . $cart->id,
+                    'product.' . $prod_id . '.remain_amount',
+                    $cart->amount, // positive value for remaining periods
+                    $purchaseTimestamp
+                );
+                $this->metrics->pushMeasurement(
+                    $cart->domain_id,
+                    'cart:' . $cart->id,
+                    'product.' . $prod_id . '.remain_count',
+                    1, // positive value for remaining periods counts
+                    $purchaseTimestamp
+                );
+
                 if (!is_null($supportProfileId) && $supportProfileTimestamp >= $purchaseTimestamp) {
                     $this->metrics->pushMeasurement(
                         $cart->domain_id,
                         'cart:' . $cart->id,
                         'product.' . $prod_id . '.periodic_payment.' . $supportProfileId,
                         1, // 1 periodic payment record
+                        $purchaseTimestamp
+                    );
+
+                    $this->metrics->pushMeasurement(
+                        $cart->domain_id,
+                        'cart:' . $cart->id,
+                        'product.' . $prod_id . '.remain_amount.'.$supportProfileId,
+                        $cart->amount, // positive value for remaining periods
+                        $purchaseTimestamp
+                    );
+                    $this->metrics->pushMeasurement(
+                        $cart->domain_id,
+                        'cart:' . $cart->id,
+                        'product.' . $prod_id . '.remain_count.'.$supportProfileId,
+                        1, // positive value for remaining periods counts
                         $purchaseTimestamp
                     );
                 }

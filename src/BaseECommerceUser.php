@@ -91,7 +91,9 @@ trait BaseECommerceUser
                 return intval(\Illuminate\Support\Str::substr($entry->tags, strlen('product-')));
             })->toArray();
         $childIds = Product::select('id')->whereIn('parent_id', $ownerEntries)->pluck('id')->toArray();
-        return array_merge($ownerEntries, $childIds);
+        $childChildIds = Product::select('id')->whereIn('parent_id', $childIds)->pluck('id')->toArray();
+
+        return array_merge($ownerEntries, $childIds, $childChildIds);
     }
 
     /**

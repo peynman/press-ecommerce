@@ -136,7 +136,7 @@ class ProductSalesAmountRelationship extends Relation
         $user = Auth::user();
 
         if (!$user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
-            if ($user->hasRole(config('larapress.profiles.security.roles.support'))) {
+            if ($user->hasRole(config('larapress.ecommerce.lms.support_role_id'))) {
                 $suffix = $suffix . ".$user->id";
             }
         }

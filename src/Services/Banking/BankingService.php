@@ -860,7 +860,7 @@ class BankingService implements
     public function getInstallmentsForPeriodicPurchases()
     {
         Cart::query()
-            ->whereIn('status', [Cart::STATUS_ACCESS_GRANTED, Cart::STATUS_ACCESS_COMPLETE])
+            ->where('status', Cart::STATUS_ACCESS_COMPLETE)
             ->where('flags', '&', Cart::FLAGS_HAS_PERIODS)
             ->whereRaw('(flags & ' . Cart::FLAGS_PERIODIC_COMPLETED . ') = 0')
             ->chunk(100, function ($carts) {
@@ -1254,6 +1254,7 @@ class BankingService implements
                         'period_start' => $purchasedAt,
                         'description' => trans('larapress::ecommerce.banking.messages.wallet-descriptions.cart_purchased', ['cart_id' => $cart->id]),
                         'balance' => $this->getUserBalance($cart->customer, $cart->currency),
+                        'is_period_payment' => BaseFlags::isActive($cart->flags, Cart::FLAGS_PERIOD_PAYMENT_CART),
                         'support' => $supportProfileId,
                         'product_shares' => $virtualShare,
                     ]
@@ -1277,6 +1278,7 @@ class BankingService implements
                         'description' => trans('larapress::ecommerce.banking.messages.wallet-descriptions.cart_purchased', ['cart_id' => $cart->id]),
                         'balance' => $this->getUserBalance($cart->customer, $cart->currency),
                         'product_shares' => $realShare,
+                        'is_period_payment' => BaseFlags::isActive($cart->flags, Cart::FLAGS_PERIOD_PAYMENT_CART),
                         'support' => $supportProfileId,
                     ]
                 ]);

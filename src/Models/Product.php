@@ -215,6 +215,24 @@ class Product extends Model implements ICartItem
     /**
      * Undocumented function
      *
+     * @return ProductSalesCountRelationship
+     */
+    public function remaining_periodic_count() {
+        return new ProductSalesCountRelationship($this, 'remain_count');
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return ProductSalesCountRelationship
+     */
+    public function remaining_periodic_amount() {
+        return new ProductSalesCountRelationship($this, 'remain_amount');
+    }
+
+    /**
+     * Undocumented function
+     *
      * @param string $value
      * @return void
      */
