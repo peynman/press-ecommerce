@@ -94,7 +94,7 @@ class WalletTransactionReport implements IReportSource, ShouldQueue
             $purchaseTimestamp
         );
 
-        if (!is_null($supportProfileId) && $supportProfileTimestamp >= $purchaseTimestamp) {
+        if (!is_null($supportProfileId) && $supportProfileTimestamp <= $purchaseTimestamp) {
             $this->metrics->pushMeasurement(
                 $transaction->domain_id,
                 $tags,
@@ -117,7 +117,7 @@ class WalletTransactionReport implements IReportSource, ShouldQueue
                 );
             }
 
-            if (!is_null($supportProfileId) && $supportProfileTimestamp >= $purchaseTimestamp) {
+            if (!is_null($supportProfileId) && $supportProfileTimestamp <= $purchaseTimestamp) {
                 foreach ($shares as $productId => $shareAmount) {
                     $this->metrics->pushMeasurement(
                         $transaction->domain_id,

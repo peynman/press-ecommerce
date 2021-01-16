@@ -229,7 +229,7 @@ class ProductCRUDProvider implements
             if ($user->hasRole(config('larapress.ecommerce.lms.owner_role_id'))) {
                 $query->whereIn('id', $user->getOwenedProductsIds());
             } else {
-                $query->where('author_id', $user->id);
+//                $query->where('author_id', $user->id);
             }
         }
 

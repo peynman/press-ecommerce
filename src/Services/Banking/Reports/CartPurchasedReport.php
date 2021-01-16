@@ -151,7 +151,7 @@ class CartPurchasedReport implements IReportSource, ShouldQueue
                             );
                         }
 
-                        if (!is_null($supportProfileId) && $supportProfileTimestamp >= $purchaseTimestamp) {
+                        if (!is_null($supportProfileId) && $supportProfileTimestamp <= $purchaseTimestamp) {
                             $this->metrics->pushMeasurement(
                                 $cart->domain_id,
                                 'cart:' . $cart->id,
@@ -186,7 +186,7 @@ class CartPurchasedReport implements IReportSource, ShouldQueue
                             1, // 1 sale record
                             $purchaseTimestamp
                         );
-                        if (!is_null($supportProfileId) && $supportProfileTimestamp > $purchaseTimestamp) {
+                        if (!is_null($supportProfileId) && $supportProfileTimestamp <= $purchaseTimestamp) {
                             $this->metrics->pushMeasurement(
                                 $cart->domain_id,
                                 'cart:' . $cart->id,
@@ -232,7 +232,7 @@ class CartPurchasedReport implements IReportSource, ShouldQueue
                     $purchaseTimestamp
                 );
 
-                if (!is_null($supportProfileId) && $supportProfileTimestamp >= $purchaseTimestamp) {
+                if (!is_null($supportProfileId) && $supportProfileTimestamp <= $purchaseTimestamp) {
                     $this->metrics->pushMeasurement(
                         $cart->domain_id,
                         'cart:' . $cart->id,
