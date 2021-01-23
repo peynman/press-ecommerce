@@ -45,8 +45,13 @@ class ProductReports implements
         $this->avReports = [
             'products.visit.total' => function ($user, array $options = []) {
                 [$filters, $fromC, $toC, $groups] = $this->getCommonReportProps($user, $options);
-                $groups[] = "product";
+                if (!in_array("product", $groups)) {
+                    $groups[] = "product";
+                }
                 $filters = $this->filterOnProductOwner($user, $filters);
+                if (!isset($filters['product'])) {
+                    $filters['product'] = '$exists';
+                }
 
                 return $this->reports->queryMeasurement(
                     'pages.visit',
@@ -61,8 +66,13 @@ class ProductReports implements
             'products.visit.windowed' => function ($user, array $options = []) {
                 [$filters, $fromC, $toC, $groups] = $this->getCommonReportProps($user, $options);
                 $window = isset($options['window']) ? $options['window'] : '1h';
-                $groups[] = "product";
+                if (!in_array("product", $groups)) {
+                    $groups[] = "product";
+                }
                 $filters = $this->filterOnProductOwner($user, $filters);
+                if (!isset($filters['product'])) {
+                    $filters['product'] = '$exists';
+                }
 
                 return $this->reports->queryMeasurement(
                     'pages.visit',
@@ -76,8 +86,13 @@ class ProductReports implements
             },
             'products.visit.func' => function ($user, array $options = []) {
                 [$filters, $fromC, $toC, $groups] = $this->getCommonReportProps($user, $options);
-                $groups[] = "product";
+                if (!in_array("product", $groups)) {
+                    $groups[] = "product";
+                }
                 $filters = $this->filterOnProductOwner($user, $filters);
+                if (!isset($filters['product'])) {
+                    $filters['product'] = '$exists';
+                }
 
                 return $this->reports->queryMeasurement(
                     'pages.visit',
@@ -86,7 +101,7 @@ class ProductReports implements
                     array_merge(["_value"], $groups),
                     $fromC,
                     $toC,
-                    isset($options['func']) ? $options['func'] : 'count()',
+                    isset($options['func']) && is_string($options['func']) ? $options['func'] : 'count()',
                 );
             },
             'products.sales.total' => function ($user, array $options = []) {
@@ -98,14 +113,15 @@ class ProductReports implements
                     unset($filters['domain']);
                 }
 
+                $queryKey = 'product.%.sales.%.amount';
                 if (isset($filters['support'])) {
-                } else {
-                    $queryKey = 'product.%.sales.%.amount';
+                    unset($filters['support']);
+                    $queryKey .= '.'.$user->id;
                 }
 
                 // dot nonation grouping for key name
                 $dotGroups = [];
-                if (in_array('product', $groups) || isset($filters['type'])) {
+                if (in_array('type', $groups) || isset($filters['type'])) {
                     $dotGroups['type'] = 4;
                 }
                 if (in_array('product', $groups) || isset($filters['product'])) {
@@ -132,16 +148,81 @@ class ProductReports implements
                     unset($filters['domain']);
                 }
 
+                $queryKey = 'product.%.sales.%.amount';
                 if (isset($filters['support'])) {
-                } else {
-                    $queryKey = 'product.%.sales.%.amount';
+                    unset($filters['support']);
+                    $queryKey .= '.'.$user->id;
                 }
 
                 // dot nonation grouping for key name
                 $dotGroups = [];
-                if (isset($filters['type'])) {
+                if (in_array('type', $groups) || isset($filters['type'])) {
                     $dotGroups['type'] = 4;
                 }
+                if (in_array('product', $groups) || isset($filters['product'])) {
+                    $dotGroups['product'] = 2;
+                }
+
+                return $this->metrics->queryMeasurement(
+                    $queryKey,
+                    $window,
+                    $filters,
+                    // dot nonation grouping for key name
+                    $dotGroups,
+                    $domains,
+                    $fromC,
+                    $toC
+                );
+            },
+            'products.sales_periodic.total' => function ($user, array $options = []) {
+                [$filters, $fromC, $toC, $groups] = $this->getCommonReportProps($user, $options);
+                $filters = $this->filterOnProductOwner($user, $filters);
+                $domains = [];
+                if (isset($filters['domain'])) {
+                    $domains = $filters['domain'];
+                    unset($filters['domain']);
+                }
+
+                $queryKey = 'product.%.sales.%.amount';
+                if (isset($filters['support'])) {
+                    unset($filters['support']);
+                    $queryKey .= '.'.$user->id;
+                }
+
+                // dot nonation grouping for key name
+                $dotGroups = [];
+                if (in_array('product', $groups) || isset($filters['product'])) {
+                    $dotGroups['product'] = 2;
+                }
+
+                return $this->metrics->aggregateMeasurementDotGrouped(
+                    $queryKey,
+                    $filters,
+                    // dot nonation grouping for key name
+                    $dotGroups,
+                    $domains,
+                    $fromC,
+                    $toC,
+                );
+            },
+            'products.sales_periodic.windowed' => function ($user, array $options = []) {
+                [$filters, $fromC, $toC, $groups] = $this->getCommonReportProps($user, $options);
+                $window = $this->dateIntervalToSeconds(CarbonInterval::fromString(isset($options['window']) ? $options['window'] : '1h'));
+                $filters = $this->filterOnProductOwner($user, $filters);
+                $domains = [];
+                if (isset($filters['domain'])) {
+                    $domains = $filters['domain'];
+                    unset($filters['domain']);
+                }
+
+                $queryKey = 'product.%.sales_periodic';
+                if (isset($filters['support'])) {
+                    unset($filters['support']);
+                    $queryKey .= '.'.$user->id;
+                }
+
+                // dot nonation grouping for key name
+                $dotGroups = [];
                 if (in_array('product', $groups) || isset($filters['product'])) {
                     $dotGroups['product'] = 2;
                 }

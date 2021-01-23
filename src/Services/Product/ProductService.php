@@ -162,10 +162,20 @@ class ProductService implements IProductService
                 if (isset($typeData['file_id'])) {
                     $file_ids[] = $typeData['file_id'];
                 }
+                if (isset($typeData['files']) && is_array($typeData['files'])) {
+                    foreach ($typeData['files'] as $fileMeta) {
+                        $file_ids[] = $fileMeta['file'];
+                    }
+                }
                 if (isset($typeData['extras']) && is_array($typeData['extras'])) {
                     foreach ($typeData['extras'] as $extra) {
                         if (isset($extra['file_id'])) {
                             $file_ids[] = $extra['file_id'];
+                        }
+                        if (isset($extra['files']) && is_array($extra['files'])) {
+                            foreach ($extra['files'] as $fileMeta) {
+                                $file_ids[] = $fileMeta['file'];
+                            }
                         }
                     }
                 }

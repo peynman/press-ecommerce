@@ -2,11 +2,14 @@
 
 namespace Larapress\ECommerce\CRUD;
 
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Larapress\CRUD\Services\BaseCRUDProvider;
 use Larapress\CRUD\Services\ICRUDProvider;
+use Larapress\CRUD\Services\ICRUDService;
 use Larapress\CRUD\Services\IPermissionsMetadata;
 use Larapress\ECommerce\Models\Product;
 use Larapress\ECommerce\Services\Azmoon\IAzmoonService;
@@ -14,6 +17,9 @@ use Larapress\ECommerce\Services\Product\ProductReports;
 use Larapress\Profiles\Models\FormEntry;
 use Larapress\Profiles\Services\FormEntry\IFormEntryService;
 use Larapress\ECommerce\IECommerceUser;
+use Larapress\ECommerce\Models\WalletTransaction;
+use Larapress\ECommerce\Services\Product\ProductSalesAmountRelationship;
+use Larapress\ECommerce\Services\Product\ProductSalesCountRelationship;
 use Larapress\Reports\Services\IMetricsService;
 use Larapress\Reports\Services\IReportsService;
 
@@ -33,19 +39,6 @@ class ProductCRUDProvider implements
         'sales',
     ];
     public $model = Product::class;
-    public $createValidations = [
-        'parent_id' => 'nullable|numeric|exists:products,id',
-        'name' => 'required|string|unique:products,name',
-        'group' => 'nullable|string',
-        'data.title' => 'required',
-        'priority' => 'nullable|numeric',
-        'flags' => 'nullable|numeric',
-        'publish_at' => 'nullable|datetime_zoned',
-        'expires_at' => 'nullable|datetime_zoned',
-        'types' => 'required|array|min:1',
-        'types.*.id' => 'required|exists:product_types,id',
-        'categories.*.id' => 'nullable|exists:product_categories,id',
-    ];
     public $updateValidations = [
         'parent_id' => 'nullable|numeric|exists:products,id',
         'name' => 'required|string|unique:products,name',
@@ -68,40 +61,181 @@ class ProductCRUDProvider implements
         'types',
         'categories',
     ];
-    public $filterFields = [
-        'relations' => [
-            'sales_real_amount' => [
-                'sales_from' => 'after:created_at',
-                'sales_to' => 'before:created_at',
-            ],
-            'sales_virtual_amount' => [
-                'sales_from' => 'after:created_at',
-                'sales_to' => 'before:created_at',
-            ],
-            'sales_fixed' => [
-                'sales_from' => 'after:created_at',
-                'sales_to' => 'before:created_at',
-            ],
-            'sales_periodic' => [
-                'sales_from' => 'after:created_at',
-                'sales_to' => 'before:created_at',
-            ],
-            'sales_role_support_amount' => [
-                'sales_from' => 'after:created_at',
-                'sales_to' => 'before:created_at',
-            ],
-            'sales_role_support_ext_amount' => [
-                'sales_from' => 'after:created_at',
-                'sales_to' => 'before:created_at',
-            ]
-        ],
-        'types' => 'has:types',
-        'categories' => 'has:categories',
-        'parent_id' => 'equals:parent_id',
-        'user_purchased_id' => 'has-has:purchased_carts:customer:id'
-    ];
-    public $filterDefaults = [];
 
+    /** @var ICRUDService */
+    protected $crudService;
+    public function getSummerizForRelation(Relation $relation, $relationName, Builder $query, $inputs, $column) {
+        /** @var IECommerceUser */
+        $user = Auth::user();
+        if (!$user->hasPermission(config('larapress.ecommerce.routes.products.name').'.sales')) {
+            return null;
+        }
+
+        $availableFilters = $this->getFilterFields();
+        if (is_null($this->crudService)) {
+            /** @var ICRUDService */
+            $this->crudService = app(ICRUDService::class);
+        }
+
+        $query->setEagerLoads([]);
+        $ids = $query->select('id')->pluck('id')->toArray();
+
+        if (isset($availableFilters['relations'][$relationName])) {
+            $this->crudService->addFiltersToQuery($relation->getQuery(), $availableFilters['relations'][$relationName], $inputs);
+        }
+
+        $relation->addConstraints();
+        $relation->addEagerConstraints($ids);
+        $results = $relation->get();
+        if (isset($results[0][$column])) {
+            return $results[0][$column];
+        }
+
+        return null;
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return array
+     */
+    public function getSummerizableColumns()
+    {
+        return [
+            'sales_fixed' => function (Builder $query, $inputs) {
+                return $this->getSummerizForRelation(
+                    new ProductSalesCountRelationship(new Product(), 'sales_fixed', []),
+                    'sales_fixed',
+                    clone $query,
+                    $inputs,
+                    'total_count'
+                );
+            },
+            'sales_periodic' => function (Builder $query, $inputs) {
+                return $this->getSummerizForRelation(
+                    new ProductSalesCountRelationship(new Product(), 'sales_periodic', []),
+                    'sales_periodic',
+                    clone $query,
+                    $inputs,
+                    'total_count'
+                );
+            },
+            'sales_virtual_amount' => function (Builder $query, $inputs) {
+                return $this->getSummerizForRelation(
+                    new ProductSalesAmountRelationship(new Product(), WalletTransaction::TYPE_VIRTUAL_MONEY, "", []),
+                    'sales_virtual_amount',
+                    clone $query,
+                    $inputs,
+                    'total_amount'
+                );
+            },
+            'sales_real_amount' => function (Builder $query, $inputs) {
+                return $this->getSummerizForRelation(
+                    new ProductSalesAmountRelationship(new Product(), WalletTransaction::TYPE_REAL_MONEY, "", []),
+                    'sales_real_amount',
+                    clone $query,
+                    $inputs,
+                    'total_amount'
+                );
+            },
+            'sales_role_support_ext_amount' => function (Builder $query, $inputs) {
+                return $this->getSummerizForRelation(
+                    new ProductSalesAmountRelationship(new Product(), WalletTransaction::TYPE_REAL_MONEY, ".roles.support-external", []),
+                    'sales_role_support_ext_amount',
+                    clone $query,
+                    $inputs,
+                    'total_amount'
+                );
+            },
+            'sales_role_support_amount' => function (Builder $query, $inputs) {
+                return $this->getSummerizForRelation(
+                    new ProductSalesAmountRelationship(new Product(), WalletTransaction::TYPE_REAL_MONEY, ".roles.support", []),
+                    'sales_role_support_amount',
+                    clone $query,
+                    $inputs,
+                    'total_amount'
+                );
+            },
+        ];
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param Request $request
+     * @return array
+     */
+    public function getCreateRules(Request $request)
+    {
+        return [
+            'parent_id' => 'nullable|numeric|exists:products,id',
+            'name' => 'required|string|unique:products,name',
+            'group' => 'nullable|string',
+            'data.title' => 'required',
+            'priority' => 'nullable|numeric',
+            'flags' => 'nullable|numeric',
+            'publish_at' => 'nullable|datetime_zoned',
+            'expires_at' => 'nullable|datetime_zoned',
+            'types' => 'required|array|min:1',
+            'types.*.id' => 'required|exists:product_types,id',
+            'categories.*.id' => 'nullable|exists:product_categories,id',
+        ];
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return array
+     */
+    public function getFilterFields()
+    {
+        return [
+            'relations' => [
+                'sales_real_amount' => [
+                    'sales_from' => 'after:created_at',
+                    'sales_to' => 'before:created_at',
+                ],
+                'sales_virtual_amount' => [
+                    'sales_from' => 'after:created_at',
+                    'sales_to' => 'before:created_at',
+                ],
+                'sales_fixed' => [
+                    'sales_from' => 'after:created_at',
+                    'sales_to' => 'before:created_at',
+                ],
+                'sales_periodic' => [
+                    'sales_from' => 'after:created_at',
+                    'sales_to' => 'before:created_at',
+                ],
+                'sales_role_support_amount' => [
+                    'sales_from' => 'after:created_at',
+                    'sales_to' => 'before:created_at',
+                ],
+                'sales_role_support_ext_amount' => [
+                    'sales_from' => 'after:created_at',
+                    'sales_to' => 'before:created_at',
+                ],
+                'remaining_periodic_count' => [
+                    'sales_from' => 'after:created_at',
+                    'sales_to' => 'before:created_at',
+                ],
+                'remaining_periodic_amount' => [
+                    'sales_from' => 'after:created_at',
+                    'sales_to' => 'before:created_at',
+                ],
+            ],
+            'types' => 'has:types',
+            'categories' => 'has:categories',
+            'parent_id' => 'equals:parent_id',
+            'user_purchased_id' => 'has-has:purchased_carts:customer:id'
+        ];
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return array
+     */
     public function getValidRelations()
     {
         return [
@@ -228,8 +362,6 @@ class ProductCRUDProvider implements
         if (!$user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
             if ($user->hasRole(config('larapress.ecommerce.lms.owner_role_id'))) {
                 $query->whereIn('id', $user->getOwenedProductsIds());
-            } else {
-//                $query->where('author_id', $user->id);
             }
         }
 

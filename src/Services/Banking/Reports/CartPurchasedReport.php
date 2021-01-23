@@ -120,7 +120,7 @@ class CartPurchasedReport implements IReportSource, ShouldQueue
                             foreach ($periods as $period) {
                                 $totalPeriodsLeftAmount += floatval($period['amount']);
                             }
-                        } else if (isset($item->data['calucalte_periodic'])) {
+                        } else if (isset($item->data['calucalte_periodic']) && isset($item->data['calucalte_periodic']['period_count'])) {
                             $calc = $item->data['calucalte_periodic'];
                             $count = intval($calc['period_count']);
                             $amount = floatval($calc['period_amount']);

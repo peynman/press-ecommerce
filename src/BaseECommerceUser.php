@@ -12,6 +12,8 @@ use Larapress\Profiles\Models\FormEntry;
 use Illuminate\Support\Str;
 use Larapress\CRUD\Models\Role;
 use Larapress\ECommerce\Models\Product;
+use Larapress\ECommerce\Services\Product\UserSalesAmountRelationship;
+use Larapress\ECommerce\Services\Product\UserSalesCountRelationship;
 
 trait BaseECommerceUser
 {
@@ -219,6 +221,50 @@ trait BaseECommerceUser
     public function getSupportUserProfileAttribute()
     {
         return $this->form_support_user_profile;
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return array
+     */
+    public function sales_fixed() {
+        return new UserSalesCountRelationship(
+            $this,
+            'sales_fixed',
+            []
+        );
+    }
+
+
+    /**
+     * Undocumented function
+     *
+     * @return array
+     */
+    public function sales_periodic() {
+        return new UserSalesCountRelationship(
+            $this,
+            'sales_periodic',
+            []
+        );
+    }
+
+    public function sales_virtual() {
+        return new UserSalesAmountRelationship(
+            $this,
+            WalletTransaction::TYPE_VIRTUAL_MONEY,
+            []
+        );
+    }
+
+
+    public function sales_real() {
+        return new UserSalesAmountRelationship(
+            $this,
+            WalletTransaction::TYPE_REAL_MONEY,
+            []
+        );
     }
 
     /**

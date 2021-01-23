@@ -100,7 +100,15 @@ class WalletTransactionCRUDProvider implements ICRUDProvider, IPermissionsMetada
             'domain' => 'has:domain:id',
             'type' => 'equals:type',
             'user_id' => 'equals:user_id',
-            'amount' => function($query, $value) {
+            'withoutGateway' => function($query, $value) {
+                if ($value) {
+                    $query->whereNull('data->transaction_id');
+                }
+            },
+            'amount_min' => function($query, $value) {
+                $query->where('amount', '>=', $value);
+            },
+            'amount_type' => function($query, $value) {
                 if ($value == 1) {
                     $query->where('amount', '<', 0);
                 } else {

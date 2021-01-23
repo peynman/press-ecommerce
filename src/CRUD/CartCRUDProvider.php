@@ -77,20 +77,49 @@ class CartCRUDProvider implements
     public $defaultShowRelations = [
         'products'
     ];
-    public $filterFields = [
-        'created_from' => 'after:created_at',
-        'created_to' => 'before:created_at',
-        'domain' => 'has:domain:id',
-        'status' => 'equals:status',
-        'customer_id' => 'equals:customer_id',
-        'product_ids' => 'has:products:id',
-        'products_count' => 'has-count:products:>=',
-        'flags' => 'bitwise:flags',
-        'amount' => 'equals:amount',
-        'hasDescription' => 'not-null:data->description'
-    ];
 
+    /**
+     * Undocumented function
+     *
+     * @return array
+     */
+    public function getSummerizableColumns()
+    {
+        return [
+            'amount' => function($query, $params) {
+                return $query->sum('amount');
+            }
+        ];
+    }
 
+    /**
+     * Undocumented function
+     *
+     * @return array
+     */
+    public function getFilterFields()
+    {
+        return [
+            'created_from' => 'after:created_at',
+            'created_to' => 'before:created_at',
+            'domain' => 'has:domain:id',
+            'status' => 'equals:status',
+            'customer_id' => 'equals:customer_id',
+            'product_ids' => 'has:products:id',
+            'products_count' => 'has-count:products:>=',
+            'flags' => 'bitwise:flags',
+            'amount' => 'equals:amount',
+            'hasDescription' => 'not-null:data->description',
+            'due_date_before' => 'before:data->periodic_pay->due_date',
+            'due_date_after' => 'after:data->periodic_pay->due_date'
+        ];
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return array
+     */
     public function getValidSortColumns()
     {
         return [

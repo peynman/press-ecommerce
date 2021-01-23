@@ -17,10 +17,13 @@ class ProductSalesCountRelationship extends Relation
 
     protected $filterType = null;
     protected $isReadyToLoad = false;
-    public function __construct(Model $parent, string $filterType)
+    protected $groupBy = [];
+
+    public function __construct(Model $parent, string $filterType, $groupBy = ['metrics_counters.domain_id', 'metrics_counters.key'])
     {
         parent::__construct(MetricCounter::query(), $parent);
         $this->filterType = $filterType;
+        $this->groupBy = $groupBy;
     }
 
     /**
@@ -30,7 +33,6 @@ class ProductSalesCountRelationship extends Relation
      */
     public function addConstraints()
     {
-        $this->query->selectRaw('metrics_counters.domain_id, metrics_counters.key, sum(metrics_counters.value) as total_count');
     }
 
     /**
@@ -42,19 +44,25 @@ class ProductSalesCountRelationship extends Relation
      */
     public function addEagerConstraints(array $models)
     {
+        $this->query->selectRaw(implode(",", array_merge(['sum(metrics_counters.value) as total_count'], $this->groupBy)));
+
         $suffix = $this->filterType;
         $domains = null;
         /** @var IECommerceUser */
         $user = Auth::user();
 
-        $models = collect($models);
+        if (is_object($models[0])) {
+            $models = collect($models)->pluck('id');
+        } else {
+            $models = collect($models);
+        }
         if (!$user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
             if ($user->hasRole(config('larapress.ecommerce.lms.support_role_id'))) {
                 $suffix = $suffix . ".$user->id";
             } else if ($user->hasRole(config('larapress.ecommerce.lms.owner_role_id'))) {
                 $ownerEntries = $user->getOwenedProductsIds();
-                $models = $models->filter(function($model) use($ownerEntries) {
-                    return in_array($model->id, $ownerEntries);
+                $models = $models->filter(function ($model) use ($ownerEntries) {
+                    return in_array($model, $ownerEntries);
                 });
             } else {
                 $domains = $user->getAffiliateDomainIds();
@@ -63,14 +71,16 @@ class ProductSalesCountRelationship extends Relation
 
         $this->query
             ->whereIn('metrics_counters.key', $models->map(function ($model)  use ($suffix) {
-                return "product.$model->id.$suffix";
+                return "product.$model.$suffix";
             }));
 
         if (!is_null($domains)) {
             $this->query->whereIn('domain_id', $domains);
         }
 
-        $this->query->groupBy(['metrics_counters.domain_id', 'metrics_counters.key']);
+        if (count($this->groupBy)) {
+            $this->query->groupBy($this->groupBy);
+        }
 
         $this->isReadyToLoad = true;
     }
