@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Larapress\ECommerce\Models\WalletTransaction;
 use Larapress\Reports\Models\MetricCounter;
 use Larapress\ECommerce\IECommerceUser;
@@ -47,18 +48,6 @@ class ProductSalesAmountRelationship extends Relation
     {
         $this->query->selectRaw(implode(",", array_merge(['sum(metrics_counters.value) as total_amount'], $this->groupBy)));
 
-        $flatten_array = function ($arr) {
-            $flatten = [];
-            foreach ($arr as $item) {
-                if (gettype($item) === 'string') {
-                    $flatten[] = $item;
-                } else {
-                    $flatten = array_merge(...$item);
-                }
-            }
-            return $flatten;
-        };
-
         $suffix = ".amount";
         $domains = null;
         /** @var IECommerceUser */
@@ -82,17 +71,12 @@ class ProductSalesAmountRelationship extends Relation
                 $domains = $user->getAffiliateDomainIds();
             }
         }
-        $this->query
-            ->whereIn('metrics_counters.key', $flatten_array($models->map(function ($model)  use ($suffix) {
-                if (!is_null($this->filterType)) {
-                    return "product.$model.sales." . $this->filterType  . $this->extraSuffix . $suffix;
-                } else {
-                    return [
-                        "product.$model.sales." . WalletTransaction::TYPE_REAL_MONEY  . $this->extraSuffix . $suffix,
-                        "product.$model.sales." . WalletTransaction::TYPE_VIRTUAL_MONEY   . $this->extraSuffix . $suffix,
-                    ];
-                }
-            })));
+
+
+        $ids = $models->join("|");
+
+        $fullSuffix = str_replace(".", "\.", $this->extraSuffix . $suffix);
+        $this->query->where('metrics_counters.key', 'RLIKE', "^product\.($ids)\.sales\.".(is_null($this->filterType) ? "(1|2)": $this->filterType)."$fullSuffix$");
 
         if (!is_null($domains)) {
             $this->query->whereIn('domain_id', $domains);
@@ -149,6 +133,7 @@ class ProductSalesAmountRelationship extends Relation
                 $suffix = $suffix . ".$user->id";
             }
         }
+
         foreach ($models as $model) {
             $resultset = array_values($results->filter(function (Model $contract) use ($model, $suffix) {
                 return in_array($contract->key, [

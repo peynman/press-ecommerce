@@ -63,7 +63,7 @@ class UserSalesAmountRelationship extends Relation
 
         $suppIds = $models->join("|");
         $this->query
-            ->where('metrics_counters.key', 'RLIKE', "^product\.[[:digit:]]\.sales\.$suffix\.amount\.($suppIds)$");
+            ->where('metrics_counters.key', 'RLIKE', "^product\.[0-9]*\.sales\.$suffix\.amount\.($suppIds)$");
 
         if (!is_null($domains)) {
             $this->query->whereIn('domain_id', $domains);

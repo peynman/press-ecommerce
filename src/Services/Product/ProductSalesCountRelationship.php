@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Larapress\ECommerce\Models\WalletTransaction;
 use Larapress\Reports\Models\MetricCounter;
 use Larapress\ECommerce\IECommerceUser;
@@ -58,7 +59,7 @@ class ProductSalesCountRelationship extends Relation
         }
         if (!$user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
             if ($user->hasRole(config('larapress.ecommerce.lms.support_role_id'))) {
-                $suffix = $suffix . ".$user->id";
+                $suffix = $suffix . "\.$user->id";
             } else if ($user->hasRole(config('larapress.ecommerce.lms.owner_role_id'))) {
                 $ownerEntries = $user->getOwenedProductsIds();
                 $models = $models->filter(function ($model) use ($ownerEntries) {
@@ -69,10 +70,9 @@ class ProductSalesCountRelationship extends Relation
             }
         }
 
-        $this->query
-            ->whereIn('metrics_counters.key', $models->map(function ($model)  use ($suffix) {
-                return "product.$model.$suffix";
-            }));
+        $ids = $models->join("|");
+
+        $this->query->where('metrics_counters.key', 'RLIKE', "^product\.($ids)\.$suffix$");
 
         if (!is_null($domains)) {
             $this->query->whereIn('domain_id', $domains);

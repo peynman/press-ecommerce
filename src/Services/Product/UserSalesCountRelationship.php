@@ -63,7 +63,7 @@ class UserSalesCountRelationship extends Relation
 
         $suppIds = $models->join("|");
         $this->query
-            ->where('metrics_counters.key', 'RLIKE', "^product\.[[:digit:]]\.$this->filterType\.($suppIds)$");
+            ->where('metrics_counters.key', 'RLIKE', "^product\.[0-9]*\.$this->filterType\.($suppIds)$");
 
         if (!is_null($domains)) {
             $this->query->whereIn('domain_id', $domains);

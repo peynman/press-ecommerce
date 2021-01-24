@@ -68,8 +68,8 @@ class CartPurchasedReport implements IReportSource, ShouldQueue
             'products',
         ])->find($event->cartId);
 
-        // just run on purchased carts
-        if ($cart->status === Cart::STATUS_UNVERIFIED) {
+        // only run on complete access
+        if ($cart->status !== Cart::STATUS_ACCESS_COMPLETE) {
             return;
         }
 
