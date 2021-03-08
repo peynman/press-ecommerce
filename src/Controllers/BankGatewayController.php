@@ -21,7 +21,8 @@ class BankGatewayController extends BaseCRUDController
         );
     }
 
-    public static function registerPublicWebRoutes() {
+    public static function registerPublicWebRoutes()
+    {
         Route::any(config('larapress.ecommerce.routes.bank_gateways.name') . '/{gateway_id}/redirect/increase/{amount}/currency/{currency}', '\\' . self::class . '@redirectToBankForIncreaseAmount')
             ->name(config('larapress.ecommerce.routes.bank_gateways.name') . '.any.redirect.increase');
         Route::any(config('larapress.ecommerce.routes.bank_gateways.name') . '/{gateway_id}/redirect/{cart_id}', '\\' . self::class . '@redirectToBankForCart')
@@ -39,14 +40,15 @@ class BankGatewayController extends BaseCRUDController
      * @param string $cart_id
      * @return void
      */
-    public function redirectToBankForIncreaseAmount(IBankingService $service, Request $request, $gateway_id, $amount, $currency) {
+    public function redirectToBankForIncreaseAmount(IBankingService $service, Request $request, $gateway_id, $amount, $currency)
+    {
         return $service->redirectToBankForAmount(
             $request,
             $gateway_id,
             $amount,
             $currency,
             // failed to redirect
-			function($request, Cart $cart, $e = null) {
+            function ($request, Cart $cart, $e = null) {
                 return response()->redirectTo(isset($cart->data['return_to']) ? $cart->data['return_to']:config('larapress.ecommerce.banking.redirect.failed'))
                 ->with([
                     'answer' => [
@@ -54,9 +56,9 @@ class BankGatewayController extends BaseCRUDController
                         'type' => 'error',
                     ]
                 ]);
-			},
+            },
             // already purchased cart
-            function($request, Cart $cart) {
+            function ($request, Cart $cart) {
                 return response()->redirectTo(isset($cart->data['return_to']) ? $cart->data['return_to']:config('larapress.ecommerce.banking.redirect.already'))
                 ->with([
                     'answer' => [
@@ -77,12 +79,13 @@ class BankGatewayController extends BaseCRUDController
      * @param int $gateway_id
      * @return void
      */
-    public function redirectToBankForCart(IBankingService $service, Request $request, $gateway_id, $cart_id) {
-		return $service->redirectToBankForCart(
-			$request,
-			$cart_id,
-			$gateway_id,
-			function($request, Cart $cart, $e = null) {
+    public function redirectToBankForCart(IBankingService $service, Request $request, $gateway_id, $cart_id)
+    {
+        return $service->redirectToBankForCart(
+            $request,
+            $cart_id,
+            $gateway_id,
+            function ($request, Cart $cart, $e = null) {
                 return response()->redirectTo(isset($cart->data['return_to']) ? $cart->data['return_to']:config('larapress.ecommerce.banking.redirect.failed'))
                 ->with([
                     'answer' => [
@@ -90,8 +93,8 @@ class BankGatewayController extends BaseCRUDController
                         'type' => 'error',
                     ]
                 ]);
-			},
-            function($request, Cart $cart) {
+            },
+            function ($request, Cart $cart) {
                 return response()->redirectTo(isset($cart->data['return_to']) ? $cart->data['return_to']:config('larapress.ecommerce.banking.redirect.already'))
                 ->with([
                     'answer' => [
@@ -100,7 +103,7 @@ class BankGatewayController extends BaseCRUDController
                     ]
                 ]);
             },
-		);
+        );
     }
 
     /**
@@ -117,7 +120,7 @@ class BankGatewayController extends BaseCRUDController
         return $service->verifyBankRequest(
             $request,
             $transaction_id,
-            function($request, Cart $cart, BankGatewayTransaction $transaction) {
+            function ($request, Cart $cart, BankGatewayTransaction $transaction) {
                 return response()->redirectTo(isset($cart->data['return_to']) ? $cart->data['return_to']:config('larapress.ecommerce.banking.redirect.already'))
                 ->with([
                     'answer' => [
@@ -125,8 +128,8 @@ class BankGatewayController extends BaseCRUDController
                         'type' => 'success',
                     ]
                 ]);
-			},
-			function($request, Cart $cart, BankGatewayTransaction $transaction) {
+            },
+            function ($request, Cart $cart, BankGatewayTransaction $transaction) {
                 return response()->redirectTo(isset($cart->data['return_to']) ? $cart->data['return_to']:config('larapress.ecommerce.banking.redirect.success'))
                 ->with([
                     'answer' => [
@@ -134,8 +137,8 @@ class BankGatewayController extends BaseCRUDController
                         'type' => 'success',
                     ]
                 ]);
-			},
-			function($request, Cart $cart, $e) {
+            },
+            function ($request, Cart $cart, $e) {
                 return response()->redirectTo(isset($cart->data['return_to']) ? $cart->data['return_to']:config('larapress.ecommerce.banking.redirect.failed'))
                 ->with([
                     'answer' => [
@@ -143,8 +146,8 @@ class BankGatewayController extends BaseCRUDController
                         'type' => 'error',
                     ]
                 ]);
-			},
-			function($request, Cart $cart, $e) {
+            },
+            function ($request, Cart $cart, $e) {
                 return response()->redirectTo(isset($cart->data['return_to']) ? $cart->data['return_to']:config('larapress.ecommerce.banking.redirect.failed'))
                 ->with([
                     'answer' => [
@@ -152,8 +155,7 @@ class BankGatewayController extends BaseCRUDController
                         'type' => 'warning',
                     ]
                 ]);
-			}
+            }
         );
     }
-
 }

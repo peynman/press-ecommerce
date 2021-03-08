@@ -2,7 +2,7 @@
 
 namespace Larapress\ECommerce\CRUD;
 
-use Illuminate\Database\Query\Builder;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -11,7 +11,6 @@ use Larapress\CRUD\BaseFlags;
 use Larapress\CRUD\Services\BaseCRUDProvider;
 use Larapress\CRUD\Services\ICRUDProvider;
 use Larapress\CRUD\Services\IPermissionsMetadata;
-use Larapress\CRUD\ICRUDUser;
 use Larapress\ECommerce\Models\Cart;
 use Larapress\ECommerce\Models\WalletTransaction;
 use Larapress\ECommerce\Services\Banking\Events\CartPurchasedEvent;
@@ -67,13 +66,6 @@ class CartCRUDProvider implements
         'has_exact:customer,name',
         'has_exact:customer.phones,number',
     ];
-    public $validRelations = [
-        'customer',
-        'domain',
-        'products',
-        'nested_carts',
-        'customer.phones',
-    ];
     public $defaultShowRelations = [
         'products'
     ];
@@ -86,9 +78,43 @@ class CartCRUDProvider implements
     public function getSummerizableColumns()
     {
         return [
-            'amount' => function($query, $params) {
+            'amount' => function ($query, $params) {
                 return $query->sum('amount');
             }
+        ];
+    }
+
+    public function getValidRelations()
+    {
+        return [
+            'customer' => function ($user) {
+                return $user->hasPermission(config('larapress.profiles.routes.users.name').'.view');
+            },
+            'domain' => function ($user) {
+                return $user->hasPermission(config('larapress.profiles.routes.domains.name').'.view');
+            },
+            'customer.phones' => function ($user) {
+                return $user->hasPermission(config('larapress.profiles.routes.phone-numbers.name').'.view');
+            },
+            'customer.form_support_user_profile' => function ($user) {
+                return $user->hasPermission(config('larapress.profiles.routes.form-entries.name').'.view');
+            },
+            'customer.form_profile_default' => function ($user) {
+                return $user->hasPermission(config('larapress.profiles.routes.form-entries.name').'.view');
+            },
+            'customer.form_profile_support' => function ($user) {
+                return $user->hasPermission(config('larapress.profiles.routes.form-entries.name').'.view');
+            },
+            'customer.form_support_registration_entry' => function ($user) {
+                return $user->hasPermission(config('larapress.profiles.routes.form-entries.name').'.view');
+            },
+            'customer.wallet_balance'  => function ($user) {
+                return $user->hasPermission(config('larapress.ecommerce.routes.wallet_transactions.name').'.view');
+            },
+            'products' => function ($user) {
+                return $user->hasPermission(config('larapress.ecommerce.routes.products.name').'.view');
+            },
+            'nested_carts',
         ];
     }
 
@@ -111,7 +137,15 @@ class CartCRUDProvider implements
             'amount' => 'equals:amount',
             'hasDescription' => 'not-null:data->description',
             'due_date_before' => 'before:data->periodic_pay->due_date',
-            'due_date_after' => 'after:data->periodic_pay->due_date'
+            'due_date_after' => 'after:data->periodic_pay->due_date',
+            'purchased_from' => 'after:data->period_start',
+            'purchased_to' => 'before:data->period_start',
+            'items_count_more' => function (Builder $query, $value) {
+                $query->whereHas('cart_items', function ($q) use ($value) {
+                    $q->selectRaw('count(*)');
+                    $q->havingRaw(DB::raw('count(*) >= '.$value));
+                });
+            },
         ];
     }
 
@@ -354,14 +388,6 @@ class CartCRUDProvider implements
             ->where('group', 'cart:' . $object->id)
             ->delete();
 
-        // if this is a original cart and there are no installments now remove installments records
-        if (!BaseFlags::isActive($object->flags, Cart::FLAGS_HAS_PERIODS)) {
-            Cart::query()
-                ->where('data->periodic_pay->originalCart', $object->id)
-                ->delete();
-        }
-
-
         if ($object->status == Cart::STATUS_ACCESS_COMPLETE) {
             $object->flags |= Cart::FLAGS_USER_CART;
 
@@ -409,9 +435,22 @@ class CartCRUDProvider implements
 
         // if this is a original cart, remove installments records
         if (BaseFlags::isActive($object->flags, Cart::FLAGS_HAS_PERIODS)) {
-            Cart::query()
+            //ids to delete
+            $ids = Cart::query()
                 ->where('data->periodic_pay->originalCart', $object->id)
+                ->select(['id'])
+                ->get('id');
+            Cart::query()
+                ->whereIn('id', $ids)
                 ->delete();
+            // remove wallet transaction associated with this cart
+            $innerIds = WalletTransaction::query()
+                ->where('user_id', $object->customer_id)
+                ->whereIn('data->cart_id', $ids->toArray())
+                ->where('amount', '<', 0)
+                ->select(['id'])
+                ->get('id');
+            WalletTransaction::query()->whereIn('id', $innerIds)->delete();
         }
 
         Cache::tags(['purchasing-cart:' . $object->customer_id])->flush();

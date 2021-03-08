@@ -20,8 +20,7 @@ class SupportGroupFormListener implements ShouldQueue
                 // user profile updated
             case config('larapress.ecommerce.lms.profile_form_id'):
                 if ($event->created) {
-                    if (
-                        !is_null(config('larapress.ecommerce.lms.profle_gift.amount')) &&
+                    if (!is_null(config('larapress.ecommerce.lms.profle_gift.amount')) &&
                         !is_null(config('larapress.ecommerce.lms.profle_gift.currency')) &&
                         config('larapress.ecommerce.lms.profle_gift.amount') > 0
                     ) {

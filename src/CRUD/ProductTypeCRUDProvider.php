@@ -25,14 +25,14 @@ class ProductTypeCRUDProvider implements ICRUDProvider, IPermissionsMetadata
     ];
     public $model = ProductType::class;
     public $createValidations = [
-    	'name' => 'required|string|unique:products,name',
-	    'data.title' => 'required',
-	    'flags' => 'nullable|numeric',
+        'name' => 'required|string|unique:products,name',
+        'data.title' => 'required',
+        'flags' => 'nullable|numeric',
     ];
     public $updateValidations = [
-    	'name' => 'required|string|unique:products,name',
-	    'data.title' => 'required',
-	    'flags' => 'nullable|numeric',
+        'name' => 'required|string|unique:products,name',
+        'data.title' => 'required',
+        'flags' => 'nullable|numeric',
     ];
     public $autoSyncRelations = [];
     public $validSortColumns = [
@@ -62,7 +62,8 @@ class ProductTypeCRUDProvider implements ICRUDProvider, IPermissionsMetadata
      * @param Request $request
      * @return void
      */
-    public function getUpdateRules(Request $request) {
+    public function getUpdateRules(Request $request)
+    {
         $this->updateValidations['name'] .= ',' . $request->route('id');
         return $this->updateValidations;
     }
@@ -73,7 +74,7 @@ class ProductTypeCRUDProvider implements ICRUDProvider, IPermissionsMetadata
      * @param [type] $args
      * @return void
      */
-    public function onBeforeCreate( $args )
+    public function onBeforeCreate($args)
     {
         $args['author_id'] = Auth::user()->id;
 

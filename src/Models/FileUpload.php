@@ -32,11 +32,11 @@ class FileUpload extends Model
 
     public $fillable = [
         'uploader_id',
-	    'title',
-    	'mime',
-    	'storage',
-	    'path',
-	    'filename',
+        'title',
+        'mime',
+        'storage',
+        'path',
+        'filename',
         'access',
         'size',
         'flags',

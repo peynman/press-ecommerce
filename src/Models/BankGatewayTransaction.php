@@ -34,56 +34,60 @@ class BankGatewayTransaction extends Model
     const STATUS_FAILED = 5;
     const STATUS_SUCCESS = 6;
 
-	use SoftDeletes;
+    use SoftDeletes;
 
-	protected $table = 'bank_gateway_transactions';
+    protected $table = 'bank_gateway_transactions';
 
-	protected $fillable = [
+    protected $fillable = [
         'bank_gateway_id',
         'domain_id',
         'customer_id',
         'cart_id',
         'agent_ip',
         'agent_client',
-		'amount',
-		'currency',
-		'tracking_code',
-		'reference_code',
-		'status',
-		'flags',
-		'data',
-	];
+        'amount',
+        'currency',
+        'tracking_code',
+        'reference_code',
+        'status',
+        'flags',
+        'data',
+    ];
 
-	protected $casts = [
-		'data' => 'array',
-	];
+    protected $casts = [
+        'data' => 'array',
+    ];
 
 
-	/**
-	 * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-	 */
-	public function cart() {
-		return $this->belongsTo(Cart::class, 'cart_id');
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function cart()
+    {
+        return $this->belongsTo(Cart::class, 'cart_id');
     }
 
-	/**
-	 * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-	 */
-	public function domain() {
-		return $this->belongsTo(Domain::class, 'domain_id');
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function domain()
+    {
+        return $this->belongsTo(Domain::class, 'domain_id');
     }
 
-	/**
-	 * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-	 */
-	public function bank_gateway() {
-		return $this->belongsTo(BankGateway::class, 'bank_gateway_id');
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function bank_gateway()
+    {
+        return $this->belongsTo(BankGateway::class, 'bank_gateway_id');
     }
 
-	/**
-	 * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-	 */
-	public function customer() {
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function customer()
+    {
         return $this->belongsTo(config('larapress.crud.user.class'), 'customer_id');
     }
 }

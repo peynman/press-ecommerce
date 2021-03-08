@@ -62,9 +62,9 @@ class ProductSalesAmountRelationship extends Relation
         if (!$user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
             if ($user->hasRole(config('larapress.ecommerce.lms.support_role_id'))) {
                 $suffix = $suffix . ".$user->id";
-            } else if ($user->hasRole(config('larapress.ecommerce.lms.owner_role_id'))) {
+            } elseif ($user->hasRole(config('larapress.ecommerce.lms.owner_role_id'))) {
                 $ownerEntries = $user->getOwenedProductsIds();
-                $models = $models->filter(function($model) use($ownerEntries) {
+                $models = $models->filter(function ($model) use ($ownerEntries) {
                     return in_array($model, $ownerEntries);
                 });
             } else {

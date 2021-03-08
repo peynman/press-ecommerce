@@ -138,7 +138,8 @@ class ProductService implements IProductService
      * @param callable $callback
      * @return mixed
      */
-    public function checkProductLinkAccess(Request $request, $product, $link, $callback) {
+    public function checkProductLinkAccess(Request $request, $product, $link, $callback)
+    {
         /** @var IBankingService $service */
         $service = app()->make(IBankingService::class);
 
@@ -154,11 +155,11 @@ class ProductService implements IProductService
             $product = Product::with('types')->find($product);
         }
 
-		if ($product->isFree() || (!is_null($user) && $service->isProductOnPurchasedList($user, $product))) {
+        if ($product->isFree() || (!is_null($user) && $service->isProductOnPurchasedList($user, $product))) {
             /** @var ProductType[] */
             $typeDatas = $product->data['types'];
             $file_ids = [];
-			foreach ($typeDatas as $typeData) {
+            foreach ($typeDatas as $typeData) {
                 if (isset($typeData['file_id'])) {
                     $file_ids[] = $typeData['file_id'];
                 }
@@ -185,16 +186,16 @@ class ProductService implements IProductService
             if (!in_array($link_id, $file_ids)) {
                 throw new AppException(AppException::ERR_INVALID_QUERY);
             }
-		} else {
-			throw new AppException(AppException::ERR_OBJ_ACCESS_DENIED);
-		}
+        } else {
+            throw new AppException(AppException::ERR_OBJ_ACCESS_DENIED);
+        }
 
 
         if (is_numeric($link)) {
             $link = FileUpload::find($link);
         }
-		if (is_null($link)) {
-			throw new AppException(AppException::ERR_OBJ_FILE_NOT_FOUND);
+        if (is_null($link)) {
+            throw new AppException(AppException::ERR_OBJ_FILE_NOT_FOUND);
         }
 
         return $callback($request, $product, $link);
@@ -208,7 +209,8 @@ class ProductService implements IProductService
      * @param callbable $callback
      * @return mixed
      */
-    public function checkProductAccess(Request $request, $product, $callback) {
+    public function checkProductAccess(Request $request, $product, $callback)
+    {
         /** @var IBankingService $service */
         $service = app()->make(IBankingService::class);
 
@@ -224,18 +226,18 @@ class ProductService implements IProductService
             $product = Product::with('types')->find($product);
         }
 
-		if ($product->isFree() || (!is_null($user) && $service->isProductOnPurchasedList($user, $product))) {
+        if ($product->isFree() || (!is_null($user) && $service->isProductOnPurchasedList($user, $product))) {
             /** @var ProductType[] */
             $typeDatas = $product->data['types'];
             $file_ids = [];
-			foreach ($typeDatas as $typeData) {
+            foreach ($typeDatas as $typeData) {
                 if (isset($typeData['file_id'])) {
                     $file_ids[] = $typeData['file_id'];
                 }
             }
-		} else {
-//			throw new AppException(AppException::ERR_OBJ_ACCESS_DENIED);
-		}
+        } else {
+//          throw new AppException(AppException::ERR_OBJ_ACCESS_DENIED);
+        }
 
         return $callback($request, $product);
     }

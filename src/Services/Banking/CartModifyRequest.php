@@ -31,7 +31,8 @@ class CartModifyRequest extends FormRequest
     }
 
     protected $product = null;
-    public function getProduct() {
+    public function getProduct()
+    {
         if (is_null($this->product)) {
             $this->product = Product::find($this->get('product_id'));
         }

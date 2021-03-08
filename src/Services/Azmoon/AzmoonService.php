@@ -23,13 +23,13 @@ class AzmoonService implements IAzmoonService
      * @param Product $product
      * @return void
      */
-    public function buildAzmoonDetails($product) {
+    public function buildAzmoonDetails($product)
+    {
         if (is_numeric($product)) {
             $product = Product::find($product);
         }
 
-        if (
-            is_null($product) ||
+        if (is_null($product) ||
             !isset($product->data['types']['azmoon']['file_id']) ||
             is_null($product->data['types']['azmoon']['file_id'])
         ) {
@@ -61,8 +61,7 @@ class AzmoonService implements IAzmoonService
         }
         $productId = $product->id;
 
-        if (
-            is_null($product) ||
+        if (is_null($product) ||
             !isset($product->data['types']['azmoon']['file_id']) ||
             is_null($product->data['types']['azmoon']['file_id'])
         ) {
@@ -131,8 +130,7 @@ class AzmoonService implements IAzmoonService
         }
         $productId = $product->id;
 
-        if (
-            is_null($product) ||
+        if (is_null($product) ||
             !isset($product->data['types']['azmoon']['file_id']) ||
             is_null($product->data['types']['azmoon']['file_id']) ||
             !isset($product->data['types']['azmoon']['details'])
@@ -152,7 +150,7 @@ class AzmoonService implements IAzmoonService
 
         /** @var IProductService */
         $productService = app(IProductService::class);
-        return $productService->checkProductAccess($request, $product, function($request, $product) use($index, $answer, $file) {
+        return $productService->checkProductAccess($request, $product, function ($request, $product) use ($index, $answer, $file) {
             /** @var IFileUploadService */
             $fileService = app(IFileUploadService::class);
             $dir = substr($file->path, 0, strrpos($file->path, '.', -1));
@@ -182,8 +180,7 @@ class AzmoonService implements IAzmoonService
         }
         $productId = $product->id;
 
-        if (
-            is_null($product) ||
+        if (is_null($product) ||
             !isset($product->data['types']['azmoon']['file_id']) ||
             is_null($product->data['types']['azmoon']['file_id']) ||
             is_null($product->data['types']['azmoon']['details'])

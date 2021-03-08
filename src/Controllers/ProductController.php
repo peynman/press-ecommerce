@@ -29,7 +29,8 @@ class ProductController extends BaseCRUDController
         );
     }
 
-    public static function registerPublicApiRoutes() {
+    public static function registerPublicApiRoutes()
+    {
         Route::post(
             config('larapress.ecommerce.routes.products.name') . '/repository',
             '\\' . self::class . '@queryRepository'
@@ -42,7 +43,8 @@ class ProductController extends BaseCRUDController
      * @param Request $request
      * @return array
      */
-    public function queryRepository(IProductService $service, Request $request) {
+    public function queryRepository(IProductService $service, Request $request)
+    {
         return $service->queryProductsFromRequest($request);
     }
 
@@ -55,7 +57,8 @@ class ProductController extends BaseCRUDController
      * @param int $id
      * @return array
      */
-    public function duplicateProduct(IProductService $service, Request $request, $id) {
+    public function duplicateProduct(IProductService $service, Request $request, $id)
+    {
         return $service->duplicateProductForRequest($request, $id);
     }
 }

@@ -60,7 +60,7 @@ class WalletTransactionCRUDProvider implements ICRUDProvider, IPermissionsMetada
     public $updateValidations = [
         'amount' => 'required|numeric',
         'currency' => 'required|numeric',
-	    'flags' => 'nullable|numeric',
+        'flags' => 'nullable|numeric',
         'data.description' => 'required|string',
     ];
     public $autoSyncRelations = [];
@@ -75,17 +75,37 @@ class WalletTransactionCRUDProvider implements ICRUDProvider, IPermissionsMetada
         'has_exact:user,name',
         'has_exact:user.phones,number',
     ];
-    public $validRelations = [
-        'user',
-        'domain',
-        'user.phones',
-        'user.form_support_user_profile',
-        'user.form_profile_default',
-        'user.form_profile_support',
-        'user.form_support_registration_entry',
-        'user.wallet_balance',
-    ];
     public $defaultShowRelations = [];
+
+    public function getValidRelations()
+    {
+        return [
+            'user' => function ($user) {
+                return $user->hasPermission(config('larapress.profiles.routes.users.name').'.view');
+            },
+            'domain' => function ($user) {
+                return $user->hasPermission(config('larapress.profiles.routes.domains.name').'.view');
+            },
+            'user.phones' => function ($user) {
+                return $user->hasPermission(config('larapress.profiles.routes.phone-numbers.name').'.view');
+            },
+            'user.form_support_user_profile' => function ($user) {
+                return $user->hasPermission(config('larapress.profiles.routes.form-entries.name').'.view');
+            },
+            'user.form_profile_default' => function ($user) {
+                return $user->hasPermission(config('larapress.profiles.routes.form-entries.name').'.view');
+            },
+            'user.form_profile_support' => function ($user) {
+                return $user->hasPermission(config('larapress.profiles.routes.form-entries.name').'.view');
+            },
+            'user.form_support_registration_entry' => function ($user) {
+                return $user->hasPermission(config('larapress.profiles.routes.form-entries.name').'.view');
+            },
+            'user.wallet_balance'  => function ($user) {
+                return $user->hasPermission(config('larapress.ecommerce.routes.wallet_transactions.name').'.view');
+            },
+        ];
+    }
 
     /**
      * Undocumented function
@@ -100,15 +120,15 @@ class WalletTransactionCRUDProvider implements ICRUDProvider, IPermissionsMetada
             'domain' => 'has:domain:id',
             'type' => 'equals:type',
             'user_id' => 'equals:user_id',
-            'withoutGateway' => function($query, $value) {
+            'withoutGateway' => function ($query, $value) {
                 if ($value) {
                     $query->whereNull('data->transaction_id');
                 }
             },
-            'amount_min' => function($query, $value) {
+            'amount_min' => function ($query, $value) {
                 $query->where('amount', '>=', $value);
             },
-            'amount_type' => function($query, $value) {
+            'amount_type' => function ($query, $value) {
                 if ($value == 1) {
                     $query->where('amount', '<', 0);
                 } else {
@@ -123,7 +143,7 @@ class WalletTransactionCRUDProvider implements ICRUDProvider, IPermissionsMetada
      * @param [type] $args
      * @return void
      */
-    public function onBeforeCreate( $args )
+    public function onBeforeCreate($args)
     {
         /** @var IProfileUser|ICRUDUser */
         $targetUser = User::find($args['target_user']);
@@ -175,7 +195,7 @@ class WalletTransactionCRUDProvider implements ICRUDProvider, IPermissionsMetada
         $user = Auth::user();
         if (! $user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
             $query->orWhereIn('domain_id', $user->getAffiliateDomainIds());
-            $query->orWhereHas('user.form_entries', function($q) use($user) {
+            $query->orWhereHas('user.form_entries', function ($q) use ($user) {
                 $q->where('tags', 'support-group-'.$user->id);
             });
         }

@@ -85,7 +85,8 @@ class ProductRepository implements IProductRepository
      * @param IProfileUser $user
      * @return WalletTransaction[]
      */
-    public function getWalletTransactionsForUser($user) {
+    public function getWalletTransactionsForUser($user)
+    {
         return WalletTransaction::where('user_id', $user->id)->orderBy('id', 'desc')->get();
     }
 
@@ -103,7 +104,7 @@ class ProductRepository implements IProductRepository
         $query = Product::query()->select('id', 'name');
         $this->applyPublishExpireWindow($query);
         if (count($types) > 0) {
-            $query->whereHas('types', function($q) use($types) {
+            $query->whereHas('types', function ($q) use ($types) {
                 $q->whereIn('name', $types);
             });
         }
@@ -193,7 +194,8 @@ class ProductRepository implements IProductRepository
      * @param [type] $cart_id
      * @return Cart
      */
-    public function getCartForUser($user, $cart_id) {
+    public function getCartForUser($user, $cart_id)
+    {
         return Cart::query()
             ->with(['products', 'products.types'])
             ->where('customer_id', $user->id)
@@ -215,7 +217,7 @@ class ProductRepository implements IProductRepository
             if ($user->hasPermission(config('larapress.ecommerce.routes.products.name').'.sales')) {
                 if ($user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
                     $includeReports = true;
-                } else if ($user->hasRole(config('larapress.ecommerce.lms.owner_role_id'))) {
+                } elseif ($user->hasRole(config('larapress.ecommerce.lms.owner_role_id'))) {
                     $includeReports = in_array(intval($product_id), $user->getOwenedProductsIds());
                 }
             }
@@ -245,6 +247,7 @@ class ProductRepository implements IProductRepository
         $service = app(IBankingService::class);
         $purchases = is_null($user) ? [] : $service->getPurchasedItemIds($user);
         $locked = is_null($user) ? [] : $service->getPeriodicInstallmentsLockedProducts($user);
+        \Illuminate\Support\Facades\Log::debug('locked', $locked);
 
         $product['available'] = in_array($product->id, $purchases) || $product->isFree();
         $product['locked'] = in_array($product->id, $locked) && !$product->isFree();
@@ -361,7 +364,8 @@ class ProductRepository implements IProductRepository
         return $query;
     }
 
-    protected function applyPublishExpireWindow($query) {
+    protected function applyPublishExpireWindow($query)
+    {
         $query->where(function ($q) {
             $q->whereNull('publish_at');
             $q->orWhereDate('publish_at', '<=', Carbon::now());

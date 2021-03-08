@@ -4,7 +4,8 @@ namespace Larapress\ECommerce\Services\Product;
 
 use Illuminate\Http\Request;
 
-interface IProductService {
+interface IProductService
+{
 
     /**
      * Undocumented function

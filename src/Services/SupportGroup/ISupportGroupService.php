@@ -6,7 +6,8 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Larapress\Profiles\IProfileUser;
 
-interface ISupportGroupService {
+interface ISupportGroupService
+{
     /**
      * Undocumented function
      *

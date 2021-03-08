@@ -112,7 +112,8 @@ trait ProductCartItem
      *
      * @return array
      */
-    public function getPriceTagAttribute() {
+    public function getPriceTagAttribute()
+    {
         if ($this->isFree()) {
             return [ 'amount' => 0, 'currency' => $this->currency() ];
         } else {

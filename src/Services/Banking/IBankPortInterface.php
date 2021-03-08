@@ -3,7 +3,6 @@
 
 namespace Larapress\ECommerce\Services\Banking;
 
-
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -30,20 +29,20 @@ interface IBankPortInterface
     public function convertForPriceAndCurrency(float $price, int $currency);
 
 
-	/**
+    /**
      * @param Request                $request
      * @param BankGatewayTransaction $transaction
      * @param string                 $callback_url
      *
-	 * @return View|Response|RedirectResponse
-	 */
-	public function redirect(Request $request, BankGatewayTransaction $transaction, string $callback_url);
+     * @return View|Response|RedirectResponse
+     */
+    public function redirect(Request $request, BankGatewayTransaction $transaction, string $callback_url);
 
-	/**
-	 * @param Request                $request
-	 * @param BankGatewayTransaction $transaction
-	 *
-	 * @return BankGatewayTransaction
-	 */
-	public function verify(Request $request, BankGatewayTransaction $transaction);
+    /**
+     * @param Request                $request
+     * @param BankGatewayTransaction $transaction
+     *
+     * @return BankGatewayTransaction
+     */
+    public function verify(Request $request, BankGatewayTransaction $transaction);
 }

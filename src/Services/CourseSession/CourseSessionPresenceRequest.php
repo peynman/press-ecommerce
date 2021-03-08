@@ -4,6 +4,9 @@ namespace Larapress\ECommerce\Services\CourseSession;
 
 use Illuminate\Foundation\Http\FormRequest;
 
+/**
+ * @bodyParam duration integer required The amount of time a use was present in seconds.
+ */
 class CourseSessionPresenceRequest extends FormRequest
 {
     /**

@@ -33,7 +33,8 @@ class FileUploadController extends BaseCRUDController
         );
     }
 
-    public static function registerWebRoutes() {
+    public static function registerWebRoutes()
+    {
         Route::get(config('larapress.ecommerce.routes.file_uploads.name').'/download/{file_id}', '\\'.self::class.'@downloadFile')
             ->middleware(CRUDAuthorizeRequest::class)
             ->name(config('larapress.ecommerce.routes.file_uploads.name').'.view.download');
@@ -60,7 +61,8 @@ class FileUploadController extends BaseCRUDController
      * @param int $file_id
      * @return \Illuminate\Http\Response
      */
-    public function overwriteUpload(IFileUploadService $service, FileUploadRequest $request, $file_id) {
+    public function overwriteUpload(IFileUploadService $service, FileUploadRequest $request, $file_id)
+    {
         return $service->receiveUploaded($request, function ($file) use ($service, $request) {
             return $service->processUploadedFile($request, $file);
         });
@@ -74,7 +76,8 @@ class FileUploadController extends BaseCRUDController
      * @param int $file_id
      * @return \Illuminate\Http\Response
      */
-    public function downloadFile(IFileUploadService $service, Request $request, $file_id) {
+    public function downloadFile(IFileUploadService $service, Request $request, $file_id)
+    {
         return $service->serveFile($request, $file_id);
     }
 }

@@ -64,7 +64,8 @@ class ProductCRUDProvider implements
 
     /** @var ICRUDService */
     protected $crudService;
-    public function getSummerizForRelation(Relation $relation, $relationName, Builder $query, $inputs, $column) {
+    public function getSummerizForRelation(Relation $relation, $relationName, Builder $query, $inputs, $column)
+    {
         /** @var IECommerceUser */
         $user = Auth::user();
         if (!$user->hasPermission(config('larapress.ecommerce.routes.products.name').'.sales')) {
@@ -239,46 +240,46 @@ class ProductCRUDProvider implements
     public function getValidRelations()
     {
         return [
-            'author' => function($user) {
+            'author' => function ($user) {
                 return $user->hasPermission(config('larapress.profiles.routes.users.name').'.view');
             },
-            'types' => function($user) {
+            'types' => function ($user) {
                 return true;
             },
-            'categories' => function($user) {
+            'categories' => function ($user) {
                 return true;
             },
-            'parent' => function($user) {
+            'parent' => function ($user) {
                 return true;
             },
-            'children' => function($user) {
+            'children' => function ($user) {
                 return true;
             },
-            'sales_real_amount' => function($user) {
+            'sales_real_amount' => function ($user) {
                 return $user->hasPermission(config('larapress.ecommerce.routes.products.name').'.sales');
             },
-            'sales_virtual_amount' => function($user) {
+            'sales_virtual_amount' => function ($user) {
                 return $user->hasPermission(config('larapress.ecommerce.routes.products.name').'.sales');
             },
-            'sales_fixed' => function($user) {
+            'sales_fixed' => function ($user) {
                 return $user->hasPermission(config('larapress.ecommerce.routes.products.name').'.sales');
             },
-            'sales_periodic' => function($user) {
+            'sales_periodic' => function ($user) {
                 return $user->hasPermission(config('larapress.ecommerce.routes.products.name').'.sales');
             },
-            'sales_periodic_payment' => function($user) {
+            'sales_periodic_payment' => function ($user) {
                 return $user->hasPermission(config('larapress.ecommerce.routes.products.name').'.sales');
             },
-            'sales_role_support_amount' => function($user) {
+            'sales_role_support_amount' => function ($user) {
                 return $user->hasPermission(config('larapress.ecommerce.routes.products.name').'.sales');
             },
-            'sales_role_support_ext_amount' => function($user) {
+            'sales_role_support_ext_amount' => function ($user) {
                 return $user->hasPermission(config('larapress.ecommerce.routes.products.name').'.sales');
             },
-            'remaining_periodic_count' => function($user) {
+            'remaining_periodic_count' => function ($user) {
                 return $user->hasPermission(config('larapress.ecommerce.routes.products.name').'.sales');
             },
-            'remaining_periodic_amount' => function($user) {
+            'remaining_periodic_amount' => function ($user) {
                 return $user->hasPermission(config('larapress.ecommerce.routes.products.name').'.sales');
             },
         ];

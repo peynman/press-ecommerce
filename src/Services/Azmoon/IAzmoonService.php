@@ -7,7 +7,8 @@ use Larapress\ECommerce\Models\FileUpload;
 use Larapress\ECommerce\Models\Product;
 use Larapress\Profiles\IProfileUser;
 
-interface IAzmoonService {
+interface IAzmoonService
+{
 
 
     /**
@@ -32,7 +33,7 @@ interface IAzmoonService {
      * @param Product|int $product
      * @param int $index
      * @param boolean $answer
-	 * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
      */
     public function streamAzmoonFileAtIndex(Request $request, $product, $index, $answer = false);
 

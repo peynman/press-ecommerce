@@ -25,31 +25,33 @@ class ProductType extends Model
 
     protected $fillable = [
         'author_id',
-    	'name',
-	    'data',
-	    'flags',
+        'name',
+        'data',
+        'flags',
     ];
 
     protected $casts = [
-    	'data' => 'array'
+        'data' => 'array'
     ];
 
-	/**
-	 * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
-	 */
-	public function products() {
-    	return $this->belongsToMany(
-    		Product::class,
-		    'product_type_pivot',
-		    'product_type_id',
-		    'product_id'
-	    );
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     */
+    public function products()
+    {
+        return $this->belongsToMany(
+            Product::class,
+            'product_type_pivot',
+            'product_type_id',
+            'product_id'
+        );
     }
 
-	/**
-	 * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-	 */
-	public function author() {
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function author()
+    {
         return $this->belongsTo(config('larapress.crud.user.class'), 'author_id');
     }
 }

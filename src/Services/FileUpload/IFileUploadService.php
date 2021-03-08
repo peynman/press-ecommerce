@@ -7,7 +7,8 @@ use Illuminate\Http\UploadedFile;
 use Larapress\CRUD\Services\ICRUDService;
 use Larapress\ECommerce\Models\FileUpload;
 
-interface IFileUploadService {
+interface IFileUploadService
+{
     /**
      * Undocumented function
      *

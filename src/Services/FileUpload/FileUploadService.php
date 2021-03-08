@@ -149,7 +149,8 @@ class FileUploadService implements IFileUploadService
      * @param string $folder
      * @return bool
      */
-    public function saveBase64Image($encoded, $storage, $folder) {
+    public function saveBase64Image($encoded, $storage, $folder)
+    {
         if (Str::startsWith($encoded, 'data:image/png;base64,')) {
             $base64 = substr($encoded, strlen('data:image\/png;base64,') - 1);
         } else {
@@ -169,7 +170,8 @@ class FileUploadService implements IFileUploadService
         }
         imagedestroy($img);
 
-        return $filename;;
+        return $filename;
+        ;
     }
 
 
@@ -180,7 +182,8 @@ class FileUploadService implements IFileUploadService
      * @param int $fileId
      * @return void
      */
-    public function serveFile(Request $request, $link, $checkAccess = true) {
+    public function serveFile(Request $request, $link, $checkAccess = true)
+    {
         if (is_numeric($link)) {
             /** @var FileUpload */
             $link = FileUpload::find($link);
@@ -196,7 +199,7 @@ class FileUploadService implements IFileUploadService
             }
         }
 
-        return response()->stream(function() use($link) {
+        return response()->stream(function () use ($link) {
             $fileStream = Storage::disk($link->storage)->readStream($link->path);
             fpassthru($fileStream);
             if (is_resource($fileStream)) {

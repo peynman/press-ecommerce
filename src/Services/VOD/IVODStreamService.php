@@ -5,7 +5,8 @@ namespace Larapress\ECommerce\Services\VOD;
 use Illuminate\Http\Request;
 use Larapress\ECommerce\Models\FileUpload;
 
-interface IVODStreamService {
+interface IVODStreamService
+{
 
     /**
      * Undocumented function
@@ -23,7 +24,7 @@ interface IVODStreamService {
      * @param Request $request
      * @param FileUpload $link
      * @param string|null $stream
-	 * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
      */
     public function stream(Request $request, FileUpload $link, $stream = null);
 }

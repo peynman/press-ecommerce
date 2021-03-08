@@ -52,7 +52,7 @@ class AzmoonExtractJob implements ShouldQueue
             'extract-azmoon-' . $this->upload->id,
             'Started...',
             $taskData,
-            function ($onUpdate, $onSuccess, $onFailed) use($taskData) {
+            function ($onUpdate, $onSuccess, $onFailed) use ($taskData) {
                 try {
                     $startTime = time();
 
@@ -67,9 +67,9 @@ class AzmoonExtractJob implements ShouldQueue
                         'answers' => [],
                         'answer_sheet' => null,
                     ];
-                    if ($res === TRUE) {
-                        for( $i = 0; $i < $zip->numFiles; $i++ ){
-                            $stat = $zip->statIndex( $i );
+                    if ($res === true) {
+                        for ($i = 0; $i < $zip->numFiles; $i++) {
+                            $stat = $zip->statIndex($i);
                             if (\Illuminate\Support\Str::startsWith($stat['name'], "answers.txt")) {
                                 $resource = $zip->getStream($zip->getNameIndex($i));
                                 if ($resource && $stat['size'] < 16000000) { // 16mg

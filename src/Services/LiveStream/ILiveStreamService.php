@@ -5,7 +5,8 @@ namespace Larapress\ECommerce\Services\LiveStream;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
-interface ILiveStreamService {
+interface ILiveStreamService
+{
 
     /**
      * Undocumented function

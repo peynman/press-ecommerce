@@ -30,7 +30,8 @@ class MySupportGroupUpdateRequest extends FormRequest
         ];
     }
 
-    public function getSupportUserID() {
+    public function getSupportUserID()
+    {
         return $this->get('support_user_id', null);
     }
 }

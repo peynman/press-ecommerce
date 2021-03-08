@@ -34,7 +34,8 @@ class GiftCodeController extends BaseCRUDController
      * @param int $giftCodeId
      * @return void
      */
-    public function duplicateGiftCode(IBankingService $service, Request $request, $giftCodeId) {
+    public function duplicateGiftCode(IBankingService $service, Request $request, $giftCodeId)
+    {
         return $service->duplicateGiftCodeForRequest($request, $giftCodeId);
     }
 }

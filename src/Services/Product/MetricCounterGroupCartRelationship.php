@@ -1,20 +1,21 @@
 <?php
 
-namespace Larapress\ECommerce\Services\SupportGroup;
+namespace Larapress\ECommerce\Services\Product;
 
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
-use Illuminate\Support\Facades\DB;
-use Larapress\Profiles\Models\FormEntry;
+use Larapress\ECommerce\Models\Cart;
 
-class FormEntryUserSupportProfileRelationship extends Relation
+class MetricCounterGroupCartRelationship extends Relation
 {
-
+    protected $filterType = null;
     protected $isReadyToLoad = false;
+    protected $groupBy = [];
+
     public function __construct(Model $parent)
     {
-        parent::__construct(FormEntry::query(), $parent);
+        parent::__construct(Cart::query(), $parent);
     }
 
     /**
@@ -24,16 +25,6 @@ class FormEntryUserSupportProfileRelationship extends Relation
      */
     public function addConstraints()
     {
-        $this->query
-            ->select(DB::raw('profile_entries.*, form_entries.updated_at as registrated_at, form_entries.user_id as user_id, profile_entries.user_id as support_user_id'))
-            ->join('users', function ($join) {
-                $join->on('tags', '=', DB::raw('CONCAT(\'support-group-\', users.id)'));
-            })
-            ->join('form_entries as profile_entries', function ($join) {
-                $join->on('users.id', '=', 'profile_entries.user_id');
-                $join->on('profile_entries.form_id', '=', DB::raw(config('larapress.ecommerce.lms.support_profile_form_id')));
-            })
-            ;
     }
 
     /**
@@ -45,10 +36,10 @@ class FormEntryUserSupportProfileRelationship extends Relation
      */
     public function addEagerConstraints(array $models)
     {
-        $this->query
-            ->whereIn('form_entries.user_id', collect($models)->pluck('id'))
-            ->where('form_entries.form_id', DB::raw(config('larapress.ecommerce.lms.support_group_default_form_id')))
-        ;
+        $models = collect($models)->pluck('group')->map(function ($group) {
+            return substr($group, 5);
+        });
+        $this->query->whereIn('id', $models);
         $this->isReadyToLoad = true;
     }
 
@@ -65,7 +56,7 @@ class FormEntryUserSupportProfileRelationship extends Relation
         foreach ($models as $model) {
             $model->setRelation(
                 $relation,
-                null
+                null,
             );
         }
 
@@ -89,7 +80,7 @@ class FormEntryUserSupportProfileRelationship extends Relation
 
         foreach ($models as $model) {
             $resultset = $results->first(function (Model $contract) use ($model) {
-                return $contract->user_id === $model->id;
+                return $contract->id == substr($model->group, 5);
             });
             $model->setRelation(
                 $relation,
@@ -110,6 +101,6 @@ class FormEntryUserSupportProfileRelationship extends Relation
         if (!$this->isReadyToLoad) {
             $this->addEagerConstraints([$this->parent]);
         }
-        return $this->query->first();
+        return $this->query->get();
     }
 }

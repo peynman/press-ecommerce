@@ -6,7 +6,8 @@ use Larapress\ECommerce\Services\AdobeConnect\WebAPI\Entities\SCO;
 use Larapress\ECommerce\Services\AdobeConnect\WebAPI\Entities\Principal;
 use Larapress\Profiles\IProfileUser;
 
-interface IAdobeConnectService {
+interface IAdobeConnectService
+{
     /**
      * Undocumented function
      *

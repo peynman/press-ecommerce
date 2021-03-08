@@ -34,7 +34,8 @@ class CartUpdateRequest extends FormRequest
         ];
     }
 
-    public function getCurrency() {
+    public function getCurrency()
+    {
         return $this->get('currency');
     }
 }

@@ -34,7 +34,8 @@ class WalletTransactionController extends BaseCRUDController
      * @param Request $request
      * @return mixed
      */
-    public function requestUnverifiedWalletTransaction(IBankingService $service, Request $request) {
+    public function requestUnverifiedWalletTransaction(IBankingService $service, Request $request)
+    {
         return $service->addBalanceForUser(
             Auth::user(),
             $request->get('amount'),

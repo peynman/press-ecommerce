@@ -11,12 +11,12 @@ use Larapress\ECommerce\Services\LiveStream\LiveStreamController;
 use Larapress\ECommerce\Services\PDF\PDFFileDownloadController;
 use Larapress\ECommerce\Services\VOD\VODStreamController;
 use Larapress\Pages\Controllers\PageRenderController;
-use Larapress\Profiles\CRUDControllers\FormEntryController;
+use Larapress\Profiles\Controllers\FormEntryController;
 
 // api routes with public access
 Route::middleware(config('larapress.pages.middleware'))
     ->prefix('api')
-    ->group(function() {
+    ->group(function () {
         LiveStreamController::registerPublicApiRoutes();
         ProductController::registerPublicApiRoutes();
         FormEntryController::registerPublicApiRoutes();

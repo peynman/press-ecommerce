@@ -133,7 +133,7 @@ class BankingService implements
         $domain = $user->getMembershipDomain();
         $balance = $this->getUserBalance($user, $cart->currency);
 
-        if ((isset($cart->data['use_balance']) && $cart->data['use_balance'] && floatval($balance['amount']) >= floatval($cart->amount)) || $cart->amount === 0) {
+        if ((isset($cart->data['use_balance']) && $cart->data['use_balance'] && floatval($balance['amount']) >= floatval($cart->amount)) || floatval($cart->amount) === 0) {
             try {
                 DB::beginTransaction();
                 $this->markCartPurchased($request, $cart);
@@ -171,8 +171,10 @@ class BankingService implements
         $return_to = $request->get('return_to', null);
         $cartData = $cart->data;
         $cartData['return_to'] = $return_to;
+        $flags = $cart->flags;
         $cart->update([
             'data' => $cartData,
+            'flags' => $flags | Cart::FLGAS_FORWARDED_TO_BANK,
         ]);
 
         /** @var BankGatewayTransaction */
@@ -440,9 +442,12 @@ class BankingService implements
                     ->where('customer_id', $user->id)
                     ->where('domain_id', $user->getMembershipDomainId())
                     ->where('currency', $currency)
-                    ->where('flags', '&', Cart::FLAGS_USER_CART)
+                    ->where('flags', '&', Cart::FLAGS_USER_CART) // is a user cart
+                    ->whereRaw('(flags & '.Cart::FLGAS_FORWARDED_TO_BANK.') = 0') // has never been forwarded to bank page
                     ->where('status', '=', Cart::STATUS_UNVERIFIED)
                     ->first();
+
+
 
                 if (is_null($cart)) {
                     $cart = Cart::create([
@@ -536,8 +541,7 @@ class BankingService implements
                 }
 
 
-                if (
-                    !is_null(config('larapress.ecommerce.lms.teacher_support_form_id')) &&
+                if (!is_null(config('larapress.ecommerce.lms.teacher_support_form_id')) &&
                     $user->hasRole(config('larapress.ecommerce.lms.owner_role_id'))
                 ) {
                     $ids = array_merge($ids, $user->getOwenedProductsIds());
@@ -602,7 +606,7 @@ class BankingService implements
                                     }
                                 }
                             }
-                        } else if (isset($cart->data['periodic_product_ids']) && isset($cart->data['period_start'])) {
+                        } elseif (isset($cart->data['periodic_product_ids']) && isset($cart->data['period_start'])) {
                             $periodicProducts = $cart->data['periodic_product_ids'];
                             foreach ($cart->products as $product) {
                                 if (in_array($product->id, $periodicProducts)) {
@@ -613,19 +617,22 @@ class BankingService implements
                                         $calc = $product->data['calucalte_periodic'];
                                         $duration = isset($calc['period_duration']) ? intval($calc['period_duration']) : 30;
                                         $total = isset($calc['period_count']) ? intval($calc['period_count']) : 1;
-                                        if (isset($calc['ends_at']) && !is_null($calc['ends_at'])) {
-                                            $endAt = Carbon::parse($calc['ends_at']);
-                                            $remaingDays = $period_start->diffInDays($endAt);
-                                            if ($remaingDays < $duration * $total) {
-                                                $duration = floor($remaingDays / $total);
-                                            }
-                                        }
 
-                                        $period_start->addDays($duration * ($alreadyPaidCount + 1) - 1);
-                                        if ($now > $period_start) {
-                                            $ids[] = $product->id;
-                                            if (!is_null($product->group) && !empty($product->group)) {
-                                                $groups[] = $product->group;
+                                        if (intval($alreadyPaidCount) < intval($total)) {
+                                            if (isset($calc['ends_at']) && !is_null($calc['ends_at'])) {
+                                                $endAt = Carbon::parse($calc['ends_at']);
+                                                $remaingDays = $period_start->diffInDays($endAt);
+                                                if ($remaingDays < $duration * $total) {
+                                                    $duration = floor($remaingDays / $total);
+                                                }
+                                            }
+
+                                            $period_start->addDays($duration * ($alreadyPaidCount + 1) - 1);
+                                            if ($now > $period_start) {
+                                                $ids[] = $product->id;
+                                                if (!is_null($product->group) && !empty($product->group)) {
+                                                    $groups[] = $product->group;
+                                                }
                                             }
                                         }
                                     }
@@ -867,7 +874,7 @@ class BankingService implements
                 foreach ($carts as $cart) {
                     if (isset($cart->data['periodic_custom']) && count($cart->data['periodic_custom']) > 0) {
                         $this->getInstallmentsForCartPeriodicCustom($cart->customer, $cart);
-                    } else if (isset($cart->data['periodic_product_ids'])) {
+                    } elseif (isset($cart->data['periodic_product_ids'])) {
                         foreach ($cart->data['periodic_product_ids'] as $pid) {
                             if (is_array($pid) && isset($pid['id'])) {
                                 $pid = $pid['id'];
@@ -993,6 +1000,43 @@ class BankingService implements
         if (!isset($data['period_start']) || is_null($data['period_start'])) {
             $data['period_start'] = Carbon::now();
         }
+
+        $periodicIds = isset($cart->data['periodic_product_ids']) ? $cart->data['periodic_product_ids'] : [];
+        /** @var Product[] */
+        $items = $cart->products;
+        $itemDetails = [];
+        foreach ($items as $item) {
+            $itemPrice = in_array($item->id, $periodicIds) ? $item->pricePeriodic() : $item->price();
+            $isCustomPerioids = isset($cart->data['periodic_custom']) && count($cart->data['periodic_custom']) > 0;
+            if ($isCustomPerioids) {
+                $periodsCount = count($cart->data['periodic_custom']);
+            } elseif (isset($item->data['calucalte_periodic']['period_count'])) {
+                $periodsCount = $item->data['calucalte_periodic']['period_count'];
+            } else {
+                $periodsCount = 1;
+            }
+            $periodsEnd = isset($item->data['calucalte_periodic']['ends_at']) ? $item->data['calucalte_periodic']['ends_at'] : null;
+
+            $amount = isset($item->data['calucalte_periodic']['period_amount']) ? $item->data['calucalte_periodic']['period_amount'] : 0;
+            if (isset($cart->data['gift_code']['percent'])) {
+                $resitricted_producs = isset($cart->data['gift_code']['products']) ? $cart->data['gift_code']['products'] : [];
+                if ((in_array($item->id, $resitricted_producs) || count($resitricted_producs)) &&
+                    (!isset($cart->data['gift_code']['fixed_only']) || !$cart->data['gift_code']['fixed_only'])) {
+                    $percent = floatval($cart->data['gift_code']['percent']);
+                    $amount = ceil((1 - $percent) * $amount);
+                }
+            }
+
+            $itemDetails[$item->id] = [
+                'price' => $itemPrice,
+                'periodic' => in_array($item->id, $periodicIds),
+                'custom' => $isCustomPerioids,
+                'count' => $periodsCount,
+                'ends_at' => $periodsEnd,
+                'period_price' => $amount,
+            ];
+        }
+
         $cart->update([
             'status' => Cart::STATUS_ACCESS_COMPLETE,
             'flags' => $cart->flags | Cart::FLAGS_EVALUATED | $periodicFlag,
@@ -1002,6 +1046,10 @@ class BankingService implements
         $supportProfileId = $cart->customer->getSupportUserId();
         $purchasedAt = isset($cart->data['period_start']) ? Carbon::parse($cart->data['period_start']) : $cart->updated_at;
         $user = $cart->customer;
+
+        if (isset($cart->data['periodic_pay']['originalCart'])) {
+            $originalCart = Cart::with('products')->find($cart->data['periodic_pay']['originalCart']);
+        }
 
         // give introducer gift
         if (BaseFlags::isActive($cart->flags, Cart::FLAGS_USER_CART)) {
@@ -1035,7 +1083,6 @@ class BankingService implements
 
         // update original cart if this is a FLAGS_PERIOD_PAYMENT_CART
         if (BaseFlags::isActive($cart->flags, Cart::FLAGS_PERIOD_PAYMENT_CART)) {
-            $originalCart = Cart::with('products')->find($cart->data['periodic_pay']['originalCart']);
             $origData = $originalCart->data;
             $now = $cart->data['period_start'];
 
@@ -1138,24 +1185,19 @@ class BankingService implements
             }
 
             // calculate products share on virtual and real money
-            /** @var Product[] */
-            $items = $cart->products;
             $virtualShare = [];
             $realShare = [];
 
             $usedVirtual = 0;
             $usedReal = 0;
-            $periodicIds = isset($cart->data['periodic_product_ids']) ? $cart->data['periodic_product_ids'] : [];
             $giftCode = isset($cart->data['gift_code']) ? $cart->data['gift_code'] : [];
             // use original cart data if this is a period payment
             if (BaseFlags::isActive($cart->flags, Cart::FLAGS_PERIOD_PAYMENT_CART)) {
-                $originalCart = Cart::with('products')->find($cart->data['periodic_pay']['originalCart']);
                 $originalItems = $originalCart->products;
                 $items = [];
                 // use original cart gift code
                 $giftCode = isset($originalCart->data['gift_code']) ? $originalCart->data['gift_code'] : [];
-                if (
-                    isset($originalCart->data['periodic_custom']) && count($originalCart->data['periodic_custom']) > 0 &&
+                if (isset($originalCart->data['periodic_custom']) && count($originalCart->data['periodic_custom']) > 0 &&
                     isset($cart->data['periodic_pay']['custom']) && $cart->data['periodic_pay']['custom']
                 ) {
                     // for custom items in periodic pay, just use all original cart items
@@ -1227,7 +1269,7 @@ class BankingService implements
                             $itemRealShare = $itemPrice - $remainingVirtual;
                             $realShare[$item->id] = $itemRealShare;
                         }
-                    } else if ($realMoneyDecrese > 0 && $realMoneyDecrese > $usedReal) {
+                    } elseif ($realMoneyDecrese > 0 && $realMoneyDecrese > $usedReal) {
                         if (($realMoneyDecrese - $usedReal) >= $itemPrice) {
                             $usedReal += $itemPrice;
                             $realShare[$item->id] = $itemPrice;
@@ -1293,55 +1335,6 @@ class BankingService implements
         $this->resetBalanceCache($cart->customer_id);
 
         return $cart;
-    }
-
-    /**
-     * Undocumented function
-     *
-     * @param IECommerceUser $user
-     * @param Cart $cart
-     * @param [type] $request
-     * @return [float, array]
-     */
-    protected function getCartAmountWithRequest(IECommerceUser $user, Cart $cart, $request)
-    {
-        $data = $cart->data;
-        if (is_null($data)) {
-            $data = [];
-        }
-        $data['periodic_product_ids'] = [];
-
-        $amount = 0;
-        $items = [];
-
-        if (BaseFlags::isActive($cart->flags, Cart::FLAGS_PERIOD_PAYMENT_CART)) {
-            $amount = $cart->amount;
-        } else {
-            $periodIds = [];
-            $periods = $request->get('periods', null);
-            if (!is_null($periods)) {
-                foreach ($periods as $period => $val) {
-                    if ($val) {
-                        $periodIds[] = $period;
-                        $data['periodic_product_ids'][] = $period;
-                    }
-                }
-            }
-
-            $items = $this->getPurchasingCartItems($user, $cart->currency);
-            foreach ($items as $item) {
-                if (in_array($item->id, $periodIds)) {
-                    $amount += $item->pricePeriodic();
-                } else {
-                    $amount += $item->price();
-                }
-            }
-        }
-
-
-        $data['use_balance'] = $request->get('use_balance', false);
-
-        return [$amount, $data, $items];
     }
 
     /**
@@ -1479,6 +1472,7 @@ class BankingService implements
                         'code' => $code->id,
                         'products' => $offProductIds,
                         'percent' => $percent,
+                        'fixed_only' => $fixed_only,
                     ];
                 }
             case 'amount':
@@ -1509,6 +1503,55 @@ class BankingService implements
         }
 
         throw new AppException(AppException::ERR_OBJ_NOT_READY);
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param IECommerceUser $user
+     * @param Cart $cart
+     * @param [type] $request
+     * @return [float, array]
+     */
+    protected function getCartAmountWithRequest(IECommerceUser $user, Cart $cart, $request)
+    {
+        $data = $cart->data;
+        if (is_null($data)) {
+            $data = [];
+        }
+        $data['periodic_product_ids'] = [];
+
+        $amount = 0;
+        $items = [];
+
+        if (BaseFlags::isActive($cart->flags, Cart::FLAGS_PERIOD_PAYMENT_CART)) {
+            $amount = $cart->amount;
+        } else {
+            $periodIds = [];
+            $periods = $request->get('periods', null);
+            if (!is_null($periods)) {
+                foreach ($periods as $period => $val) {
+                    if ($val) {
+                        $periodIds[] = $period;
+                        $data['periodic_product_ids'][] = $period;
+                    }
+                }
+            }
+
+            $items = $this->getPurchasingCartItems($user, $cart->currency);
+            foreach ($items as $item) {
+                if (in_array($item->id, $periodIds)) {
+                    $amount += $item->pricePeriodic();
+                } else {
+                    $amount += $item->price();
+                }
+            }
+        }
+
+
+        $data['use_balance'] = $request->get('use_balance', false);
+
+        return [$amount, $data, $items];
     }
 
     /**

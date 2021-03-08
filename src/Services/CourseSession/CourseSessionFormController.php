@@ -10,6 +10,11 @@ use Larapress\ECommerce\Models\FileUpload;
 use Larapress\Ecommerce\Services\FileUpload\IFileUploadService;
 use Illuminate\Http\Response;
 
+/**
+ * @group CourseSession management
+ *
+ * Update and manage form entries for Course management
+ */
 class CourseSessionFormController extends Controller
 {
     public static function registerPublicApiRoutes()
@@ -22,13 +27,16 @@ class CourseSessionFormController extends Controller
             ->name(config('larapress.ecommerce.routes.products.name').'.reports.presence');
     }
 
-    public static function registerWebRoutes() {
+    public static function registerWebRoutes()
+    {
         Route::any('course-session/{session_id}/entry/{entry_id}/download/{file_id}', '\\' . self::class . '@serveCourseFormFile')
             ->name('file-uploads.view.session.file');
     }
 
     /**
-     * Undocumented function
+     * Receive a file for a session
+     *
+     * @urlParam session_id integer required The ID of the session to add this file to.
      *
      * @param ICourseSessionFormService $courseService
      * @param IFileUploadService $service
@@ -46,12 +54,17 @@ class CourseSessionFormController extends Controller
 
 
     /**
-     * Undocumented function
+     * Receive a file for a session
+     *
+     * @urlParam session_id integer required The ID of the session to open a file from
+     * @urlParam entry_id integer required The ID of the form entry which contains the from for session.
+     * @urlParam file_id integer required The ID of the file to display.
      *
      * @param ICourseSessionFormService $courseService
-     * @param IFileUploadService $service
-     * @param CourseSessionFormRequest $request
+     * @param Request $request
      * @param int $session_id
+     * @param int $entry_id
+     * @param int $file_id
      * @return Response
      */
     public function serveCourseFormFile(ICourseSessionFormService $courseService, Request $request, $session_id, $entry_id, $file_id)
@@ -61,27 +74,33 @@ class CourseSessionFormController extends Controller
 
 
     /**
-     * Undocumented function
+     * Add a presence form entry in a session for logged in user.
+     *
+     * @urlParam session_id int required The ID of the session to add a new presence record.
      *
      * @param ICourseSessionFormService $courseService
      * @param CourseSessionPresenceRequest $request
      * @param int $session_id
      * @return Response
      */
-    public function markCoursePresence(ICourseSessionFormService $courseService, CourseSessionPresenceRequest $request, $session_id) {
+    public function markCoursePresence(ICourseSessionFormService $courseService, CourseSessionPresenceRequest $request, $session_id)
+    {
         return $courseService->markCourseSessionPresence($request, $session_id);
     }
 
 
     /**
-     * Undocumented function
+     * Get presence reports for a session
+     *
+     * @urlParam session_id required The ID of the session to show presence report.
      *
      * @param ICourseSessionFormService $courseService
-     * @param CourseSessionPresenceRequest $request
+     * @param Request $request
      * @param int $session_id
      * @return Response
      */
-    public function getCoursePresenceReport(ICourseSessionFormService $courseService, Request $request, $session_id) {
+    public function getCoursePresenceReport(ICourseSessionFormService $courseService, Request $request, $session_id)
+    {
         return $courseService->getCourseSessionPresenceReport($request, $session_id);
     }
 }

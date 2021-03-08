@@ -96,8 +96,7 @@ class CartPurchasedReport implements IReportSource, ShouldQueue
         $items = $cart->products;
         if (!is_null($items) && count($items) > 0) {
             // add each product sales counter
-            if (
-                !BaseFlags::isActive($cart->flags, Cart::FLAGS_PERIOD_PAYMENT_CART) &&
+            if (!BaseFlags::isActive($cart->flags, Cart::FLAGS_PERIOD_PAYMENT_CART) &&
                 BaseFlags::isActive($cart->flags, Cart::FLAGS_USER_CART)
             ) {
                 // periodic purchase for product
@@ -114,13 +113,13 @@ class CartPurchasedReport implements IReportSource, ShouldQueue
 
                         $totalPeriodsLeft = 0;
                         $totalPeriodsLeftAmount = 0;
-                        if (isset($cart->data['periodic_pay']['custom'])) {
-                            $periods = $cart->data['periodic_pay']['custom'];
+                        if (isset($cart->data['periodic_custom'])) {
+                            $periods = $cart->data['periodic_custom'];
                             $totalPeriodsLeft = count($periods);
                             foreach ($periods as $period) {
                                 $totalPeriodsLeftAmount += floatval($period['amount']);
                             }
-                        } else if (isset($item->data['calucalte_periodic']) && isset($item->data['calucalte_periodic']['period_count'])) {
+                        } elseif (isset($item->data['calucalte_periodic']) && isset($item->data['calucalte_periodic']['period_count'])) {
                             $calc = $item->data['calucalte_periodic'];
                             $count = intval($calc['period_count']);
                             $amount = floatval($calc['period_amount']);
@@ -176,7 +175,6 @@ class CartPurchasedReport implements IReportSource, ShouldQueue
                                 );
                             }
                         }
-
                     } else {
                         // not periodic purchase for product
                         $this->metrics->pushMeasurement(
@@ -205,7 +203,7 @@ class CartPurchasedReport implements IReportSource, ShouldQueue
             if (isset($cart->data['periodic_pay']['custom']) && $cart->data['periodic_pay']['custom']) {
                 $originalCart = Cart::with('products')->find($cart->data['periodic_pay']['originalCart']);
                 $prod_ids = $originalCart->products->pluck('id');
-            } else if (isset($cart->data['periodic_pay']['product']['id'])) {
+            } elseif (isset($cart->data['periodic_pay']['product']['id'])) {
                 $prod_ids[] = $cart->data['periodic_pay']['product']['id'];
             }
 

@@ -3,22 +3,23 @@
 namespace Larapress\ECommerce\Services\CourseSession;
 
 use Carbon\Carbon;
+use Larapress\ECommerce\IECommerceUser;
 use Larapress\ECommerce\Models\Product;
 use Larapress\ECommerce\Repositories\ProductRepository;
 use Larapress\ECommerce\Services\Banking\IBankingService;
 use Larapress\ECommerce\Services\SupportGroup\ISupportGroupService;
 use Larapress\Profiles\Models\FormEntry;
 
-class CourseSessionRepository extends ProductRepository
-    implements ICourseSessionRepository
+class CourseSessionRepository extends ProductRepository implements ICourseSessionRepository
 {
     /**
      * Undocumented function
      *
-     * @param IProfileUser $user
+     * @param IECommerceUser $user
      * @return Product[]
      */
-    public function getTodayCourseSessions($user) {
+    public function getTodayCourseSessions($user)
+    {
         $query = $this->getPurchasedProductsPaginatedQuery(
             $user,
             0,
@@ -41,6 +42,7 @@ class CourseSessionRepository extends ProductRepository
         $locked = $service->getPeriodicInstallmentsLockedProducts($user);
 
         foreach ($items as $item) {
+            // we already are in  purchased products list
             $item['available'] = true;
 
             $item['locked'] = in_array($item->parent_id, $locked) && !$item->isFree();
@@ -56,7 +58,8 @@ class CourseSessionRepository extends ProductRepository
             $itemChildren = [];
             if (!is_null($item->children) && count($item->children) > 0) {
                 $innerChilds = $item->children;
-                foreach($innerChilds as $child) {
+                foreach ($innerChilds as $child) {
+                    // we already are in  purchased products list
                     $child['available'] = true;
                     $child['locked'] = $item['locked'];
                     $itemChildren[] = $child;
@@ -74,7 +77,8 @@ class CourseSessionRepository extends ProductRepository
      * @param IProfileUser $user
      * @return Product[]
      */
-    public function getWeekCourseSessions($user) {
+    public function getWeekCourseSessions($user)
+    {
         $weekStart = Carbon::now()->startOfWeek(Carbon::SATURDAY);
         $weekEnd = Carbon::now()->endOfWeek(Carbon::FRIDAY);
         $today = Carbon::now();
@@ -101,7 +105,7 @@ class CourseSessionRepository extends ProductRepository
         foreach ($items as $item) {
             $item['available'] = true;
             if (isset($item['children'])) {
-                foreach($item['children'] as $child) {
+                foreach ($item['children'] as $child) {
                     $child['available'] = true;
                 }
             }
@@ -118,7 +122,8 @@ class CourseSessionRepository extends ProductRepository
      * @param IProfileUser $user
      * @return FormEntry[]
      */
-    public function getIntroducedUsersList($user) {
+    public function getIntroducedUsersList($user)
+    {
         /** @var ISupportGroupService  */
         $service = app(ISupportGroupService::class);
         return $service->getIntroducedUsersList($user);

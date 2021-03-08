@@ -5,7 +5,8 @@ namespace Larapress\ECommerce;
 use Larapress\Profiles\IProfileUser;
 use Larapress\Profiles\Models\FormEntry;
 
-interface IECommerceUser extends IProfileUser {
+interface IECommerceUser extends IProfileUser
+{
 /**
      * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */

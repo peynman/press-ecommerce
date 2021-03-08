@@ -7,11 +7,11 @@ use Larapress\ECommerce\Controllers\ProductController;
 use Larapress\ECommerce\Services\AdobeConnect\AdobeConnectController;
 use Larapress\ECommerce\Services\CourseSession\CourseSessionFormController;
 use Larapress\ECommerce\Services\SupportGroup\SupportGroupController;
-use Larapress\Profiles\CRUDControllers\FormEntryController;
+use Larapress\Profiles\Controllers\FormEntryController;
 
 Route::middleware(config('larapress.crud.middlewares'))
     ->prefix(config('larapress.crud.prefix'))
-    ->group(function() {
+    ->group(function () {
         AdobeConnectController::registerRoutes();
         SupportGroupController::registerRoutes();
     });
@@ -20,7 +20,7 @@ Route::middleware(config('larapress.crud.middlewares'))
 // api routes with public access
 Route::middleware(config('larapress.pages.middleware'))
     ->prefix('api')
-    ->group(function() {
+    ->group(function () {
         ProductController::registerPublicApiRoutes();
         FormEntryController::registerPublicApiRoutes();
         CourseSessionFormController::registerPublicApiRoutes();

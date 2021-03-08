@@ -52,14 +52,15 @@ class ProductCommands extends ActionCommandBase
      *
      * @return void
      */
-    public function salesGenerate() {
+    public function salesGenerate()
+    {
         return function () {
             /** @var IMetricsService */
             $metrics = app(IMetricsService::class);
             Cart::query()
             ->with('products')
             ->where('status', Cart::STATUS_ACCESS_COMPLETE)
-            ->chunk(100, function($carts) use($metrics) {
+            ->chunk(100, function ($carts) use ($metrics) {
                 $this->info("Processing carts...");
                 foreach ($carts as $cart) {
                     /** @var ICartItem[] */
@@ -99,7 +100,8 @@ class ProductCommands extends ActionCommandBase
      *
      * @return void
      */
-    public function salesReset() {
+    public function salesReset()
+    {
         return function () {
             MetricCounter::where('key', 'LIKE', 'product.%.sales_%')->delete();
             $this->info("Flushed metric keys LIKE product.%.sales_%");
@@ -111,12 +113,12 @@ class ProductCommands extends ActionCommandBase
      *
      * @return void
      */
-    public function cartsInstallments() {
-        return function() {
+    public function cartsInstallments()
+    {
+        return function () {
             /** @var IBankingService */
             $service = app(IBankingService::class);
             $service->getInstallmentsForPeriodicPurchases();
         };
     }
-
 }

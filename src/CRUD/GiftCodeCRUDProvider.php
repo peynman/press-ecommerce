@@ -111,5 +111,4 @@ class GiftCodeCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         $args['author_id'] = $user->id;
         return $args;
     }
-
 }

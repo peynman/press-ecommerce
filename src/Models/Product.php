@@ -172,7 +172,8 @@ class Product extends Model implements ICartItem
      *
      * @return ProductSalesAmountRelationship
      */
-    public function sales_role_support_amount() {
+    public function sales_role_support_amount()
+    {
         return new ProductSalesAmountRelationship($this, WalletTransaction::TYPE_REAL_MONEY, ".roles.support");
     }
 
@@ -181,7 +182,8 @@ class Product extends Model implements ICartItem
      *
      * @return ProductSalesAmountRelationship
      */
-    public function sales_role_support_ext_amount() {
+    public function sales_role_support_ext_amount()
+    {
         return new ProductSalesAmountRelationship($this, WalletTransaction::TYPE_REAL_MONEY, ".roles.support-external");
     }
 
@@ -190,7 +192,8 @@ class Product extends Model implements ICartItem
      *
      * @return ProductSalesCountRelationship
      */
-    public function sales_fixed() {
+    public function sales_fixed()
+    {
         return new ProductSalesCountRelationship($this, 'sales_fixed');
     }
 
@@ -199,7 +202,8 @@ class Product extends Model implements ICartItem
      *
      * @return ProductSalesCountRelationship
      */
-    public function sales_periodic() {
+    public function sales_periodic()
+    {
         return new ProductSalesCountRelationship($this, 'sales_periodic');
     }
 
@@ -208,7 +212,8 @@ class Product extends Model implements ICartItem
      *
      * @return ProductSalesCountRelationship
      */
-    public function sales_periodic_payment() {
+    public function sales_periodic_payment()
+    {
         return new ProductSalesCountRelationship($this, 'periodic_payment');
     }
 
@@ -217,7 +222,8 @@ class Product extends Model implements ICartItem
      *
      * @return ProductSalesCountRelationship
      */
-    public function remaining_periodic_count() {
+    public function remaining_periodic_count()
+    {
         return new ProductSalesCountRelationship($this, 'remain_count');
     }
 
@@ -226,7 +232,8 @@ class Product extends Model implements ICartItem
      *
      * @return ProductSalesCountRelationship
      */
-    public function remaining_periodic_amount() {
+    public function remaining_periodic_amount()
+    {
         return new ProductSalesCountRelationship($this, 'remain_amount');
     }
 

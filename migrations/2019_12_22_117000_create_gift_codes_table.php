@@ -37,7 +37,7 @@ class CreateGiftCodesTable extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->index(['code_id', 'user_id']);
+            $table->index(['code_id', 'user_id', 'cart_id']);
 
             $table->foreign('user_id')->references('id')->on('users');
             $table->foreign('cart_id')->references('id')->on('carts');
@@ -52,7 +52,7 @@ class CreateGiftCodesTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('gift_codes');
         Schema::dropIfExists('gift_codes_use');
+        Schema::dropIfExists('gift_codes');
     }
 }

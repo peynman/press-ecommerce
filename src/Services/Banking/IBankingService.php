@@ -3,7 +3,6 @@
 
 namespace Larapress\ECommerce\Services\Banking;
 
-
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Larapress\ECommerce\IECommerceUser;

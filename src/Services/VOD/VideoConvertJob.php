@@ -54,7 +54,7 @@ class VideoConvertJob implements ShouldQueue
             'convert-' . $this->upload->id,
             'Started...',
             $taskData,
-            function ($onUpdate, $onSuccess, $onFailed) use($taskData) {
+            function ($onUpdate, $onSuccess, $onFailed) use ($taskData) {
                 try {
                     $startTime = time();
                     $rates = config('larapress.ecommerce.vod.hls_variants');
@@ -74,8 +74,8 @@ class VideoConvertJob implements ShouldQueue
                             });
                         });
                     }
-                    $mediaHLSExport->onProgress(function ($percent) use($onUpdate, $taskData) {
-                       $onUpdate('Converting %'.$percent.'...', $taskData);
+                    $mediaHLSExport->onProgress(function ($percent) use ($onUpdate, $taskData) {
+                        $onUpdate('Converting %'.$percent.'...', $taskData);
                     });
                     $mediaHLSExport->setSegmentLength(10);
 

@@ -160,7 +160,8 @@ trait BaseECommerceUser
      *
      * @return Carbon|null
      */
-    public function getSupportUserStartedDate() {
+    public function getSupportUserStartedDate()
+    {
         if (!is_null($this->form_support_registration_entry)) {
             if (isset($this->form_support_registration_entry->data['values']['support_ids'])) {
                 $suppIds = $this->form_support_registration_entry->data['values']['support_ids'];
@@ -181,7 +182,8 @@ trait BaseECommerceUser
      *
      * @return Role|null
      */
-    public function getSupportUserRole() {
+    public function getSupportUserRole()
+    {
         $userRole = DB::table('user_role')->where('user_id', $this->getSupportUserId())->first();
         if (!is_null($userRole)) {
             return Role::find($userRole->role_id);
@@ -228,7 +230,8 @@ trait BaseECommerceUser
      *
      * @return array
      */
-    public function sales_fixed() {
+    public function sales_fixed()
+    {
         return new UserSalesCountRelationship(
             $this,
             'sales_fixed',
@@ -242,7 +245,8 @@ trait BaseECommerceUser
      *
      * @return array
      */
-    public function sales_periodic() {
+    public function sales_periodic()
+    {
         return new UserSalesCountRelationship(
             $this,
             'sales_periodic',
@@ -250,7 +254,8 @@ trait BaseECommerceUser
         );
     }
 
-    public function sales_virtual() {
+    public function sales_virtual()
+    {
         return new UserSalesAmountRelationship(
             $this,
             WalletTransaction::TYPE_VIRTUAL_MONEY,
@@ -259,7 +264,8 @@ trait BaseECommerceUser
     }
 
 
-    public function sales_real() {
+    public function sales_real()
+    {
         return new UserSalesAmountRelationship(
             $this,
             WalletTransaction::TYPE_REAL_MONEY,

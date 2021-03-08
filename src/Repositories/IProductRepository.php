@@ -2,7 +2,8 @@
 
 namespace Larapress\ECommerce\Repositories;
 
-interface IProductRepository {
+interface IProductRepository
+{
     /**
      *
      * @return array

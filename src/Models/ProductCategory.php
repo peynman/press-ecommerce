@@ -29,59 +29,64 @@ class ProductCategory extends Model
     protected $table = 'product_categories';
 
     protected $fillable = [
-	    'author_id',
-	    'parent_id',
-    	'name',
-	    'flags',
-	    'data',
+        'author_id',
+        'parent_id',
+        'name',
+        'flags',
+        'data',
     ];
 
     protected $casts = [
-    	'data' => 'array'
+        'data' => 'array'
     ];
 
-	/**
-	 * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-	 */
-	public function author() {
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function author()
+    {
         return $this->belongsTo(config('larapress.crud.user.class'), 'author_id');
     }
 
-	/**
-	 * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
-	 */
-	public function product_types() {
-    	return $this->belongsToMany(
-    		ProductType::class,
-		    'product_category_type_pivot',
-		    'product_category_id',
-		    'product_type_id'
-	    );
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     */
+    public function product_types()
+    {
+        return $this->belongsToMany(
+            ProductType::class,
+            'product_category_type_pivot',
+            'product_category_id',
+            'product_type_id'
+        );
     }
 
-	/**
-	 * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
-	 */
-	public function products() {
-    	return $this->belongsToMany(
-    		Product::class,
-		    'product_category_pivot',
-		    'product_category_id',
-		    'product_id'
-	    );
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     */
+    public function products()
+    {
+        return $this->belongsToMany(
+            Product::class,
+            'product_category_pivot',
+            'product_category_id',
+            'product_id'
+        );
     }
 
-	/**
-	 * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-	 */
-	public function parent() {
-		return $this->belongsTo(ProductCategory::class, 'parent_id');
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function parent()
+    {
+        return $this->belongsTo(ProductCategory::class, 'parent_id');
     }
 
-	/**
-	 * @return \Illuminate\Database\Eloquent\Relations\HasMany
-	 */
-	public function children() {
-		return $this->hasMany(ProductCategory::class, 'parent_id');
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function children()
+    {
+        return $this->hasMany(ProductCategory::class, 'parent_id');
     }
 }

@@ -13,7 +13,8 @@ use Larapress\CRUD\Exceptions\AppException;
 use Larapress\CRUD\Extend\Helpers;
 use Larapress\ECommerce\Models\FileUpload;
 
-class VODStreamService implements IVODStreamService {
+class VODStreamService implements IVODStreamService
+{
 
     /**
      * Undocumented function
@@ -23,7 +24,8 @@ class VODStreamService implements IVODStreamService {
      * @param string|null $stream
      * @return void
      */
-    public function streamPublicLink(Request $request, $link, $stream = null) {
+    public function streamPublicLink(Request $request, $link, $stream = null)
+    {
         if (is_numeric($link)) {
             /** @var FileUpload */
             $link = FileUpload::find($link);
@@ -42,72 +44,74 @@ class VODStreamService implements IVODStreamService {
      * @param Request $request
      * @param FileUpload $link
      * @param string|null $stream
-	 * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
      */
     public function stream(Request $request, FileUpload $link, $stream = null)
     {
         if (is_null($stream)) {
-			return response()->stream(function() use($link) {
-				$fileStream = self::getVODMasterHLSPlayListFile($link);
-				fpassthru($fileStream);
-				if (is_resource($fileStream)) {
-					fclose($fileStream);
-				}
-			}, 200, [
-				'Content-Type' => 'application/x-mpegURL',
-			]);
-		}
+            return response()->stream(function () use ($link) {
+                $fileStream = self::getVODMasterHLSPlayListFile($link);
+                fpassthru($fileStream);
+                if (is_resource($fileStream)) {
+                    fclose($fileStream);
+                }
+            }, 200, [
+                'Content-Type' => 'application/x-mpegURL',
+            ]);
+        }
 
-		if (Str::endsWith($stream, '.m3u8')) {
-			return response()->stream(function() use($link, $stream) {
-				$fileStream = self::getVODFileForHLSVariant($link, $stream);
-				fpassthru($fileStream);
-				if (is_resource($fileStream)) {
-					fclose($fileStream);
-				}
-			}, 200, [
-				'Content-Type' => 'application/x-mpegURL',
-			]);
-		} else if (Str::endsWith($stream, ".key")) {
-			return response()->download(self::getVODFileForHLSVariant($link, $stream), null, [
-				'Content-Type' => 'application/txt',
-			]);
-		} else if (Str::endsWith($stream, ".ts")) {
-			return response()->stream(function() use($link, $stream) {
-				$fileStream = self::getVODFileForHLSVariant($link, $stream);
-				fpassthru($fileStream);
-				if (is_resource($fileStream)) {
-					fclose($fileStream);
-				}
-			}, 200, [
-				'Content-Type' => 'video/MP2T',
-			]);
-		} else {
-			throw new AppException(AppException::ERR_INVALID_QUERY);
-		}
+        if (Str::endsWith($stream, '.m3u8')) {
+            return response()->stream(function () use ($link, $stream) {
+                $fileStream = self::getVODFileForHLSVariant($link, $stream);
+                fpassthru($fileStream);
+                if (is_resource($fileStream)) {
+                    fclose($fileStream);
+                }
+            }, 200, [
+                'Content-Type' => 'application/x-mpegURL',
+            ]);
+        } elseif (Str::endsWith($stream, ".key")) {
+            return response()->download(self::getVODFileForHLSVariant($link, $stream), null, [
+                'Content-Type' => 'application/txt',
+            ]);
+        } elseif (Str::endsWith($stream, ".ts")) {
+            return response()->stream(function () use ($link, $stream) {
+                $fileStream = self::getVODFileForHLSVariant($link, $stream);
+                fpassthru($fileStream);
+                if (is_resource($fileStream)) {
+                    fclose($fileStream);
+                }
+            }, 200, [
+                'Content-Type' => 'video/MP2T',
+            ]);
+        } else {
+            throw new AppException(AppException::ERR_INVALID_QUERY);
+        }
     }
 
-	/**
-	 * @param FileUpload $link
-	 *
-	 * @return null|resource
-	 * @throws \Illuminate\Contracts\Filesystem\FileNotFoundException
-	 */
-	public static function getVODMasterHLSPlayListFile(FileUpload $link) {
+    /**
+     * @param FileUpload $link
+     *
+     * @return null|resource
+     * @throws \Illuminate\Contracts\Filesystem\FileNotFoundException
+     */
+    public static function getVODMasterHLSPlayListFile(FileUpload $link)
+    {
         $hlsFolder = Helpers::getPathWithoutExtension($link->path);
 
-		return Storage::disk($link->storage)->readStream($hlsFolder.'/vod.m3u8');
-	}
+        return Storage::disk($link->storage)->readStream($hlsFolder.'/vod.m3u8');
+    }
 
-	/**
-	 * @param $link
-	 * @param $variant
-	 *
-	 * @return null|resource
-	 * @throws \Illuminate\Contracts\Filesystem\FileNotFoundException
-	 */
-	public static function getVODFileForHLSVariant($link, $variant) {
+    /**
+     * @param $link
+     * @param $variant
+     *
+     * @return null|resource
+     * @throws \Illuminate\Contracts\Filesystem\FileNotFoundException
+     */
+    public static function getVODFileForHLSVariant($link, $variant)
+    {
         $hlsFolder = Helpers::getPathWithoutExtension($link->path);
-		return Storage::disk($link->storage)->readStream($hlsFolder.'/'.$variant);
-	}
+        return Storage::disk($link->storage)->readStream($hlsFolder.'/'.$variant);
+    }
 }

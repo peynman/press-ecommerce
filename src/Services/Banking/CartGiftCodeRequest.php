@@ -31,11 +31,13 @@ class CartGiftCodeRequest extends FormRequest
         ];
     }
 
-    public function getCurrency() {
+    public function getCurrency()
+    {
         return $this->get('currency');
     }
 
-    public function getGiftCode() {
+    public function getGiftCode()
+    {
         return $this->get('gift_code');
     }
 }

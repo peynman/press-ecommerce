@@ -45,6 +45,6 @@ class CreateBankGatewayTransactionsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('bank_gateways');
+        Schema::dropIfExists('bank_gateway_transactions');
     }
 }

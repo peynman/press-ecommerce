@@ -127,7 +127,8 @@ class Plupload
         }
     }
 
-    protected function mergeChunks($chunks, $originalName) {
+    protected function mergeChunks($chunks, $originalName)
+    {
         $filePathPartial = $this->getChunkPath().'/'.$originalName;
         if (! $out = @fopen($filePathPartial, 'wb')) {
             throw new Exception('Failed to open output stream.', 102);

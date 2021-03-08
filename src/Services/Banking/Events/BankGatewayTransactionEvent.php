@@ -36,7 +36,8 @@ class BankGatewayTransactionEvent implements ShouldQueue
         $this->timestamp = $timestamp;
     }
 
-    public function getGatewayTransaction() {
+    public function getGatewayTransaction()
+    {
         return BankGatewayTransaction::find($this->transactionId);
     }
 }

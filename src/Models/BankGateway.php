@@ -3,7 +3,6 @@
 
 namespace Larapress\ECommerce\Models;
 
-
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -18,25 +17,26 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class BankGateway extends Model
 {
-	use SoftDeletes;
+    use SoftDeletes;
 
-	protected $table = 'bank_gateways';
+    protected $table = 'bank_gateways';
 
-	protected $fillable = [
+    protected $fillable = [
         'author_id',
         'type',
-		'flags',
-		'data',
-	];
-
-	protected $casts = [
-		'data' => 'array',
+        'flags',
+        'data',
     ];
 
-	/**
-	 * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-	 */
-	public function author() {
+    protected $casts = [
+        'data' => 'array',
+    ];
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function author()
+    {
         return $this->belongsTo(config('larapress.crud.user.class'), 'author_id');
     }
 }

@@ -48,14 +48,16 @@ class GiftCodeUse extends Model
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
-    public function gift_code() {
+    public function gift_code()
+    {
         return $this->belongsTo(GiftCode::class, 'code_id');
     }
 
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
-    public function cart() {
+    public function cart()
+    {
         return $this->belongsTo(Cart::class, 'cart_id');
     }
 }

@@ -19,7 +19,8 @@ class AdobeConnectController extends Controller
         )->name('adobe-connect.any.verify');
     }
 
-    public function verifyAdobeConnectMeeting(IAdobeConnectService $service, $session_id) {
+    public function verifyAdobeConnectMeeting(IAdobeConnectService $service, $session_id)
+    {
         return $service->verifyProductMeeting(Auth::user(), $session_id);
     }
 }

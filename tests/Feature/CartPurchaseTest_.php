@@ -21,7 +21,8 @@ use Larapress\Profiles\Models\Domain;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Larapress\ECommerce\BaseECommerceUser;
 
-class CartPurchaseTest extends \Orchestra\Testbench\TestCase {
+class CartPurchaseTest extends \Orchestra\Testbench\TestCase
+{
     /**
      * A basic test example.
      *
@@ -69,7 +70,8 @@ class CartPurchaseTest extends \Orchestra\Testbench\TestCase {
     }
 
 
-    protected function addProductType($token, $typename) {
+    protected function addProductType($token, $typename)
+    {
         return $this->withHeaders([
             'HTTP_Authorization: Bearer '.$token,
         ])->json('POST', '/api/product-types', [
@@ -82,7 +84,8 @@ class CartPurchaseTest extends \Orchestra\Testbench\TestCase {
             'id',
         ]);
     }
-    protected function addProduct($token, $name, $price) {
+    protected function addProduct($token, $name, $price)
+    {
         return $this->withHeaders([
             'HTTP_Authorization: Bearer '.$token,
         ])->json('POST', '/api/products', [
@@ -136,7 +139,7 @@ class CartPurchaseTest extends \Orchestra\Testbench\TestCase {
 
     protected function getEnvironmentSetUp($app)
     {
-        $app->useStoragePath(realpath(__DIR__.'/../../../../storage') );
+        $app->useStoragePath(realpath(__DIR__.'/../../../../storage'));
     }
 
     /**
@@ -150,7 +153,7 @@ class CartPurchaseTest extends \Orchestra\Testbench\TestCase {
         // $this->artisan('migrate')->run();
 
         $service = app(IPermissionsService::class);
-        $service->forEachRegisteredProviderClass(function($meta_data_class) {
+        $service->forEachRegisteredProviderClass(function ($meta_data_class) {
             /** @var IPermissionsMetadata $instance */
             $instance = new $meta_data_class();
             $all_verbs = $instance->getPermissionVerbs();

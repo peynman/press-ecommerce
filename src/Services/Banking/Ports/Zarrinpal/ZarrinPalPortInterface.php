@@ -89,8 +89,7 @@ class ZarrinPalPortInterface implements IBankPortInterface
             $config['isSandbox'],
             $config['isZarinGate']
         );
-        if (isset($result["Status"]) && $result["Status"] == 100)
-        {
+        if (isset($result["Status"]) && $result["Status"] == 100) {
             unset($transaction['bank_gateway']);
             unset($transaction->bank_gateway);
             unset($transaction->domain);
@@ -126,8 +125,7 @@ class ZarrinPalPortInterface implements IBankPortInterface
         ]);
         $result = $zp->verify($config['merchant_id'], $transaction->amount, $config['isSandbox'], $config['isZarinGate']);
 
-        if (isset($result["Status"]) && $result["Status"] == 100)
-        {
+        if (isset($result["Status"]) && $result["Status"] == 100) {
             // Success
             $data = $transaction->data;
             $data['amount'] = $result["Amount"];
@@ -165,5 +163,4 @@ class ZarrinPalPortInterface implements IBankPortInterface
 
         return true;
     }
-
 }

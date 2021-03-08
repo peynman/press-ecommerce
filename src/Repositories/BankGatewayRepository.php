@@ -5,12 +5,14 @@ namespace Larapress\ECommerce\Repositories;
 use Illuminate\Support\Facades\DB;
 use Larapress\ECommerce\Models\BankGateway;
 
-class BankGatewayRepository implements IBankGatewayRepository {
+class BankGatewayRepository implements IBankGatewayRepository
+{
     /**
      * @param IProfileUser|ICRUDUser $user
      * @return array
      */
-    public function getAllBankGatewayTypes($user) {
+    public function getAllBankGatewayTypes($user)
+    {
         return [
             'zarinpal' => [
                 'merchant_id' => [
@@ -50,7 +52,8 @@ class BankGatewayRepository implements IBankGatewayRepository {
      * @param [type] $user
      * @return void
      */
-    public function getAllBankGateways($user) {
+    public function getAllBankGateways($user)
+    {
         $gateways = BankGateway::all(['id', 'type']);
 
         return $gateways;

@@ -71,14 +71,11 @@ class FileUploadCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         /** @var IECommerceUser $user */
         $user = Auth::user();
         if (!$user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
-            if (
-                !is_null(config('larapress.ecommerce.lms.teacher_support_form_id')) &&
+            if (!is_null(config('larapress.ecommerce.lms.teacher_support_form_id')) &&
                 $user->hasRole(config('larapress.ecommerce.lms.owner_role_id'))
             ) {
-
                 return in_array($object->id, $user->getOwenedProductsIds());
-            } else if (
-                !is_null(config('larapress.ecommerce.lms.support_group_default_form_id')) &&
+            } elseif (!is_null(config('larapress.ecommerce.lms.support_group_default_form_id')) &&
                 $user->hasRole(config('larapress.ecommerce.lms.support_role_id'))
             ) {
                 return FormEntry::query()

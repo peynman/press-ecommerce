@@ -24,7 +24,8 @@ class LiveStreamService implements ILiveStreamService
      * @param Request $request
      * @return boolean
      */
-    public function canStartLiveStream(Request $request) {
+    public function canStartLiveStream(Request $request)
+    {
         $streamUrl = $request->get('tcurl', null);
         if (is_null($streamUrl)) {
             return false;
@@ -51,7 +52,8 @@ class LiveStreamService implements ILiveStreamService
      * @param Request $request
      * @return Response
      */
-    public function liveStreamStarted(Request $request) {
+    public function liveStreamStarted(Request $request)
+    {
         $product = $this->getLiveStreamProduct($request->get('name', null));
         $data = $product->data;
         $data['types']['livestream']['status'] = 'live';
@@ -76,7 +78,8 @@ class LiveStreamService implements ILiveStreamService
      * @param Request $request
      * @return Response
      */
-    public function liveStreamEnded(Request $request) {
+    public function liveStreamEnded(Request $request)
+    {
         $product = $this->getLiveStreamProduct($request->get('name', null));
         $data = $product->data;
         $data['types']['livestream']['status'] = 'ended';
@@ -138,8 +141,7 @@ class LiveStreamService implements ILiveStreamService
                 config('larapress.profiles.security.roles.super-role'),
                 config('larapress.profiles.security.roles.affiliate')
             );
-            if ($user->hasRole($freeForRoles))
-            {
+            if ($user->hasRole($freeForRoles)) {
                 return true;
             }
         }

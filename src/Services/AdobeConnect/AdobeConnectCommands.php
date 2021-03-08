@@ -63,17 +63,16 @@ class AdobeConnectCommands extends ActionCommandBase
                 ->get();
 
             foreach ($products as $product) {
-                if (
-                    isset($product->data['types']['ac_meeting']['status']) &&
+                if (isset($product->data['types']['ac_meeting']['status']) &&
                     $product->data['types']['ac_meeting']['status'] === 'live'
                 ) {
                     $fullyEnded = true;
                     $recordings = [];
-                    $service->onEachServerForProduct($product, function($meetingFolder, $meetingName, $serverData)  use($service, $product, &$fullyEnded, &$recordings) {
+                    $service->onEachServerForProduct($product, function ($meetingFolder, $meetingName, $serverData) use ($service, $product, &$fullyEnded, &$recordings) {
                         $meeting = $service->createOrGetMeeting($meetingFolder, $meetingName);
                         $attendances = $service->getMeetingAttendance($meeting->getScoId());
                         $serverEnded = true;
-                        foreach($attendances as $attendance) {
+                        foreach ($attendances as $attendance) {
                             if (!isset($attendance['dateEnd'])) {
                                 $fullyEnded = false;
                                 $serverEnded = false;
@@ -100,10 +99,10 @@ class AdobeConnectCommands extends ActionCommandBase
 
                         /** @var ICourseSessionFormService */
                         $courseService = app(ICourseSessionFormService::class);
-                        $service->onEachServerForProduct($product, function($meetingFolder, $meetingName)  use($service, $product, $courseService) {
+                        $service->onEachServerForProduct($product, function ($meetingFolder, $meetingName) use ($service, $product, $courseService) {
                             $meeting = $service->createOrGetMeeting($meetingFolder, $meetingName);
                             $attendances = $service->getMeetingAttendance($meeting->getScoId());
-                            foreach($attendances as $attendance) {
+                            foreach ($attendances as $attendance) {
                                 if (!isset($attendance['login'])) {
                                     continue;
                                 }

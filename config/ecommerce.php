@@ -1,27 +1,30 @@
 <?php
 
-use Larapress\ECommerce\Controllers\BankGatewayController;
-use Larapress\ECommerce\Controllers\BankGatewayTransactionController;
-use Larapress\ECommerce\Controllers\CartController;
-use Larapress\ECommerce\Controllers\ProductCategoryController;
-use Larapress\ECommerce\Controllers\ProductController;
-use Larapress\ECommerce\Controllers\ProductTypeController;
-use Larapress\ECommerce\Controllers\WalletTransactionController;
-use Larapress\ECommerce\Controllers\FileUploadController;
-use Larapress\ECommerce\Controllers\GiftCodeController;
-use Larapress\ECommerce\CRUD\BankGatewayCRUDProvider;
-use Larapress\ECommerce\CRUD\BankGatewayTransactionCRUDProvider;
-use Larapress\ECommerce\CRUD\CartCRUDProvider;
-use Larapress\ECommerce\CRUD\FileUploadCRUDProvider;
-use Larapress\ECommerce\CRUD\GiftCodeCRUDProvider;
-use Larapress\ECommerce\CRUD\ProductCategoryCRUDProvider;
-use Larapress\ECommerce\CRUD\ProductCRUDProvider;
-use Larapress\ECommerce\CRUD\ProductTypeCRUDProvider;
-use Larapress\ECommerce\CRUD\WalletTransactionCRUDProvider;
-use Larapress\ECommerce\Services\Azmoon\AzmoonZipFileProcessor;
-use Larapress\ECommerce\Services\VOD\VideoFileProcessor;
-
 return [
+    'permissions' => [
+        \Larapress\ECommerce\CRUD\ProductCRUDProvider::class,
+        \Larapress\ECommerce\CRUD\ProductCategoryCRUDProvider::class,
+        \Larapress\ECommerce\CRUD\ProductTypeCRUDProvider::class,
+        \Larapress\ECommerce\CRUD\BankGatewayCRUDProvider::class,
+        \Larapress\ECommerce\CRUD\BankGatewayTransactionCRUDProvider::class,
+        \Larapress\ECommerce\CRUD\WalletTransactionCRUDProvider::class,
+        \Larapress\ECommerce\CRUD\CartCRUDProvider::class,
+        \Larapress\ECommerce\CRUD\FileUploadCRUDProvider::class,
+        \Larapress\ECommerce\CRUD\GiftCodeCRUDProvider::class,
+    ],
+
+    'controllers' => [
+        \Larapress\ECommerce\Controllers\ProductController::class,
+        \Larapress\ECommerce\Controllers\ProductCategoryController::class,
+        \Larapress\ECommerce\Controllers\ProductTypeController::class,
+        \Larapress\ECommerce\Controllers\BankGatewayController::class,
+        \Larapress\ECommerce\Controllers\BankGatewayTransactionController::class,
+        \Larapress\ECommerce\Controllers\WalletTransactionController::class,
+        \Larapress\ECommerce\Controllers\CartController::class,
+        \Larapress\ECommerce\Controllers\FileUploadController::class,
+        \Larapress\ECommerce\Controllers\GiftCodeController::class,
+    ],
+
     'routes' => [
         'bank_gateways' => [
             'name' => 'bank-gateways'
@@ -52,33 +55,9 @@ return [
         ]
     ],
 
-    'permissions' => [
-        ProductCRUDProvider::class,
-        ProductCategoryCRUDProvider::class,
-        ProductTypeCRUDProvider::class,
-        BankGatewayCRUDProvider::class,
-        BankGatewayTransactionCRUDProvider::class,
-        WalletTransactionCRUDProvider::class,
-        CartCRUDProvider::class,
-        FileUploadCRUDProvider::class,
-        GiftCodeCRUDProvider::class,
-    ],
-
-    'controllers' => [
-        ProductController::class,
-        ProductCategoryController::class,
-        ProductTypeController::class,
-        BankGatewayController::class,
-        BankGatewayTransactionController::class,
-        WalletTransactionController::class,
-        CartController::class,
-        FileUploadController::class,
-        GiftCodeController::class,
-    ],
-
     'file_upload_processors' => [
-        VideoFileProcessor::class,
-        AzmoonZipFileProcessor::class,
+        \Larapress\ECommerce\Services\VOD\VideoFileProcessor::class,
+        \Larapress\ECommerce\Services\Azmoon\AzmoonZipFileProcessor::class,
     ],
 
     'repository' => [

@@ -19,7 +19,8 @@ use Larapress\Profiles\Models\FormEntry;
 use Larapress\Profiles\Services\FormEntry\IFormEntryService;
 use Larapress\Profiles\IProfileUser;
 
-class SupportGroupService implements ISupportGroupService {
+class SupportGroupService implements ISupportGroupService
+{
 
     /**
      * Undocumented function
@@ -27,7 +28,8 @@ class SupportGroupService implements ISupportGroupService {
      * @param SupportGroupUpdateRequest $request
      * @return Response
      */
-    public function updateUsersSupportGroup(SupportGroupUpdateRequest $request) {
+    public function updateUsersSupportGroup(SupportGroupUpdateRequest $request)
+    {
         ini_set('memory_limit', '1024M');
         ini_set('max_execution_time', 0);
 
@@ -37,7 +39,7 @@ class SupportGroupService implements ISupportGroupService {
         $supportUserId = null;
         $supportProfile = null;
         if ($request->shouldRandomizeSupportIds()) {
-            $avSupportUserIds = call_user_func([$class, 'whereHas'], 'roles', function($q) {
+            $avSupportUserIds = call_user_func([$class, 'whereHas'], 'roles', function ($q) {
                 $q->whereIn('id', config('larapress.ecommerce.lms.support_randomizer_role_ids'));
             })->get();
         } else {
@@ -50,9 +52,9 @@ class SupportGroupService implements ISupportGroupService {
         }
 
         if ($request->shouldUseAllNoneSupportUsers()) {
-            $userIds = User::whereDoesntHave('form_entries', function($q) {
+            $userIds = User::whereDoesntHave('form_entries', function ($q) {
                 $q->where('tags', 'LIKE', 'support-group-%');
-            })->whereHas('roles', function($q) {
+            })->whereHas('roles', function ($q) {
                 $q->where('id', config('larapress.ecommerce.lms.customer_role_id'));
             });
         } else {
@@ -65,7 +67,7 @@ class SupportGroupService implements ISupportGroupService {
         $totalSupUserIds = count($avSupportUserIds);
         $indexer = 1;
 
-        $updateUsersSupportGroup = function($userIds) use(&$indexer, $request, $avSupportUserIds, $totalSupUserIds, $class, $service, $supportUserId, $supportProfile) {
+        $updateUsersSupportGroup = function ($userIds) use (&$indexer, $request, $avSupportUserIds, $totalSupUserIds, $class, $service, $supportUserId, $supportProfile) {
             foreach ($userIds as $userId) {
                 if ($request->shouldRandomizeSupportIds()) {
                     $supportUser = $avSupportUserIds[$indexer % $totalSupUserIds];
@@ -85,7 +87,7 @@ class SupportGroupService implements ISupportGroupService {
                     $user,
                     config('larapress.ecommerce.lms.support_group_default_form_id'),
                     'support-group-'.$supportUserId,
-                    function ($request, $inputNames, $form, $entry) use($supportUserId, $supportProfile) {
+                    function ($request, $inputNames, $form, $entry) use ($supportUserId, $supportProfile) {
                         return $this->getSupportIdsDataForEntry($entry, $supportUserId, $supportProfile);
                     }
                 );
@@ -110,7 +112,8 @@ class SupportGroupService implements ISupportGroupService {
      * @param IProfileUser|int $supportUser
      * @return Response
      */
-    public function updateUserSupportGroup(Request $request, IProfileUser $user, $supportUser) {
+    public function updateUserSupportGroup(Request $request, IProfileUser $user, $supportUser)
+    {
         /** @var IFormEntryService */
         $service = app(IFormEntryService::class);
 
@@ -132,7 +135,7 @@ class SupportGroupService implements ISupportGroupService {
             $user,
             config('larapress.ecommerce.lms.support_group_default_form_id'),
             'support-group-'.$supportUserId,
-            function ($request, $inputNames, $form, $entry) use($supportUserId, $supportProfile) {
+            function ($request, $inputNames, $form, $entry) use ($supportUserId, $supportProfile) {
                 return $this->getSupportIdsDataForEntry($entry, $supportUserId, $supportProfile);
             }
         );
@@ -146,7 +149,8 @@ class SupportGroupService implements ISupportGroupService {
      * @param int|IProfileUser $supportUser
      * @return Response
      */
-    public function updateMySupportGroup(Request $request, $supportUser) {
+    public function updateMySupportGroup(Request $request, $supportUser)
+    {
         /** @var IFormEntryService */
         $service = app(IFormEntryService::class);
 
@@ -168,7 +172,7 @@ class SupportGroupService implements ISupportGroupService {
             Auth::user(),
             config('larapress.ecommerce.lms.support_group_default_form_id'),
             'support-group-'.$supportUserId,
-            function ($request, $inputNames, $form, $entry) use($supportUserId, $supportProfile, $supportUser) {
+            function ($request, $inputNames, $form, $entry) use ($supportUserId, $supportProfile, $supportUser) {
                 $data = $this->getSupportIdsDataForEntry($entry, $supportUserId, $supportProfile);
                 if (is_null($entry)) {
                     $this->updateUserRegistrationGiftWithIntroducer(Auth::user(), $supportUser, false, false);
@@ -190,7 +194,8 @@ class SupportGroupService implements ISupportGroupService {
      * @param bool $updateIntroducer
      * @return void
      */
-    public function updateUserRegistrationGiftWithIntroducer(IProfileUser $user, $introducer, $updateSupportGroup, $updateIntroducer) {
+    public function updateUserRegistrationGiftWithIntroducer(IProfileUser $user, $introducer, $updateSupportGroup, $updateIntroducer)
+    {
         // add registerar gift based on introducer id
         if (!is_null($introducer)) {
             // add to support group if introducer has support role
@@ -208,7 +213,7 @@ class SupportGroupService implements ISupportGroupService {
                 $user,
                 config('larapress.ecommerce.lms.introducer_default_form_id'),
                 'introducer-id-'.$introducer->id,
-                function ($req, $form, $entry) use($introducer) {
+                function ($req, $form, $entry) use ($introducer) {
                     return [
                         'introducer_id' => $introducer->id,
                     ];
@@ -225,7 +230,7 @@ class SupportGroupService implements ISupportGroupService {
                         $user,
                         config('larapress.ecommerce.lms.support_group_default_form_id'),
                         'support-group-'.$introducer->id,
-                        function ($request, $inputNames, $form, $entry) use($introducer) {
+                        function ($request, $inputNames, $form, $entry) use ($introducer) {
                             $values = [
                                 'support_user_id' => is_null($entry) || !isset($entry->data['values']['support_user_id']) ? [$introducer->id] :
                                     array_merge($entry->data['values']['support_user_id'], [$introducer->id])
@@ -291,7 +296,8 @@ class SupportGroupService implements ISupportGroupService {
     /**
      * @return array
      */
-    protected function getSupportIdsDataForEntry($entry, $supportUserId, $supportProfile) {
+    protected function getSupportIdsDataForEntry($entry, $supportUserId, $supportProfile)
+    {
         $values = [];
         if (is_null($entry) || !isset($entry->data['values']['support_ids'])) {
             $values['support_ids'] = [];
@@ -314,7 +320,8 @@ class SupportGroupService implements ISupportGroupService {
      * @param IProfileUser $user
      * @return FormEntry[]
      */
-    public function getIntroducedUsersList($user) {
+    public function getIntroducedUsersList($user)
+    {
         $introduced = FormEntry::query()
                 ->where('form_id', config('larapress.ecommerce.lms.introducer_default_form_id'))
                 ->where('tags', 'introducer-id-'.$user->id)

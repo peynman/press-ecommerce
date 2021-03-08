@@ -33,19 +33,23 @@ class SupportGroupUpdateRequest extends FormRequest
         ];
     }
 
-    public function getUserIds() {
+    public function getUserIds()
+    {
         return $this->get('user_ids', []);
     }
 
-    public function getSupportUserID() {
+    public function getSupportUserID()
+    {
         return $this->get('support_user_id', null);
     }
 
-    public function shouldRandomizeSupportIds() {
+    public function shouldRandomizeSupportIds()
+    {
         return $this->get('random_support_id', false);
     }
 
-    public function shouldUseAllNoneSupportUsers() {
+    public function shouldUseAllNoneSupportUsers()
+    {
         return $this->get('all_none_supp_users', false);
     }
 }

@@ -32,25 +32,25 @@ class BankGatewayTransactionCRUDProvider implements ICRUDProvider, IPermissionsM
         'bank_gateway_id' => 'required|numeric|exists:bank_gateways,id',
         'domain_id' => 'required|numeric|exists:domains,id',
         'customer_id' => 'required|numeric|exists:users,id',
-		'amount' => 'required|numeric',
-		'currency' => 'required|numeric|exists:filters,id',
-		'tracking_code' => 'nullable|string',
-		'reference_code' => 'nullable|string',
-		'status' => 'required|numeric',
-		'flags' => 'nullable|numeric',
-		'data' => 'nullable|json',
+        'amount' => 'required|numeric',
+        'currency' => 'required|numeric|exists:filters,id',
+        'tracking_code' => 'nullable|string',
+        'reference_code' => 'nullable|string',
+        'status' => 'required|numeric',
+        'flags' => 'nullable|numeric',
+        'data' => 'nullable|json',
     ];
     public $updateValidations = [
         'bank_gateway_id' => 'required|numeric|exists:bank_gateways,id',
         'domain_id' => 'required|numeric|exists:domains,id',
         'customer_id' => 'required|numeric|exists:users,id',
-		'amount' => 'required|numeric',
-		'currency' => 'required|numeric|exists:filters,id',
-		'tracking_code' => 'nullable|string',
-		'reference_code' => 'nullable|string',
-		'status' => 'required|numeric',
-		'flags' => 'nullable|numeric',
-		'data' => 'nullable|json',
+        'amount' => 'required|numeric',
+        'currency' => 'required|numeric|exists:filters,id',
+        'tracking_code' => 'nullable|string',
+        'reference_code' => 'nullable|string',
+        'status' => 'required|numeric',
+        'flags' => 'nullable|numeric',
+        'data' => 'nullable|json',
     ];
     public $searchColumns = [
         'has:customer.phones,number',
@@ -88,7 +88,8 @@ class BankGatewayTransactionCRUDProvider implements ICRUDProvider, IPermissionsM
      * @param Request $request
      * @return void
      */
-    public function getUpdateRules(Request $request) {
+    public function getUpdateRules(Request $request)
+    {
         $this->updateValidations['name'] .= ',' . $request->route('id');
         return $this->updateValidations;
     }
@@ -116,7 +117,7 @@ class BankGatewayTransactionCRUDProvider implements ICRUDProvider, IPermissionsM
         $user = Auth::user();
         if (! $user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
             $query->orWhereIn('domain_id', $user->getAffiliateDomainIds());
-            $query->orWhereHas('customer.form_entries', function($q) use($user) {
+            $query->orWhereHas('customer.form_entries', function ($q) use ($user) {
                 $q->where('tags', 'support-group-'.$user->id);
             });
         }

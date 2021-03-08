@@ -4,6 +4,11 @@ namespace Larapress\ECommerce\Services\CourseSession;
 
 use Larapress\ECommerce\Services\FileUpload\FileUploadRequest;
 
+/**
+ * Send files to a session.
+ *
+ * @bodyParam file file required File content.
+ */
 class CourseSessionFormRequest extends FileUploadRequest
 {
     /**
@@ -40,10 +45,5 @@ class CourseSessionFormRequest extends FileUploadRequest
     public function getTitle()
     {
         return $this->title;
-    }
-
-    public function getFormID()
-    {
-        return $this->get('form_id');
     }
 }

@@ -7,7 +7,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
-class AzmoonController extends Controller {
+class AzmoonController extends Controller
+{
 
     public static function registerPublicAPIRoutes()
     {
@@ -32,7 +33,8 @@ class AzmoonController extends Controller {
      * @param int $productId
      * @return array
      */
-    public function azmoonDetails(IAzmoonService $service, $productId) {
+    public function azmoonDetails(IAzmoonService $service, $productId)
+    {
         return $service->getAzmoonDetails($productId);
     }
 
@@ -44,7 +46,8 @@ class AzmoonController extends Controller {
      * @param int $index
      * @return array
      */
-    public function streamAzmoonQuestionFile(IAzmoonService $service, Request $request, $productId, $index) {
+    public function streamAzmoonQuestionFile(IAzmoonService $service, Request $request, $productId, $index)
+    {
         return $service->streamAzmoonFileAtIndex($request, $productId, $index, false);
     }
 
@@ -54,9 +57,10 @@ class AzmoonController extends Controller {
      * @param IAzmoonService $service
      * @param int $productId
      * @param int $index
-	 * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
      */
-    public function streamAzmoonAnswerFile(IAzmoonService $service, Request $request, $productId, $index) {
+    public function streamAzmoonAnswerFile(IAzmoonService $service, Request $request, $productId, $index)
+    {
         return $service->streamAzmoonFileAtIndex($request, $productId, $index, true);
     }
 
@@ -68,7 +72,8 @@ class AzmoonController extends Controller {
      * @param int $productId
      * @return array
      */
-    public function acceptAzmoonAnswerSheet(IAzmoonService $service, Request $request, $productId) {
+    public function acceptAzmoonAnswerSheet(IAzmoonService $service, Request $request, $productId)
+    {
         return $service->acceptAzmoonResultForUser($request, Auth::user(), $productId);
     }
 }

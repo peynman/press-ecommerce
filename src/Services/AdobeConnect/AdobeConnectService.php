@@ -165,7 +165,7 @@ class AdobeConnectService implements IAdobeConnectService
         $this->client->permissionUpdate($permission);
 
         $sessions = [];
-        $this->onEachServerForProduct($product, function($meetingFolder, $meetingName, $serverData) use(&$sessions, $user, $product_id) {
+        $this->onEachServerForProduct($product, function ($meetingFolder, $meetingName, $serverData) use (&$sessions, $user, $product_id) {
             $this->client->login($user->name . self::UsernameSuffix, $user->name . '.' . $product_id);
             $sessions[trim($serverData['server'], '/')] = $this->client->getSession();
         });
@@ -273,7 +273,7 @@ class AdobeConnectService implements IAdobeConnectService
             $details['start_at'] = $item->data['types']['session']['start_at'];
         }
 
-        $this->onEachServerForProduct($item, function ($meetingFolder, $meetingName) use($details) {
+        $this->onEachServerForProduct($item, function ($meetingFolder, $meetingName) use ($details) {
             $this->createOrGetMeeting(
                 $meetingFolder,
                 $meetingName,
@@ -318,7 +318,8 @@ class AdobeConnectService implements IAdobeConnectService
     /**
      * @return Principal
      */
-    public function getLoggedUserInfo() {
+    public function getLoggedUserInfo()
+    {
         return $this->getUserInfo($this->username);
     }
 
@@ -328,7 +329,8 @@ class AdobeConnectService implements IAdobeConnectService
      * @param string $username
      * @return Principal|null
      */
-    public function getUserInfo($username) {
+    public function getUserInfo($username)
+    {
         $filter = Filter::instance()->equals('login', $username);
         $existing = $this->client->principalList(0, $filter);
         if (count($existing) > 0) {
@@ -343,7 +345,8 @@ class AdobeConnectService implements IAdobeConnectService
      * @param string $login
      * @return IProfileUser|null
      */
-    public function getUserFromACLogin($login) {
+    public function getUserFromACLogin($login)
+    {
         if (Str::endsWith($login, self::UsernameSuffix)) {
             $class = config('larapress.crud.user.class');
             return call_user_func([$class, 'where'], 'name', substr($login, 0, strlen($login) - strlen(self::UsernameSuffix)))->first();
@@ -358,7 +361,8 @@ class AdobeConnectService implements IAdobeConnectService
      * @param string $meetingId
      * @return array
      */
-    public function getMeetingRecordings($meetingId) {
+    public function getMeetingRecordings($meetingId)
+    {
         $filter = Filter::instance()->equals('icon', 'archive');
         $recordings = $this->client->scoContents($meetingId, $filter);
         return $recordings;
@@ -370,7 +374,8 @@ class AdobeConnectService implements IAdobeConnectService
      * @param string $meetingId
      * @return array
      */
-    public function getMeetingSessions($meetingId) {
+    public function getMeetingSessions($meetingId)
+    {
         $details = $this->client->reportMeetingSessions($meetingId);
         return isset($details['reportMeetingSessions']) ? $details['reportMeetingSessions'] : [];
     }
@@ -381,7 +386,8 @@ class AdobeConnectService implements IAdobeConnectService
      * @param string $meetingId
      * @return array
      */
-    public function getMeetingAttendance($meetingId) {
+    public function getMeetingAttendance($meetingId)
+    {
         $details = $this->client->reportMeetingAttendance($meetingId);
         return isset($details['reportMeetingAttendance']) ? $details['reportMeetingAttendance'] : [];
     }

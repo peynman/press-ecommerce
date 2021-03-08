@@ -33,11 +33,13 @@ class FileUploadRequest extends FormRequest
     }
 
 
-    public function getAccess() {
+    public function getAccess()
+    {
         return $this->get('access');
     }
 
-    public function getTitle() {
+    public function getTitle()
+    {
         return $this->get('title');
     }
 }

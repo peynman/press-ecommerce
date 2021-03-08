@@ -9,14 +9,16 @@ use Larapress\Reports\Models\TaskReport;
 use Larapress\Reports\Services\ITaskHandler;
 use Larapress\Reports\Services\ITaskReportService;
 
-class VideoFileProcessor implements IFileUploadProcessor, ITaskHandler {
+class VideoFileProcessor implements IFileUploadProcessor, ITaskHandler
+{
     /**
      * Undocumented function
      *
      * @param FileUpload $upload
      * @return FileUpload
      */
-    public function postProcessFile(Request $request, FileUpload $upload) {
+    public function postProcessFile(Request $request, FileUpload $upload)
+    {
         /** @var ITaskReportService */
         $taskService = app(ITaskReportService::class);
         $autoStart = $request->get('auto_start', false);
@@ -32,7 +34,8 @@ class VideoFileProcessor implements IFileUploadProcessor, ITaskHandler {
      * @param FileUpload $upload
      * @return boolean
      */
-    public function shouldProcessFile(FileUpload $upload) {
+    public function shouldProcessFile(FileUpload $upload)
+    {
         return \Illuminate\Support\Str::startsWith($upload->mime, 'video/');
     }
 
@@ -42,7 +45,8 @@ class VideoFileProcessor implements IFileUploadProcessor, ITaskHandler {
      * @param TaskReport $task
      * @return void
      */
-    public function handle(TaskReport $task) {
+    public function handle(TaskReport $task)
+    {
         $upload = FileUpload::find($task->data['id']);
         VideoConvertJob::dispatch($upload);
     }

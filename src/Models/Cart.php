@@ -36,8 +36,7 @@ class Cart extends Model
     const FLAGS_SYSTEM_API = 32;
     const FLAGS_ADMIN = 64;
     const FLAGS_PERIODIC_COMPLETED = 128;
-    const FLAGS_GIFT_CART = 256;
-    const FLAGS_ADMIN_MODIFY = 512;
+    const FLGAS_FORWARDED_TO_BANK = 256;
 
     use SoftDeletes;
 
@@ -79,7 +78,8 @@ class Cart extends Model
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
      */
-    public function products() {
+    public function products()
+    {
         return $this->belongsToMany(
             Product::class,
             'carts_products_pivot',
@@ -88,12 +88,22 @@ class Cart extends Model
         );
     }
 
+    public function cart_items()
+    {
+        return $this->hasMany(
+            CartItem::class,
+            'cart_id',
+            'id'
+        );
+    }
+
     /**
      * Undocumented function
      *
      * @return boolean
      */
-    public function isPaid() {
+    public function isPaid()
+    {
         return $this->status === self::STATUS_ACCESS_GRANTED || $this->status === self::STATUS_ACCESS_COMPLETE;
     }
 
@@ -102,7 +112,8 @@ class Cart extends Model
      *
      * @return array
      */
-    public function getPeriodicProductIds() {
+    public function getPeriodicProductIds()
+    {
         return isset($this->data['periodic_product_ids']) ? $this->data['periodic_product_ids'] : [];
     }
 }

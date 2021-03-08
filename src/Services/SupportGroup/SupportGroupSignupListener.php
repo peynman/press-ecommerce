@@ -7,10 +7,12 @@ use Illuminate\Foundation\Events\Dispatchable;
 use Larapress\Auth\Signup\SignupEvent;
 use Larapress\Profiles\Services\FormEntry\FormEntryUpdateEvent;
 
-class SupportGroupSignupListener implements ShouldQueue {
+class SupportGroupSignupListener implements ShouldQueue
+{
     use Dispatchable;
 
-    public function handle(SignupEvent $event) {
+    public function handle(SignupEvent $event)
+    {
         ini_set('max_execution_time', 0);
 
         /** @var ISupportGroupService */

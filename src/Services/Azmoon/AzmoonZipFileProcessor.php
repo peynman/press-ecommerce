@@ -8,14 +8,16 @@ use Larapress\ECommerce\Services\FileUpload\IFileUploadProcessor;
 use Larapress\Reports\Models\TaskReport;
 use Larapress\Reports\Services\ITaskHandler;
 
-class AzmoonZipFileProcessor implements IFileUploadProcessor, ITaskHandler {
+class AzmoonZipFileProcessor implements IFileUploadProcessor, ITaskHandler
+{
     /**
      * Undocumented function
      *
      * @param FileUpload $upload
      * @return FileUpload
      */
-    public function postProcessFile(Request $request, FileUpload $upload) {
+    public function postProcessFile(Request $request, FileUpload $upload)
+    {
         AzmoonExtractJob::dispatch($upload);
     }
 
@@ -25,7 +27,8 @@ class AzmoonZipFileProcessor implements IFileUploadProcessor, ITaskHandler {
      * @param FileUpload $upload
      * @return boolean
      */
-    public function shouldProcessFile(FileUpload $upload) {
+    public function shouldProcessFile(FileUpload $upload)
+    {
         return \Illuminate\Support\Str::startsWith($upload->mime, 'application/zip');
     }
 
@@ -35,7 +38,8 @@ class AzmoonZipFileProcessor implements IFileUploadProcessor, ITaskHandler {
      * @param TaskReport $task
      * @return void
      */
-    public function handle(TaskReport $task) {
+    public function handle(TaskReport $task)
+    {
         $upload = FileUpload::find($task->data['id']);
         AzmoonExtractJob::dispatch($upload);
     }

@@ -3,7 +3,6 @@
 
 namespace Larapress\ECommerce\Models;
 
-
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Larapress\Profiles\Models\Domain;
@@ -32,12 +31,13 @@ class WalletTransaction extends Model
     const TYPE_UNVERIFIED = 3;
 
     const FLAGS_REGISTRATION_GIFT = 1;
+    const FLAGS_AUTO_IMPORT = 2;
 
-	use SoftDeletes;
+    use SoftDeletes;
 
-	protected $table = 'wallet_transactions';
+    protected $table = 'wallet_transactions';
 
-	protected $fillable = [
+    protected $fillable = [
         'user_id',
         'domain_id',
         'amount',
@@ -53,17 +53,19 @@ class WalletTransaction extends Model
         'data' => 'array'
     ];
 
-	/**
-	 * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-	 */
-	public function user() {
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function user()
+    {
         return $this->belongsTo(config('larapress.crud.user.class'), 'user_id');
     }
 
-	/**
-	 * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-	 */
-	public function domain() {
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function domain()
+    {
         return $this->belongsTo(Domain::class, 'domain_id');
     }
 }
