@@ -25,10 +25,22 @@ class CreateCartsTable extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->index(['customer_id', 'domain_id', 'status', 'currency', 'flags']);
+            $table->index(
+                [
+                    'deleted_at',
+                    'created_at',
+                    'updated_at',
+                    'customer_id',
+                    'domain_id',
+                    'status',
+                    'currency',
+                    'flags'
+                ],
+                'carts_full_index'
+            );
 
             $table->foreign('customer_id')->references('id')->on('users');
-	        $table->foreign('domain_id')->references('id')->on('domains');
+            $table->foreign('domain_id')->references('id')->on('domains');
         });
     }
 

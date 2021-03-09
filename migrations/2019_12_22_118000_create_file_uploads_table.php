@@ -28,7 +28,17 @@ class CreateFileUploadsTable extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->index(['deleted_at', 'created_at', 'flags', 'mime', 'title']);
+            $table->index(
+                [
+                    'deleted_at',
+                    'created_at',
+                    'updated_at',
+                    'flags',
+                    'mime',
+                    'title'
+                ],
+                'file_uploads_full_index'
+            );
 
             $table->foreign('uploader_id')->references('id')->on('users');
         });

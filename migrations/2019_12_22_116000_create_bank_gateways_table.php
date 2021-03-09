@@ -22,6 +22,17 @@ class CreateBankGatewaysTable extends Migration
             $table->timestamps();
             $table->softDeletes();
 
+            $table->index(
+                [
+                    'deleted_at',
+                    'created_at',
+                    'updated_at',
+                    'type',
+                    'flags'
+                ],
+                'bank_gateways_full_index'
+            );
+
             $table->foreign('author_id')->references('id')->on('users');
         });
     }

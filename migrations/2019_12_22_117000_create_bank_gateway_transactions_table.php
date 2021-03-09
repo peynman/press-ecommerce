@@ -31,6 +31,20 @@ class CreateBankGatewayTransactionsTable extends Migration
             $table->timestamps();
             $table->softDeletes();
 
+            $table->index(
+                [
+                    'deleted_at',
+                    'created_at',
+                    'updated_at',
+                    'customer_id',
+                    'domain_id',
+                    'bank_gateway_id',
+                    'cart_id',
+                    'flags'
+                ],
+                'bank_gateway_transactions_full_index'
+            );
+
             $table->foreign('customer_id')->references('id')->on('users');
             $table->foreign('domain_id')->references('id')->on('domains');
             $table->foreign('bank_gateway_id')->references('id')->on('bank_gateways');

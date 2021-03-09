@@ -15,8 +15,8 @@ class CreateProductsTable extends Migration
     {
         Schema::create('products', function (Blueprint $table) {
             $table->bigIncrements('id');
-	        $table->bigInteger('author_id', false, true);
-	        $table->bigInteger('parent_id', false, true)->nullable();
+            $table->bigInteger('author_id', false, true);
+            $table->bigInteger('parent_id', false, true)->nullable();
             $table->string('name');
             $table->string('group')->nullable();
             $table->json('data')->nullable();
@@ -27,10 +27,23 @@ class CreateProductsTable extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->index(['deleted_at', 'publish_at', 'expires_at', 'parent_id', 'group']);
+            $table->index(
+                [
+                    'deleted_at',
+                    'created_at',
+                    'updated_at',
+                    'publish_at',
+                    'expires_at',
+                    'parent_id',
+                    'group',
+                    'flags',
+                    'name',
+                ],
+                'products_full_index'
+            );
 
-	        $table->foreign('author_id')->references('id')->on('users');
-	        $table->foreign('parent_id')->references('id')->on('products');
+            $table->foreign('author_id')->references('id')->on('users');
+            $table->foreign('parent_id')->references('id')->on('products');
         });
     }
 

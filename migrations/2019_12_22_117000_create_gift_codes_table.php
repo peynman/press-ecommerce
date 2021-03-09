@@ -25,7 +25,17 @@ class CreateGiftCodesTable extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->index(['code', 'status']);
+            $table->index(
+                [
+                    'deleted_at',
+                    'created_at',
+                    'updated_at',
+                    'code',
+                    'status',
+                    'flags'
+                ],
+                'gift_codes_full_index'
+            );
 
             $table->foreign('author_id')->references('id')->on('users');
         });

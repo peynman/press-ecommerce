@@ -25,8 +25,22 @@ class CreateWalletTransactionsTable extends Migration
             $table->timestamps();
             $table->softDeletes();
 
+            $table->index(
+                [
+                    'deleted_at',
+                    'created_at',
+                    'updated_at',
+                    'user_id',
+                    'domain_id',
+                    'currency',
+                    'type',
+                    'flags'
+                ],
+                'wallet_transactions_full_index'
+            );
+
             $table->foreign('user_id')->references('id')->on('users');
-	        $table->foreign('domain_id')->references('id')->on('domains');
+            $table->foreign('domain_id')->references('id')->on('domains');
         });
     }
 
