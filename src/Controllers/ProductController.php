@@ -3,14 +3,18 @@
 namespace Larapress\ECommerce\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Route;
-use Larapress\CRUD\CRUDControllers\BaseCRUDController;
+use Larapress\CRUD\Services\CRUD\BaseCRUDController;
 use Larapress\ECommerce\CRUD\ProductCRUDProvider;
-use Larapress\ECommerce\Models\Product;
-use Larapress\ECommerce\Repositories\IProductRepository;
 use Larapress\ECommerce\Services\Product\IProductService;
 
+
+/**
+ * Standard CRUD Controller for Product resource.
+ *
+ * @group Product Management
+ */
 class ProductController extends BaseCRUDController
 {
     public static function registerRoutes()
@@ -38,10 +42,14 @@ class ProductController extends BaseCRUDController
     }
 
     /**
-     * Undocumented function
+     * Query Products Reportistory
      *
-     * @param Request $request
-     * @return array
+     * This is a global method to query on all available products for customer.
+     * <aside class="notice">This is a public method.😕</aside>
+     *
+     * @return Response
+     *
+     * @unauthorized
      */
     public function queryRepository(IProductService $service, Request $request)
     {
@@ -50,12 +58,9 @@ class ProductController extends BaseCRUDController
 
 
     /**
-     * Undocumented function
+     * Clone Product
      *
-     * @param IProductService $service
-     * @param Request $request
-     * @param int $id
-     * @return array
+     * @return Response
      */
     public function duplicateProduct(IProductService $service, Request $request, $id)
     {

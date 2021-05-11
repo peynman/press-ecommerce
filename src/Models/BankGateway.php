@@ -17,6 +17,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class BankGateway extends Model
 {
+    const FLAGS_DISABLED = 1;
+
     use SoftDeletes;
 
     protected $table = 'bank_gateways';

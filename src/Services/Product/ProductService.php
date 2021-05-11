@@ -9,12 +9,12 @@ use Larapress\CRUD\Events\CRUDCreated;
 use Larapress\CRUD\Exceptions\AppException;
 use Larapress\CRUD\Extend\Helpers;
 use Larapress\ECommerce\CRUD\ProductCRUDProvider;
-use Larapress\ECommerce\Models\FileUpload;
+use Larapress\ECommerce\IECommerceUser;
+use Larapress\FileShare\Models\FileUpload;
 use Larapress\ECommerce\Models\Product;
 use Larapress\ECommerce\Models\ProductType;
 use Larapress\ECommerce\Repositories\IProductRepository;
-use Larapress\ECommerce\Services\Banking\IBankingService;
-use Larapress\Profiles\Repository\Domain\IDomainRepository;
+use Larapress\ECommerce\Services\Cart\ICartService;
 use Larapress\Reports\Services\IMetricsService;
 use Larapress\Profiles\IProfileUser;
 
@@ -53,14 +53,14 @@ class ProductService implements IProductService
     /**
      * Undocumented function
      *
-     * @param Request $request
-     * @param int $product_id
+     * @param ProductCloneRequest $request
+     *
      * @return Product
      */
-    public function duplicateProductForRequest(Request $request, $product_id)
+    public function cloneProductForRequest(ProductCloneRequest $request)
     {
         /** @var Product */
-        $product = Product::find($product_id);
+        $product = Product::with(['author', 'types', 'cateogires'])->find($request->getProductID());
 
         if (is_null($product)) {
             throw new AppException(AppException::ERR_OBJECT_NOT_FOUND);
@@ -138,17 +138,10 @@ class ProductService implements IProductService
      * @param callable $callback
      * @return mixed
      */
-    public function checkProductLinkAccess(Request $request, $product, $link, $callback)
+    public function checkProductLinkAccess(IECommerceUser $user, $product, $link, $callback)
     {
-        /** @var IBankingService $service */
-        $service = app()->make(IBankingService::class);
-
-        /** @var IProfileUser */
-        $user = Auth::user();
-
-        /** @var IDomainRepository */
-        $domainRepo = app(IDomainRepository::class);
-        $domain = $domainRepo->getRequestDomain($request);
+        /** @var ICartService $service */
+        $service = app()->make(ICartService::class);
 
         if (is_numeric($product)) {
             /** @var Product $product */
@@ -198,28 +191,22 @@ class ProductService implements IProductService
             throw new AppException(AppException::ERR_OBJ_FILE_NOT_FOUND);
         }
 
-        return $callback($request, $product, $link);
+        return $callback($product, $link);
     }
 
     /**
      * Undocumented function
      *
-     * @param Request $request
+     * @param IECommerceUser $user
      * @param int|Product $product
-     * @param callbable $callback
+     * @param closure $callback
+     *
      * @return mixed
      */
-    public function checkProductAccess(Request $request, $product, $callback)
+    public function checkProductAccess(IECommerceUser $user, $product, $callback)
     {
-        /** @var IBankingService $service */
-        $service = app()->make(IBankingService::class);
-
-        /** @var IProfileUser */
-        $user = Auth::user();
-
-        /** @var IDomainRepository */
-        $domainRepo = app(IDomainRepository::class);
-        $domain = $domainRepo->getRequestDomain($request);
+        /** @var ICartService $service */
+        $service = app()->make(ICartService::class);
 
         if (is_numeric($product)) {
             /** @var Product $product */
@@ -236,9 +223,9 @@ class ProductService implements IProductService
                 }
             }
         } else {
-//          throw new AppException(AppException::ERR_OBJ_ACCESS_DENIED);
+            throw new AppException(AppException::ERR_OBJ_ACCESS_DENIED);
         }
 
-        return $callback($request, $product);
+        return $callback($product);
     }
 }

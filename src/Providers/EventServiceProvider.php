@@ -23,22 +23,6 @@ class EventServiceProvider extends ServiceProvider
         'Larapress\ECommerce\Services\Banking\Events\WalletTransactionEvent' => [
             'Larapress\ECommerce\Services\Banking\Reports\WalletTransactionReport'
         ],
-
-        // sync adobe connect servers on
-        'Larapress\CRUD\Events\CRUDUpdated' => [
-            'Larapress\ECommerce\Services\AdobeConnect\SyncACMeetingOnProductEvent',
-        ],
-        'Larapress\CRUD\Events\CRUDCreated' => [
-            'Larapress\ECommerce\Services\AdobeConnect\SyncACMeetingOnProductEvent',
-        ],
-        'Larapress\Profiles\Services\FormEntry\FormEntryUpdateEvent' => [
-            'Larapress\ECommerce\Services\SupportGroup\SupportGroupFormListener',
-        ],
-
-        // sync ecommerce for support group
-        'Larapress\Auth\Signup\SignupEvent' => [
-            'Larapress\ECommerce\Services\SupportGroup\SupportGroupSignupListener'
-        ],
     ];
 
 

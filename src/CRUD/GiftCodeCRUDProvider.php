@@ -5,9 +5,9 @@ namespace Larapress\ECommerce\CRUD;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Larapress\CRUD\Services\BaseCRUDProvider;
-use Larapress\CRUD\Services\ICRUDProvider;
-use Larapress\CRUD\Services\IPermissionsMetadata;
+use Larapress\CRUD\Services\CRUD\BaseCRUDProvider;
+use Larapress\CRUD\Services\CRUD\ICRUDProvider;
+use Larapress\CRUD\Services\RBAC\IPermissionsMetadata;
 use Larapress\CRUD\ICRUDUser;
 use Larapress\ECommerce\Models\Cart;
 use Larapress\ECommerce\Models\GiftCode;
@@ -34,6 +34,7 @@ class GiftCodeCRUDProvider implements ICRUDProvider, IPermissionsMetadata
             'status' => 'required|numeric',
             'code' => 'required|string|min:6|regex:/(^[A-Za-z0-9-_.]+$)+/',
             'data.type' => 'required|string|in:percent,fixed',
+            'data.value' => 'required|numeric',
         ];
     }
 
@@ -45,6 +46,7 @@ class GiftCodeCRUDProvider implements ICRUDProvider, IPermissionsMetadata
             'status' => 'required|numeric',
             'code' => 'required|string|min:6|regex:/(^[A-Za-z0-9-_.]+$)+/',
             'data.type' => 'required|string|in:percent,fixed',
+            'data.value' => 'required|numeric',
         ];
     }
 

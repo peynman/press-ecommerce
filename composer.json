@@ -1,6 +1,6 @@
 {
   "name": "peynman/larapress-ecommerce",
-  "description": "This is the description of the package.",
+  "description": "Ecommerce for Larapress CRUD.",
   "type": "library",
   "license": "MIT",
   "minimum-stability": "dev",
@@ -28,11 +28,10 @@
     }
   },
   "require": {
-    "php": "^7.3.0",
+    "php": "^7.0|^8.0",
     "laravel/framework": "^8.0",
     "peynman/larapress-profiles": "master",
-    "jildertmiedema/laravel-plupload": "^0.7.1",
-    "brunogasparetto/adobe-connect-client": "master"
+    "jildertmiedema/laravel-plupload": "^0.7.1"
   },
   "require-dev": {
     "facade/ignition": "^2.3.6",

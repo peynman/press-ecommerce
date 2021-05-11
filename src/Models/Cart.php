@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Larapress\Profiles\Models\Domain;
 use Larapress\ECommerce\IECommerceUser;
+use Larapress\ECommerce\Services\Cart\BaseCartTrait;
+use Larapress\ECommerce\Services\Cart\ICart;
 
 /**
  * @property int            $id
@@ -14,6 +16,7 @@ use Larapress\ECommerce\IECommerceUser;
  * @property int            $status
  * @property float          $amount
  * @property int            $currency
+ * @property int            $flags
  * @property IECommerceUser   $customer
  * @property Domain         $domain
  * @property ICartItem[]    $products
@@ -22,7 +25,7 @@ use Larapress\ECommerce\IECommerceUser;
  * @property \Carbon\Carbon $updated_at
  * @property \Carbon\Carbon $deleted_at
  */
-class Cart extends Model
+class Cart extends Model implements ICart
 {
     const STATUS_UNVERIFIED = 1;
     const STATUS_ACCESS_GRANTED = 2;
@@ -39,6 +42,7 @@ class Cart extends Model
     const FLGAS_FORWARDED_TO_BANK = 256;
 
     use SoftDeletes;
+    use BaseCartTrait;
 
     protected $table = 'carts';
 
@@ -85,7 +89,11 @@ class Cart extends Model
             'carts_products_pivot',
             'cart_id',
             'product_id'
-        );
+        )
+            ->using(CartItem::class)
+            ->withPivot([
+                'data'
+            ]);
     }
 
     public function cart_items()

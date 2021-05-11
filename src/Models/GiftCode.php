@@ -2,10 +2,13 @@
 
 namespace Larapress\ECommerce\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Larapress\Profiles\IProfileUser;
 use Larapress\Profiles\Models\Domain;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Larapress\ECommerce\Factories\GiftCodeFactory;
 
 /**
  * @property int            $id
@@ -23,6 +26,8 @@ use Larapress\Profiles\Models\Domain;
  */
 class GiftCode extends Model
 {
+    use HasFactory;
+
     const STATUS_AVAILABLE = 1;
     const STATUS_EXPIRED = 2;
 
@@ -43,6 +48,16 @@ class GiftCode extends Model
     public $casts = [
         'data' => 'array',
     ];
+
+    /**
+     * Undocumented function
+     *
+     * @return Factory
+     */
+    protected static function newFactory()
+    {
+        return GiftCodeFactory::new();
+    }
 
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo

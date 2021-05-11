@@ -3,30 +3,21 @@
 namespace Larapress\ECommerce\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use Larapress\ECommerce\Commands\ProductCommands;
 use Larapress\ECommerce\Repositories\IProductRepository;
 use Larapress\ECommerce\Repositories\ProductRepository;
-use Larapress\ECommerce\Services\AdobeConnect\AdobeConnectCommands;
-use Larapress\ECommerce\Services\AdobeConnect\AdobeConnectService;
-use Larapress\ECommerce\Services\AdobeConnect\IAdobeConnectService;
-use Larapress\ECommerce\Services\Azmoon\AzmoonService;
-use Larapress\ECommerce\Services\Azmoon\IAzmoonService;
 use Larapress\ECommerce\Services\Banking\BankingService;
 use Larapress\ECommerce\Services\Banking\IBankingService;
-use Larapress\ECommerce\Services\CourseSession\ICourseSessionFormService;
-use Larapress\ECommerce\Services\CourseSession\CourseSessionFormService;
-use Larapress\ECommerce\Services\CourseSession\CourseSessionRepository;
-use Larapress\ECommerce\Services\CourseSession\ICourseSessionRepository;
-use Larapress\ECommerce\Services\FileUpload\FileUploadService;
-use Larapress\Ecommerce\Services\FileUpload\IFileUploadService;
-use Larapress\ECommerce\Services\LiveStream\ILiveStreamService;
-use Larapress\ECommerce\Services\LiveStream\LiveStreamService;
 use Larapress\ECommerce\Services\Product\IProductService;
 use Larapress\ECommerce\Services\Product\ProductService;
-use Larapress\ECommerce\Services\SupportGroup\ISupportGroupService;
-use Larapress\ECommerce\Services\SupportGroup\SupportGroupService;
-use Larapress\ECommerce\Services\VOD\IVODStreamService;
-use Larapress\ECommerce\Services\VOD\VODStreamService;
+use Larapress\ECommerce\Commands\UpdateInstallmentCarts;
+use Larapress\ECommerce\Services\Cart\CartService;
+use Larapress\ECommerce\Services\Cart\ICartService;
+use Larapress\ECommerce\Services\Cart\IPurchasingCartService;
+use Larapress\ECommerce\Services\Cart\PurchasingCartService;
+use Larapress\ECommerce\Services\GiftCodes\GiftCodeService;
+use Larapress\ECommerce\Services\GiftCodes\IGiftCodeService;
+use Larapress\ECommerce\Services\Wallet\IWalletService;
+use Larapress\ECommerce\Services\Wallet\WalletService;
 
 class PackageServiceProvider extends ServiceProvider
 {
@@ -38,16 +29,12 @@ class PackageServiceProvider extends ServiceProvider
     public function register()
     {
         $this->app->bind(IProductRepository::class, ProductRepository::class);
-        $this->app->bind(IBankingService::class, BankingService::class);
-        $this->app->bind(ILiveStreamService::class, LiveStreamService::class);
-        $this->app->bind(IFileUploadService::class, FileUploadService::class);
         $this->app->bind(IProductService::class, ProductService::class);
-        $this->app->bind(IVODStreamService::class, VODStreamService::class);
-        $this->app->bind(ICourseSessionFormService::class, CourseSessionFormService::class);
-        $this->app->bind(IAdobeConnectService::class, AdobeConnectService::class);
-        $this->app->bind(ICourseSessionRepository::class, CourseSessionRepository::class);
-        $this->app->bind(ISupportGroupService::class, SupportGroupService::class);
-        $this->app->bind(IAzmoonService::class, AzmoonService::class);
+        $this->app->bind(IBankingService::class, BankingService::class);
+        $this->app->bind(ICartService::class, CartService::class);
+        $this->app->bind(IPurchasingCartService::class, PurchasingCartService::class);
+        $this->app->bind(IGiftCodeService::class, GiftCodeService::class);
+        $this->app->bind(IWalletService::class, WalletService::class);
 
         $this->app->register(EventServiceProvider::class);
     }
@@ -74,8 +61,7 @@ class PackageServiceProvider extends ServiceProvider
 
         if ($this->app->runningInConsole()) {
             $this->commands([
-                ProductCommands::class,
-                AdobeConnectCommands::class,
+                UpdateInstallmentCarts::class,
             ]);
         }
     }

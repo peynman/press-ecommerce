@@ -7,14 +7,13 @@ use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
-use Larapress\CRUD\Services\BaseCRUDProvider;
-use Larapress\CRUD\Services\ICRUDProvider;
-use Larapress\CRUD\Services\ICRUDService;
-use Larapress\CRUD\Services\IPermissionsMetadata;
+use Larapress\CRUD\Services\CRUD\BaseCRUDProvider;
+use Larapress\CRUD\Services\CRUD\ICRUDProvider;
+use Larapress\CRUD\Services\CRUD\ICRUDService;
+use Larapress\CRUD\Services\RBAC\IPermissionsMetadata;
 use Larapress\ECommerce\Models\Product;
 use Larapress\ECommerce\Services\Azmoon\IAzmoonService;
 use Larapress\ECommerce\Services\Product\ProductReports;
-use Larapress\Profiles\Models\FormEntry;
 use Larapress\Profiles\Services\FormEntry\IFormEntryService;
 use Larapress\ECommerce\IECommerceUser;
 use Larapress\ECommerce\Models\WalletTransaction;
@@ -39,20 +38,7 @@ class ProductCRUDProvider implements
         'sales',
     ];
     public $model = Product::class;
-    public $updateValidations = [
-        'parent_id' => 'nullable|numeric|exists:products,id',
-        'name' => 'required|string|unique:products,name',
-        'priority' => 'nullable|numeric',
-        'group' => 'nullable|string',
-        'data.title' => 'required',
-        'flags' => 'nullable|numeric',
-        'publish_at' => 'nullable|datetime_zoned',
-        'expires_at' => 'nullable|datetime_zoned',
-        'types' => 'nullable|array|min:1',
-        'types.*.id' => 'nullable|exists:product_types,id',
-        'categories.*.id' => 'nullable|exists:product_categories,id',
-    ];
-    public $searchColumns = [
+        public $searchColumns = [
         'name',
         'id',
         'data',
@@ -66,9 +52,10 @@ class ProductCRUDProvider implements
     protected $crudService;
     public function getSummerizForRelation(Relation $relation, $relationName, Builder $query, $inputs, $column)
     {
+
         /** @var IECommerceUser */
         $user = Auth::user();
-        if (!$user->hasPermission(config('larapress.ecommerce.routes.products.name').'.sales')) {
+        if (!$user->hasPermission(config('larapress.ecommerce.routes.products.name') . '.sales')) {
             return null;
         }
 
@@ -161,6 +148,18 @@ class ProductCRUDProvider implements
     }
 
     /**
+     * Exclude current id in name unique request
+     *
+     * @param Request $request
+     * @return void
+     */
+    public function getUpdateRules(Request $request) {
+        $createValidations = $this->getCreateRules($request);
+        $createValidations['name'] .= ',' . $request->route('id');
+        return $createValidations;
+    }
+
+    /**
      * Undocumented function
      *
      * @param Request $request
@@ -168,18 +167,42 @@ class ProductCRUDProvider implements
      */
     public function getCreateRules(Request $request)
     {
+        $avCurrencyIds = collect(config('larapress.ecommerce.banking.available_currencies'))->pluck('id');
+
         return [
-            'parent_id' => 'nullable|numeric|exists:products,id',
             'name' => 'required|string|unique:products,name',
-            'group' => 'nullable|string',
             'data.title' => 'required',
+
+            'parent_id' => 'nullable|numeric|exists:products,id',
             'priority' => 'nullable|numeric',
+            'group' => 'nullable|string',
             'flags' => 'nullable|numeric',
             'publish_at' => 'nullable|datetime_zoned',
             'expires_at' => 'nullable|datetime_zoned',
-            'types' => 'required|array|min:1',
-            'types.*.id' => 'required|exists:product_types,id',
-            'categories.*.id' => 'nullable|exists:product_categories,id',
+            'data.sale_periodic_only' => 'nullable|boolean',
+            'data.quantized' => 'nullable|boolean',
+            'data.max_quantity' => 'required_if:data.quantized,true|numeric',
+
+            'data.pricing.*' => 'nullable',
+            'data.pricing.*.amount' => 'required_with:data.pricing.*|numeric',
+            'data.pricing.*.currency' => 'required_with:data.pricing.*|numeric|in:'.$avCurrencyIds->implode(','),
+            'data.pricing.*.priority' => 'required_with:data.pricing.*|numeric',
+
+            'data.price_periodic.*' => 'nullable',
+            'data.price_periodic.*.amount' => 'required_with:data.price_periodic.*|numeric',
+            'data.price_periodic.*.currency' => 'required_with:data.price_periodic.*|numeric|in:'.$avCurrencyIds->implode(','),
+            'data.price_periodic.*.priority' => 'required_with:data.price_periodic.*|numeric',
+
+            'data.calucalte_periodic.ends_at' => 'nullable|datetime_zoned',
+            'data.calucalte_periodic.period_count' => 'required_with:data.price_periodic.*|numeric',
+            'data.calucalte_periodic.period_duration' => 'required_with:data.price_periodic.*|numeric',
+            'data.calucalte_periodic.period_amount' => 'required_with:data.price_periodic.*|numeric',
+
+            'types.*' => 'nullable',
+            'types.*.id' => 'required_with:types.*|exists:product_types,id',
+
+            'categories.*' => 'nullable',
+            'categories.*.id' => 'required_with:categories.*|exists:product_categories,id',
         ];
     }
 
@@ -241,7 +264,7 @@ class ProductCRUDProvider implements
     {
         return [
             'author' => function ($user) {
-                return $user->hasPermission(config('larapress.profiles.routes.users.name').'.view');
+                return $user->hasPermission(config('larapress.profiles.routes.users.name') . '.view');
             },
             'types' => function ($user) {
                 return true;
@@ -256,31 +279,31 @@ class ProductCRUDProvider implements
                 return true;
             },
             'sales_real_amount' => function ($user) {
-                return $user->hasPermission(config('larapress.ecommerce.routes.products.name').'.sales');
+                return $user->hasPermission(config('larapress.ecommerce.routes.products.name') . '.sales');
             },
             'sales_virtual_amount' => function ($user) {
-                return $user->hasPermission(config('larapress.ecommerce.routes.products.name').'.sales');
+                return $user->hasPermission(config('larapress.ecommerce.routes.products.name') . '.sales');
             },
             'sales_fixed' => function ($user) {
-                return $user->hasPermission(config('larapress.ecommerce.routes.products.name').'.sales');
+                return $user->hasPermission(config('larapress.ecommerce.routes.products.name') . '.sales');
             },
             'sales_periodic' => function ($user) {
-                return $user->hasPermission(config('larapress.ecommerce.routes.products.name').'.sales');
+                return $user->hasPermission(config('larapress.ecommerce.routes.products.name') . '.sales');
             },
             'sales_periodic_payment' => function ($user) {
-                return $user->hasPermission(config('larapress.ecommerce.routes.products.name').'.sales');
+                return $user->hasPermission(config('larapress.ecommerce.routes.products.name') . '.sales');
             },
             'sales_role_support_amount' => function ($user) {
-                return $user->hasPermission(config('larapress.ecommerce.routes.products.name').'.sales');
+                return $user->hasPermission(config('larapress.ecommerce.routes.products.name') . '.sales');
             },
             'sales_role_support_ext_amount' => function ($user) {
-                return $user->hasPermission(config('larapress.ecommerce.routes.products.name').'.sales');
+                return $user->hasPermission(config('larapress.ecommerce.routes.products.name') . '.sales');
             },
             'remaining_periodic_count' => function ($user) {
-                return $user->hasPermission(config('larapress.ecommerce.routes.products.name').'.sales');
+                return $user->hasPermission(config('larapress.ecommerce.routes.products.name') . '.sales');
             },
             'remaining_periodic_amount' => function ($user) {
-                return $user->hasPermission(config('larapress.ecommerce.routes.products.name').'.sales');
+                return $user->hasPermission(config('larapress.ecommerce.routes.products.name') . '.sales');
             },
         ];
     }
@@ -308,18 +331,6 @@ class ProductCRUDProvider implements
         return [
             new ProductReports(app(IReportsService::class), app(IMetricsService::class))
         ];
-    }
-
-    /**
-     * Exclude current id in name unique request
-     *
-     * @param Request $request
-     * @return void
-     */
-    public function getUpdateRules(Request $request)
-    {
-        $this->updateValidations['name'] .= ',' . $request->route('id');
-        return $this->updateValidations;
     }
 
     /**
@@ -361,7 +372,7 @@ class ProductCRUDProvider implements
         /** @var IECommerceUser $user */
         $user = Auth::user();
         if (!$user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
-            if ($user->hasRole(config('larapress.ecommerce.lms.owner_role_id'))) {
+            if ($user->hasRole(config('larapress.lcms.owner_role_id'))) {
                 $query->whereIn('id', $user->getOwenedProductsIds());
             }
         }
@@ -379,7 +390,7 @@ class ProductCRUDProvider implements
         /** @var IECommerceUser $user */
         $user = Auth::user();
         if (!$user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
-            if ($user->hasRole(config('larapress.ecommerce.lms.owner_role_id'))) {
+            if ($user->hasRole(config('larapress.lcms.owner_role_id'))) {
                 return in_array($object->id, $user->getOwenedProductsIds());
             } else {
                 return $user->id === $object->author_id;
@@ -402,12 +413,6 @@ class ProductCRUDProvider implements
             $this->syncBelongsToManyRelation('categories', $object, $input_data);
         }
 
-        if (isset($object->data['types']['azmoon']['file_id']) && !is_null($object->data['types']['azmoon']['file_id'])) {
-            /** @var IAzmoonService */
-            $service = app(IAzmoonService::class);
-            $service->buildAzmoonDetails($object);
-        }
-
         // remove ancestors cache
         if (!is_null($object->parent_id)) {
             Cache::tags(['product.ancestors:' . $object->id])->flush();
@@ -427,12 +432,6 @@ class ProductCRUDProvider implements
         $this->syncBelongsToManyRelation('types', $object, $input_data);
         if (isset($input_data['categories'])) {
             $this->syncBelongsToManyRelation('categories', $object, $input_data);
-        }
-
-        if (isset($object->data['types']['azmoon']['file_id']) && !is_null($object->data['types']['azmoon']['file_id'])) {
-            /** @var IAzmoonService */
-            $service = app(IAzmoonService::class);
-            $service->buildAzmoonDetails($object);
         }
 
         // remove ancestors cache

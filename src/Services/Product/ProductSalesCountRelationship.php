@@ -52,15 +52,16 @@ class ProductSalesCountRelationship extends Relation
         /** @var IECommerceUser */
         $user = Auth::user();
 
-        if (is_object($models[0])) {
+        if (isset($models[0]) && is_object($models[0])) {
             $models = collect($models)->pluck('id');
         } else {
             $models = collect($models);
         }
+
         if (!$user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
-            if ($user->hasRole(config('larapress.ecommerce.lms.support_role_id'))) {
+            if ($user->hasRole(config('larapress.lcms.support_role_id'))) {
                 $suffix = $suffix . "\.$user->id";
-            } elseif ($user->hasRole(config('larapress.ecommerce.lms.owner_role_id'))) {
+            } elseif ($user->hasRole(config('larapress.lcms.owner_role_id'))) {
                 $ownerEntries = $user->getOwenedProductsIds();
                 $models = $models->filter(function ($model) use ($ownerEntries) {
                     return in_array($model, $ownerEntries);
@@ -125,7 +126,7 @@ class ProductSalesCountRelationship extends Relation
         $user = Auth::user();
 
         if (!$user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
-            if ($user->hasRole(config('larapress.ecommerce.lms.support_role_id'))) {
+            if ($user->hasRole(config('larapress.lcms.support_role_id'))) {
                 $suffix = $suffix . ".$user->id";
             }
         }

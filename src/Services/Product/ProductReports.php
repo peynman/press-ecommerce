@@ -6,7 +6,7 @@ use Carbon\CarbonInterval;
 use DateTimeImmutable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Log;
-use Larapress\CRUD\Services\IReportSource;
+use Larapress\CRUD\Services\CRUD\ICRUDReportSource;
 use Larapress\CRUD\Repository\IRoleRepository;
 use Larapress\Pages\Services\PageVisitEvent;
 use Larapress\Profiles\Models\FormEntry;
@@ -30,7 +30,7 @@ class ProductReports implements
 
     public function filterOnProductOwner($user, $filters)
     {
-        if ($user->hasRole(config('larapress.ecommerce.lms.owner_role_id'))) {
+        if ($user->hasRole(config('larapress.lcms.owner_role_id'))) {
             unset($filters['domains']);
             $filters['product'] = $user->getOwenedProductsIds();
             return $filters;

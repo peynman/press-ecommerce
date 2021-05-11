@@ -2,7 +2,7 @@
 
 namespace Larapress\ECommerce\Services\Product;
 
-use Illuminate\Http\Request;
+use Larapress\ECommerce\IECommerceUser;
 
 interface IProductService
 {
@@ -10,40 +10,42 @@ interface IProductService
     /**
      * Undocumented function
      *
-     * @param Request $request
+     * @param ProductQueryRequest $request
+     *
      * @return array
      */
-    public function queryProductsFromRequest(Request $request);
+    public function queryProductsFromRequest(ProductQueryRequest $request);
 
 
     /**
      * Undocumented function
      *
-     * @param Request $request
-     * @param int $product_id
-     * @return Product
+     * @param ProductCloneRequest $request
+
+     * @return Product[]
      */
-    public function duplicateProductForRequest(Request $request, $product_id);
+    public function cloneProductForRequest(ProductCloneRequest $request);
 
     /**
      * Undocumented function
      *
-     * @param Request $request
+     * @param IECommerceUser $user
      * @param int|Product $product
      * @param int|FileUpload $link
      * @param callable $callback
      * @return mixed
      */
-    public function checkProductLinkAccess(Request $request, $product, $link, $callback);
+    public function checkProductLinkAccess(IECommerceUser $user, $product, $link, $callback);
 
 
     /**
      * Undocumented function
      *
-     * @param Request $request
+     * @param IECommerceUser $user
      * @param int|Product $product
-     * @param callbable $callback
+     * @param closure $callback
+     *
      * @return mixed
      */
-    public function checkProductAccess(Request $request, $product, $callback);
+    public function checkProductAccess(IECommerceUser $user, $product, $callback);
 }

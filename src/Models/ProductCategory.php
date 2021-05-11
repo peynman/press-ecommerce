@@ -2,8 +2,10 @@
 
 namespace Larapress\ECommerce\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Larapress\ECommerce\Factories\ProductCategoryFactory;
 use Larapress\Profiles\IProfileUser;
 
 /**
@@ -24,6 +26,7 @@ use Larapress\Profiles\IProfileUser;
  */
 class ProductCategory extends Model
 {
+    use HasFactory;
     use SoftDeletes;
 
     protected $table = 'product_categories';
@@ -39,6 +42,16 @@ class ProductCategory extends Model
     protected $casts = [
         'data' => 'array'
     ];
+
+    /**
+     * Undocumented function
+     *
+     * @return Factory
+     */
+    protected static function newFactory()
+    {
+        return ProductCategoryFactory::new();
+    }
 
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo

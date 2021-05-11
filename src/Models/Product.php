@@ -3,12 +3,17 @@
 namespace Larapress\ECommerce\Models;
 
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Larapress\ECommerce\Services\Banking\ICartItem;
+use Larapress\ECommerce\Factories\ProductFactory;
+use Larapress\ECommerce\Services\Cart\BaseCartItemTrait;
+use Larapress\ECommerce\Services\Cart\ICartItem;
 use Larapress\ECommerce\Services\Product\ProductSalesAmountRelationship;
 use Larapress\ECommerce\Services\Product\ProductSalesCountRelationship;
 use Larapress\Profiles\IProfileUser;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Collection;
 
 /**
  * @property int                  $id
@@ -19,10 +24,10 @@ use Larapress\Profiles\IProfileUser;
  * @property int                  $parent_id
  * @property int                  $author_id
  * @property IProfileUser         $author
- * @property ProductCategory[]    $categories
- * @property Product[]            $children
+ * @property ProductCategory[]|Collection    $categories
+ * @property Product[]|Collection            $children
  * @property Product              $parent
- * @property ProductType[]        $types
+ * @property ProductType[]|Collection        $types
  * @property array                $data
  * @property \Carbon\Carbon       $publish_at
  * @property \Carbon\Carbon       $expires_at
@@ -32,8 +37,9 @@ use Larapress\Profiles\IProfileUser;
  */
 class Product extends Model implements ICartItem
 {
+    use HasFactory;
     use SoftDeletes;
-    use ProductCartItem;
+    use BaseCartItemTrait;
 
     protected $table = 'products';
 
@@ -60,17 +66,26 @@ class Product extends Model implements ICartItem
         'data' => 'array',
     ];
 
-    public $appends = [
-        'price-tag'
-    ];
+    public $appends = [];
 
     public $hidden = [
-        // 'sales_real_amount',
-        // 'sales_virtual_amount',
-        // 'sales_fixed',
-        // 'sales_periodic',
-        // 'sales_periodic_payment',
+        'sales_real_amount',
+        'sales_virtual_amount',
+        'sales_fixed',
+        'sales_periodic',
+        'sales_periodic_payment',
     ];
+
+    /**
+     * Undocumented function
+     *
+     * @return Factory
+     */
+    protected static function newFactory()
+    {
+        return ProductFactory::new();
+    }
+
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
@@ -102,6 +117,18 @@ class Product extends Model implements ICartItem
             'product_category_pivot',
             'product_id',
             'product_category_id'
+        );
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function reviews()
+    {
+        return $this->hasMany(
+            ProductReview::class,
+            'product_reviews',
+            'product_id'
         );
     }
 
@@ -235,35 +262,5 @@ class Product extends Model implements ICartItem
     public function remaining_periodic_amount()
     {
         return new ProductSalesCountRelationship($this, 'remain_amount');
-    }
-
-    /**
-     * Undocumented function
-     *
-     * @param string $value
-     * @return void
-     */
-    public function setExpiresAtAttribute($value)
-    {
-        if (empty($value) || is_null($value)) {
-            $this->attributes['expires_at'] = null;
-        } else {
-            $this->attributes['expires_at'] = Carbon::parse($value);
-        }
-    }
-
-    /**
-     * Undocumented function
-     *
-     * @param string $value
-     * @return void
-     */
-    public function setPublishAtAttribute($value)
-    {
-        if (empty($value) || is_null($value)) {
-            $this->attributes['publish_at'] = null;
-        } else {
-            $this->attributes['publish_at'] = Carbon::parse($value);
-        }
     }
 }

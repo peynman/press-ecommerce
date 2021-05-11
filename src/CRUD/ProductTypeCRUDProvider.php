@@ -5,9 +5,9 @@ namespace Larapress\ECommerce\CRUD;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
-use Larapress\CRUD\Services\BaseCRUDProvider;
-use Larapress\CRUD\Services\ICRUDProvider;
-use Larapress\CRUD\Services\IPermissionsMetadata;
+use Larapress\CRUD\Services\CRUD\BaseCRUDProvider;
+use Larapress\CRUD\Services\CRUD\ICRUDProvider;
+use Larapress\CRUD\Services\RBAC\IPermissionsMetadata;
 use Larapress\ECommerce\Models\Product;
 use Larapress\ECommerce\Models\ProductType;
 use Larapress\Pages\Models\Page;
@@ -25,12 +25,12 @@ class ProductTypeCRUDProvider implements ICRUDProvider, IPermissionsMetadata
     ];
     public $model = ProductType::class;
     public $createValidations = [
-        'name' => 'required|string|unique:products,name',
+        'name' => 'required|string|unique:product_types,name',
         'data.title' => 'required',
         'flags' => 'nullable|numeric',
     ];
     public $updateValidations = [
-        'name' => 'required|string|unique:products,name',
+        'name' => 'required|string|unique:product_types,name',
         'data.title' => 'required',
         'flags' => 'nullable|numeric',
     ];

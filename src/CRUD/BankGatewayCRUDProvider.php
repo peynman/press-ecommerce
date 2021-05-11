@@ -5,11 +5,12 @@ namespace Larapress\ECommerce\CRUD;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Larapress\CRUD\Services\BaseCRUDProvider;
-use Larapress\CRUD\Services\ICRUDProvider;
-use Larapress\CRUD\Services\IPermissionsMetadata;
+use Larapress\CRUD\Services\CRUD\BaseCRUDProvider;
+use Larapress\CRUD\Services\CRUD\ICRUDProvider;
+use Larapress\CRUD\Services\RBAC\IPermissionsMetadata;
 use Larapress\CRUD\ICRUDUser;
 use Larapress\ECommerce\Models\BankGateway;
+use Larapress\ECommerce\Repositories\IBankGatewayRepository;
 use Larapress\Profiles\IProfileUser;
 
 class BankGatewayCRUDProvider implements ICRUDProvider, IPermissionsMetadata
@@ -24,16 +25,6 @@ class BankGatewayCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         self::DELETE,
     ];
     public $model = BankGateway::class;
-    public $createValidations = [
-        'type' => 'required|string',
-        'data' => 'nullable',
-        'flags' => 'nullable|numeric',
-    ];
-    public $updateValidations = [
-        'type' => 'required|string',
-        'data' => 'nullable',
-        'flags' => 'nullable|numeric',
-    ];
     public $searchColumns = [
         'type',
         'data',
@@ -50,6 +41,45 @@ class BankGatewayCRUDProvider implements ICRUDProvider, IPermissionsMetadata
     ];
     public $defaultShowRelations = [
     ];
+
+    /**
+     * @param Request $request
+     * @return array
+     */
+    public function getUpdateRules(Request $request)
+    {
+        /** @var IBankGatewayRepository */
+        $repo = app(IBankGatewayRepository::class);
+        $types = $repo->getAllBankGatewayTypes(Auth::user());
+
+        $rules = [
+            'type' => 'required|string|in:'.(implode(",", array_keys($types))),
+            'flags' => 'nullable|numeric',
+            'data' => 'nullable',
+        ];
+
+        return $rules;
+    }
+
+    /**
+     * @param Request $request
+     * @return array
+     */
+    public function getCreateRules(Request $request)
+    {
+        /** @var IBankGatewayRepository */
+        $repo = app(IBankGatewayRepository::class);
+        $types = $repo->getAllBankGatewayTypes(Auth::user());
+
+        $rules = [
+            'type' => 'required|string|in:'.(implode(",", array_keys($types))),
+            'flags' => 'nullable|numeric',
+            'data' => 'nullable',
+        ];
+
+        return $rules;
+    }
+
 
     /**
      * @param Builder $query

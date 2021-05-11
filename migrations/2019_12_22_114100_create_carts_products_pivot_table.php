@@ -16,8 +16,7 @@ class CreateCartsProductsPivotTable extends Migration
         Schema::create('carts_products_pivot', function (Blueprint $table) {
             $table->bigInteger('cart_id', false, true);
             $table->bigInteger('product_id', false, true);
-            $table->decimal('amount', 12, 2);
-            $table->integer('currency', false, true);
+            $table->json('data')->nullable();
 
             $table->foreign('cart_id')->references('id')->on('carts');
 	        $table->foreign('product_id')->references('id')->on('products');

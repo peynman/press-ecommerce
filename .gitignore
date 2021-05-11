@@ -17,3 +17,4 @@ composer.lock
 phpmd.output.html
 phpunit.coverage.xml
 package-lock.json
+.phpcs_reports.txt

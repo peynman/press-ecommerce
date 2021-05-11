@@ -8,14 +8,14 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Larapress\CRUD\BaseFlags;
-use Larapress\CRUD\Services\BaseCRUDProvider;
-use Larapress\CRUD\Services\ICRUDProvider;
-use Larapress\CRUD\Services\IPermissionsMetadata;
+use Larapress\CRUD\Services\CRUD\BaseCRUDProvider;
+use Larapress\CRUD\Services\CRUD\ICRUDProvider;
+use Larapress\CRUD\Services\RBAC\IPermissionsMetadata;
 use Larapress\ECommerce\Models\Cart;
 use Larapress\ECommerce\Models\WalletTransaction;
-use Larapress\ECommerce\Services\Banking\Events\CartPurchasedEvent;
 use Larapress\ECommerce\Services\Banking\IBankingService;
-use Larapress\ECommerce\Services\Banking\Reports\CartPurchasedReport;
+use Larapress\ECommerce\Services\Cart\CartPurchasedEvent;
+use Larapress\ECommerce\Services\Cart\CartPurchasedReport;
 use Larapress\Profiles\IProfileUser;
 use Larapress\Reports\Models\MetricCounter;
 use Larapress\Reports\Services\IMetricsService;
@@ -266,6 +266,12 @@ class CartCRUDProvider implements
      */
     public function onBeforeUpdate($args)
     {
+        if (isset($args['flags']) && !is_null($args['flags']) && is_numeric($args['flags'])) {
+            $args['flags'] = $args['flags'] | Cart::FLAGS_ADMIN;
+        } else {
+            $args['falgs'] = Cart::FLAGS_ADMIN;
+        }
+
         $periodic_ids = [];
         if (isset($args['data']['periodic_product_ids'])) {
             $periodic_ids = array_values($args['data']['periodic_product_ids']);

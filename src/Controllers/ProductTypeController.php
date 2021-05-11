@@ -2,9 +2,15 @@
 
 namespace Larapress\ECommerce\Controllers;
 
-use Larapress\CRUD\CRUDControllers\BaseCRUDController;
+use Larapress\CRUD\Services\CRUD\BaseCRUDController;
 use Larapress\ECommerce\CRUD\ProductTypeCRUDProvider;
 
+
+/**
+ * Standard CRUD Controller for Product Type resource.
+ *
+ * @group Product Type Management
+ */
 class ProductTypeController extends BaseCRUDController
 {
     public static function registerRoutes()

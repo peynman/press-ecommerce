@@ -2,16 +2,17 @@
 
 namespace Larapress\ECommerce\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Larapress\ECommerce\Factories\ProductTypeFactory;
 
 /**
  * @property int            $id
  * @property string         $name
  * @property string         $title
  * @property int            $flags
- * @property int            $status
- * @property array          $schema
+ * @property array          $data
  * @property Product[]      $products
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
@@ -19,6 +20,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class ProductType extends Model
 {
+    use HasFactory;
     use SoftDeletes;
 
     protected $table = 'product_types';
@@ -33,6 +35,17 @@ class ProductType extends Model
     protected $casts = [
         'data' => 'array'
     ];
+
+
+    /**
+     * Undocumented function
+     *
+     * @return Factory
+     */
+    protected static function newFactory()
+    {
+        return ProductTypeFactory::new();
+    }
 
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany

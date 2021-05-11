@@ -4,12 +4,17 @@ namespace Larapress\ECommerce\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use Larapress\CRUD\CRUDControllers\BaseCRUDController;
+use Larapress\CRUD\Services\CRUD\BaseCRUDController;
 use Larapress\ECommerce\CRUD\BankGatewayCRUDProvider;
 use Larapress\ECommerce\Models\BankGatewayTransaction;
 use Larapress\ECommerce\Models\Cart;
 use Larapress\ECommerce\Services\Banking\IBankingService;
 
+/**
+ * Standard CRUD Controller for Bank Gateway resource.
+ *
+ * @group Bank Gateway Management
+ */
 class BankGatewayController extends BaseCRUDController
 {
     public static function registerRoutes()

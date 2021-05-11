@@ -3,9 +3,9 @@
 namespace Larapress\ECommerce\CRUD;
 
 use Illuminate\Support\Facades\Auth;
-use Larapress\CRUD\Services\BaseCRUDProvider;
-use Larapress\CRUD\Services\ICRUDProvider;
-use Larapress\CRUD\Services\IPermissionsMetadata;
+use Larapress\CRUD\Services\CRUD\BaseCRUDProvider;
+use Larapress\CRUD\Services\CRUD\ICRUDProvider;
+use Larapress\CRUD\Services\RBAC\IPermissionsMetadata;
 use Larapress\ECommerce\IECommerceUser;
 
 /**
@@ -40,12 +40,12 @@ class ProductMetricsCRUDProvider implements
         /** @var IECommerceUser $user */
         $user = Auth::user();
         if (! $user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
-            if ($user->hasRole(config('larapress.ecommerce.lms.owner_role_id'))) {
+            if ($user->hasRole(config('larapress.lcms.owner_role_id'))) {
                 $ownerEntries = collect($user->getOwenedProductsIds())->map(function ($id) {
                     return 'product[.]'.$id.'[.].*';
                 })->toArray();
                 $query->whereRaw('metrics_counters.key REGEXP \''.implode('|', $ownerEntries).'\'');
-            } elseif ($user->hasRole(config('larapress.ecommerce.lms.support_role_id'))) {
+            } elseif ($user->hasRole(config('larapress.lcms.support_role_id'))) {
                 $query->where('key', 'LIKE', '%.'.$user->id);
             } else {
                 $query->whereHas('domains', function ($q) use ($user) {

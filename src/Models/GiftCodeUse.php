@@ -33,10 +33,6 @@ class GiftCodeUse extends Model
         'cart_id',
     ];
 
-    public $casts = [
-        'data' => 'array',
-    ];
-
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */

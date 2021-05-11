@@ -9,7 +9,6 @@ return [
         \Larapress\ECommerce\CRUD\BankGatewayTransactionCRUDProvider::class,
         \Larapress\ECommerce\CRUD\WalletTransactionCRUDProvider::class,
         \Larapress\ECommerce\CRUD\CartCRUDProvider::class,
-        \Larapress\ECommerce\CRUD\FileUploadCRUDProvider::class,
         \Larapress\ECommerce\CRUD\GiftCodeCRUDProvider::class,
     ],
 
@@ -21,7 +20,7 @@ return [
         \Larapress\ECommerce\Controllers\BankGatewayTransactionController::class,
         \Larapress\ECommerce\Controllers\WalletTransactionController::class,
         \Larapress\ECommerce\Controllers\CartController::class,
-        \Larapress\ECommerce\Controllers\FileUploadController::class,
+        \Larapress\ECommerce\Controllers\CartPurchasingController::class,
         \Larapress\ECommerce\Controllers\GiftCodeController::class,
     ],
 
@@ -44,25 +43,24 @@ return [
         'product_types' => [
             'name' => 'product-types',
         ],
+        'product_reviews' => [
+            'name' => 'product-reviews',
+        ],
         'wallet_transactions' => [
             'name' => 'wallet-transactions',
         ],
         'gift_codes' => [
             'name' => 'gift-codes',
-        ],
-        'file_uploads' => [
-            'name' => 'file-uploads'
         ]
     ],
 
-    'file_upload_processors' => [
-        \Larapress\ECommerce\Services\VOD\VideoFileProcessor::class,
-        \Larapress\ECommerce\Services\Azmoon\AzmoonZipFileProcessor::class,
+    'repository' => [
+        'limit' => 50,
+        'max_limit' => 200,
+        'min_limit' => 5,
     ],
 
-    'repository' => [
-        'per_page' => 50
-    ],
+    'customer_role_id' => 3,
 
     'banking' => [
         'ports' => [
@@ -74,6 +72,14 @@ return [
             'title' => 'تومان'
         ],
 
+        'available_currencies' => [
+            [
+                'id' => 1,
+                'title' => 'تومان',
+            ],
+        ],
+
+
         'redirect' => [
             'already' => '/me/carts',
             'success' => '/me/products',
@@ -82,24 +88,17 @@ return [
             'increase_success' => '/me/carts',
             'increase_failed' => '/me/carts',
         ],
+
         'default_gateway' => 1,
-    ],
 
-    'vod' => [
-        'hls_variants' => [
-            264 => [426, 240],
-            878 => [640, 360],
-            1128 => [854, 480],
-            2628 => [1280, 720],
+        'registeration_gift' => [
+            'amount' => 0,
+            'currency' => 1,
         ],
-        'queue' => 'jobs'
-    ],
 
-    'lms' => [
-        'course_file_upload_default_form_id' => 2,
-        'support_group_default_form_id' => 4,
-        'course_presense_default_form_id' => 3,
-        'support_profile_form_id' => 0,
-        'profile_form_id' => 1,
-    ]
+        'profle_gift' => [
+            'amount' => 0,
+            'currency' => 1,
+        ]
+    ],
 ];

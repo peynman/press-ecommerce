@@ -3,12 +3,19 @@
 namespace Larapress\ECommerce\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
-use Larapress\CRUD\CRUDControllers\BaseCRUDController;
+use Larapress\CRUD\Services\CRUD\BaseCRUDController;
 use Larapress\ECommerce\CRUD\WalletTransactionCRUDProvider;
 use Larapress\ECommerce\Models\WalletTransaction;
-use Larapress\ECommerce\Services\Banking\IBankingService;
+use Larapress\ECommerce\Services\Wallet\IWalletService;
+use Larapress\ECommerce\IECommerceUser;
 
+/**
+ * Standard CRUD Controller for Wallet Transaction resource.
+ *
+ * @group Wallet Transaction Management
+ */
 class WalletTransactionController extends BaseCRUDController
 {
     public static function registerRoutes()
@@ -28,16 +35,16 @@ class WalletTransactionController extends BaseCRUDController
     }
 
     /**
-     * Undocumented function
+     * Issue unverified wallet transaction
      *
-     * @param IBankingService $service
-     * @param Request $request
-     * @return mixed
+     * @return Response
      */
-    public function requestUnverifiedWalletTransaction(IBankingService $service, Request $request)
+    public function requestUnverifiedWalletTransaction(IWalletService $service, Request $request)
     {
+        /** @var IECommerceUser */
+        $user = Auth::user();
         return $service->addBalanceForUser(
-            Auth::user(),
+            $user,
             $request->get('amount'),
             config('larapress.ecommerce.banking.currency.id'),
             WalletTransaction::TYPE_UNVERIFIED,
