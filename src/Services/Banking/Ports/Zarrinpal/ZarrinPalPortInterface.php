@@ -78,9 +78,10 @@ class ZarrinPalPortInterface implements IBankPortInterface
     {
         $this->validate($transaction);
         $config = $transaction->bank_gateway->data;
+
         $zarinpal = new Zarrinpal();
         $result = $zarinpal->request(
-            $config['merchant_id'],
+            $config['merchantId'],
             $transaction->amount,
             $transaction->data['description'],
             $config['email'],
@@ -123,6 +124,7 @@ class ZarrinPalPortInterface implements IBankPortInterface
         $transaction->update([
             'status' => BankGatewayTransaction::STATUS_RECEIVED,
         ]);
+
         $result = $zp->verify($config['merchant_id'], $transaction->amount, $config['isSandbox'], $config['isZarinGate']);
 
         if (isset($result["Status"]) && $result["Status"] == 100) {
@@ -147,6 +149,9 @@ class ZarrinPalPortInterface implements IBankPortInterface
             ]);
             return $transaction;
         }
+
+        CRUDUpdated::dispatch(Auth::user(), $transaction, BankGatewayTransactionCRUDProvider::class, Carbon::now());
+
         return $transaction;
     }
 

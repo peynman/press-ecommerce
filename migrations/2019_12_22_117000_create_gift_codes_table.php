@@ -19,7 +19,6 @@ class CreateGiftCodesTable extends Migration
             $table->string('code');
             $table->decimal('amount', 12, 2);
             $table->integer('currency', false, true);
-            $table->integer('status', false, true);
             $table->json('data')->nullable();
             $table->integer('flags', false, true)->default(0);
             $table->timestamps();
@@ -31,7 +30,6 @@ class CreateGiftCodesTable extends Migration
                     'created_at',
                     'updated_at',
                     'code',
-                    'status',
                     'flags'
                 ],
                 'gift_codes_full_index'

@@ -1,7 +1,11 @@
 <?php
 
 namespace Larapress\ECommerce\Services\Product;
+
 use Larapress\ECommerce\IECommerceUser;
+use Larapress\ECommerce\Models\Product;
+use Larapress\ECommerce\Models\ProductCategory;
+use Larapress\CRUD\Services\Pagination\PaginatedResponse;
 
 interface IProductRepository
 {
@@ -22,7 +26,8 @@ interface IProductRepository
      *
      * @param IECommerceUser|null $user
      * @param int $category
-     * @return array
+     *
+     * @return ProductCategory
      */
     public function getProdcutCategoryChildren($user, $category);
 
@@ -44,9 +49,9 @@ interface IProductRepository
      * @param array $types
      * @param boolean $exclude
      *
-     * @return array
+     * @return PaginatedResponse
      */
-    public function getProductsPaginated($user, $page = 0, $limit = 50, $categories = [], $types = [], $exclude = false);
+    public function getProductsPaginated($user, $page = 0, $limit = null, $categories = [], $types = [], $exclude = false);
 
     /**
      * Undocumented function
@@ -54,9 +59,21 @@ interface IProductRepository
      * @param IECommerceUser|null $user
      * @param int $categories
      *
-     * @return array
+     * @return PaginatedResponse
      */
-    public function getPurchasedProductsPaginated($user, $page = 0, $limit = 30, $categories = [], $types = []);
+    public function getPurchasedProductsPaginated($user, $page = 0, $limit = null, $categories = [], $types = []);
+
+    /**
+     * Undocumented function
+     *
+     * @param IECommerceUser $user
+     * @param int $productId
+     * @param int $page
+     * @param int|null $limit
+     *
+     * @return PaginatedResponse
+     */
+    public function getProductReviews($user, $productId, $page = 0, $limit = null);
 
     /**
      * Undocumented function
@@ -64,16 +81,7 @@ interface IProductRepository
      * @param IECommerceUser|null $user
      * @return Cart[]
      */
-    public function getPurchasedProdutsCarts($user);
-
-    /**
-     * Undocumented function
-     *
-     * @param [type] $user
-     * @param [type] $cart_id
-     * @return Cart
-     */
-    public function getCartForUser($user, $cart_id);
+    public function getPurchasedProductsCarts($user);
 
     /**
      * Undocumented function
@@ -84,21 +92,12 @@ interface IProductRepository
      */
     public function getProductDetails($user, $product_id);
 
-
-    /**
-     * Undocumented function
-     *
-     * @param IProfileUser $user
-     * @return WalletTransaction[]
-     */
-    public function getWalletTransactionsForUser($user);
-
     /**
      * Undocumented function
      *
      * @param Product $product
      *
-     * @return array
+     * @return Product[]
      */
     public function getProductAncestorIds($product);
 }

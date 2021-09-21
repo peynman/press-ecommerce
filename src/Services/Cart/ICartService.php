@@ -13,12 +13,12 @@ interface ICartService
     /**
      * Undocumented function
      *
-     * @param Cart $cart
+     * @param ICart $cart
      * @param Carbon|string|null $purchaseTimestamp
      *`
-     * @return Cart
+     * @return ICart
      */
-    public function markCartPurchased(Cart $cart, $purchaseTimestamp = null);
+    public function markCartPurchased(ICart $cart, $purchaseTimestamp = null);
 
     /**
      * Undocumented function
@@ -72,13 +72,32 @@ interface ICartService
      */
     public function isProductOnPurchasedList(IECommerceUser $user, $product);
 
+
     /**
      * Undocumented function
      *
-     * @param Cart $cart
-     * @param null|Product[] $products
+     * @param IECommerceUser $user
+     * @param integer|Product $product
      *
-     * @return Cart
+     * @return boolean
      */
-    public function updateCartAmountFromDataAndProducts(Cart $cart, $products = null);
+    public function isProductOnLockedList(IECommerceUser $user, $product);
+
+    /**
+     * Undocumented function
+     *
+     * @param ICart $cart
+     *
+     * @return float
+     */
+    public function calculateCartAmountFromDataAndProducts(ICart $cart);
+
+    /**
+     * Undocumented function
+     *
+     * @param int $userId
+     *
+     * @return void
+     */
+    public function resetPurchasedCache($userId);
 }

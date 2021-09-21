@@ -16,6 +16,7 @@ class CreateBankGatewaysTable extends Migration
         Schema::create('bank_gateways', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->bigInteger('author_id', false, true);
+            $table->string('name')->unique();
             $table->string('type');
             $table->json('data')->nullable();
             $table->integer('flags', false, true)->default(0);
@@ -27,8 +28,9 @@ class CreateBankGatewaysTable extends Migration
                     'deleted_at',
                     'created_at',
                     'updated_at',
+                    'name',
                     'type',
-                    'flags'
+                    'flags',
                 ],
                 'bank_gateways_full_index'
             );

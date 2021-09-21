@@ -1,6 +1,6 @@
 <?php
 
-namespace Larapress\ECommerce\Services\Cart;
+namespace Larapress\ECommerce\Services\Cart\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -33,8 +33,10 @@ class CartUpdateRequest extends FormRequest
     {
         return [
             'currency' => 'required|numeric',
-            'periods' => 'nullable',
-            'periods.*' => 'exists:products,id',
+            'products.*.id' => 'nullable|exists:products,id',
+            'products.*.quantity' => 'nullable|numeric',
+            'products.*.data' => 'nullable|json_object',
+            'periods.*' => 'nullable|exists:products,id',
             'gateway' => 'nullabel|exists:bank_gateways,id',
             'gift_code' => 'nullable|exists:gift_codes,code',
             'use_balance' => 'nullable|boolean',
@@ -81,9 +83,18 @@ class CartUpdateRequest extends FormRequest
     /**
      * Undocumented function
      *
-     * @return void
+     * @return array
      */
     public function getPeriodicIds() {
         return $this->get('periods', []);
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return void
+     */
+    public function getProducts() {
+        return $this->get('products', []);
     }
 }

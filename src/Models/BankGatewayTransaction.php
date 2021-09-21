@@ -5,6 +5,7 @@ namespace Larapress\ECommerce\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Larapress\Profiles\Models\Domain;
+use Larapress\ECommerce\IECommerceUser;
 
 /**
  * @property int            $id
@@ -12,6 +13,7 @@ use Larapress\Profiles\Models\Domain;
  * @property int            $currency
  * @property int            $bank_gateway_id
  * @property int            $cart_id
+ * @property int            $domain_id
  * @property string         $tracking_code
  * @property string         $reference_code
  * @property int            $status
@@ -21,6 +23,7 @@ use Larapress\Profiles\Models\Domain;
  * @property BankGateway    $bank_gateway
  * @property Cart           $cart
  * @property Domain         $domain
+ * @property IECommerceUser $customer
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  * @property \Carbon\Carbon $deleted_at
@@ -56,6 +59,7 @@ class BankGatewayTransaction extends Model
 
     protected $casts = [
         'data' => 'array',
+        'amount' => 'float',
     ];
 
 
@@ -88,6 +92,6 @@ class BankGatewayTransaction extends Model
      */
     public function customer()
     {
-        return $this->belongsTo(config('larapress.crud.user.class'), 'customer_id');
+        return $this->belongsTo(config('larapress.crud.user.model'), 'customer_id');
     }
 }

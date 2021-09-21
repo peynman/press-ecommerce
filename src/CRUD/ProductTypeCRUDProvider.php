@@ -2,28 +2,29 @@
 
 namespace Larapress\ECommerce\CRUD;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
-use Larapress\CRUD\Services\CRUD\BaseCRUDProvider;
+use Larapress\CRUD\Services\CRUD\Traits\CRUDProviderTrait;
 use Larapress\CRUD\Services\CRUD\ICRUDProvider;
+use Larapress\CRUD\Services\CRUD\ICRUDVerb;
 use Larapress\CRUD\Services\RBAC\IPermissionsMetadata;
-use Larapress\ECommerce\Models\Product;
 use Larapress\ECommerce\Models\ProductType;
-use Larapress\Pages\Models\Page;
 
-class ProductTypeCRUDProvider implements ICRUDProvider, IPermissionsMetadata
+class ProductTypeCRUDProvider implements ICRUDProvider
 {
-    use BaseCRUDProvider;
+    use CRUDProviderTrait;
 
     public $name_in_config = 'larapress.ecommerce.routes.product_types.name';
+    public $model_in_config = 'larapress.ecommerce.routes.product_types.model';
+    public $compositions_in_config = 'larapress.ecommerce.routes.product_types.compositions';
+
     public $verbs = [
-        self::VIEW,
-        self::CREATE,
-        self::EDIT,
-        self::DELETE,
+        ICRUDVerb::VIEW,
+        ICRUDVerb::CREATE,
+        ICRUDVerb::EDIT,
+        ICRUDVerb::DELETE,
     ];
-    public $model = ProductType::class;
     public $createValidations = [
         'name' => 'required|string|unique:product_types,name',
         'data.title' => 'required',
@@ -34,35 +35,40 @@ class ProductTypeCRUDProvider implements ICRUDProvider, IPermissionsMetadata
         'data.title' => 'required',
         'flags' => 'nullable|numeric',
     ];
-    public $autoSyncRelations = [];
     public $validSortColumns = [
         'id',
         'name',
         'author_id',
         'created_at',
-        'updated_at'
+        'updated_at',
+        'deleted_at',
     ];
     public $searchColumns = [
         'id',
         'name',
         'data'
     ];
-    public $validRelations = [
-        'author'
-    ];
-    public $validFilters = [];
-    public $defaultShowRelations = [];
-    public $excludeIfNull = [];
-    public $filterFields = [];
-    public $filterDefaults = [];
+
+    /**
+     * Undocumented function
+     *
+     * @return array
+     */
+    public function getValidRelations(): array
+    {
+        return [
+            'author' => config('larapress.crud.user.provider'),
+        ];
+    }
 
     /**
      * Exclude current id in name unique request
      *
      * @param Request $request
-     * @return void
+     *
+     * @return array
      */
-    public function getUpdateRules(Request $request)
+    public function getUpdateRules(Request $request): array
     {
         $this->updateValidations['name'] .= ',' . $request->route('id');
         return $this->updateValidations;
@@ -71,10 +77,11 @@ class ProductTypeCRUDProvider implements ICRUDProvider, IPermissionsMetadata
     /**
      * Undocumented function
      *
-     * @param [type] $args
+     * @param array $args
+     *
      * @return void
      */
-    public function onBeforeCreate($args)
+    public function onBeforeCreate(array $args): array
     {
         $args['author_id'] = Auth::user()->id;
 
@@ -84,13 +91,13 @@ class ProductTypeCRUDProvider implements ICRUDProvider, IPermissionsMetadata
     /**
      * @param Builder $query
      *
-     * @return \Illuminate\Database\Query\Builder
+     * @return Builder
      */
-    public function onBeforeQuery($query)
+    public function onBeforeQuery(Builder $query): Builder
     {
-        /** @var ICRUDUser $user */
+        /** @var IProfileUser $user */
         $user = Auth::user();
-        if (! $user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
+        if (! $user->hasRole(config('larapress.profiles.security.roles.super_role'))) {
             $query->where('author_id', $user->id);
         }
 
@@ -98,15 +105,15 @@ class ProductTypeCRUDProvider implements ICRUDProvider, IPermissionsMetadata
     }
 
     /**
-     * @param Page $object
+     * @param ProductType $object
      *
      * @return bool
      */
-    public function onBeforeAccess($object)
+    public function onBeforeAccess($object): bool
     {
-        /** @var ICRUDUser|IProfileUser $user */
+        /** @var IProfileUser $user */
         $user = Auth::user();
-        if (! $user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
+        if (! $user->hasRole(config('larapress.profiles.security.roles.super_role'))) {
             return $user->id === $object->author_id;
         }
 

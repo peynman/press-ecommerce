@@ -13,43 +13,15 @@ use Larapress\ECommerce\IECommerceUser;
 use Larapress\FileShare\Models\FileUpload;
 use Larapress\ECommerce\Models\Product;
 use Larapress\ECommerce\Models\ProductType;
-use Larapress\ECommerce\Repositories\IProductRepository;
 use Larapress\ECommerce\Services\Cart\ICartService;
-use Larapress\Reports\Services\IMetricsService;
+use Larapress\ECommerce\Services\Product\Reports\ProductPurchasedCountReport;
+use Larapress\ECommerce\Services\Product\Reports\ProductPurchasedSalesReport;
+use Larapress\ECommerce\Services\Product\Requests\ProductCloneRequest;
+use Larapress\Reports\Services\Reports\IMetricsService;
 use Larapress\Profiles\IProfileUser;
 
 class ProductService implements IProductService
 {
-    /**
-     * Undocumented function
-     *
-     * @param Request $request
-     * @return array
-     */
-    public function queryProductsFromRequest(Request $request)
-    {
-        /** @var IProductRepository */
-        $repo = app(IProductRepository::class);
-
-        if ($request->get('purchased', false)) {
-            return $repo->getPurchasedProductsPaginated(
-                Auth::user(),
-                $request->get('page', 1),
-                $request->get('limit', config('larapress.ecommerce.repository.per_page', 50)),
-                $request->get('categories', []),
-                $request->get('types', [])
-            );
-        }
-
-        return $repo->getProductsPaginated(
-            Auth::user(),
-            $request->get('page', 1),
-            $request->get('limit', config('larapress.ecommerce.repository.per_page', 50)),
-            $request->get('categories', []),
-            $request->get('types', [])
-        );
-    }
-
     /**
      * Undocumented function
      *
@@ -97,6 +69,9 @@ class ProductService implements IProductService
     {
         return Helpers::getCachedValue(
             'larapress.ecommerce.product.' . $product_id . '.sales',
+            ['product.sales:' . $product_id],
+            3600,
+            false,
             function () use ($product_id) {
                 /** @var IMetricsService */
                 $service = app(IMetricsService::class);
@@ -104,16 +79,41 @@ class ProductService implements IProductService
                 /** @var IProfileUser */
                 $user = Auth::user();
                 $domains = [];
-                if (!$user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
+                if (!$user->hasRole(config('larapress.profiles.security.roles.super_role'))) {
                     $domains = $user->getAffiliateDomainIds();
                 }
 
-                $virtual = $service->sumMeasurement('product.' . $product_id . '.sales.1.amount', $domains);
-                $real = $service->sumMeasurement('product.' . $product_id . '.sales.2.amount', $domains);
+                $virtual = $service->sumMeasurement(
+                    'product.' . $product_id . '.sales.1.amount',
+                    ProductPurchasedSalesReport::MEASUREMENT_TYPE,
+                    null,
+                    $domains
+                );
+                $real = $service->sumMeasurement(
+                    'product.' . $product_id . '.sales.2.amount',
+                    ProductPurchasedSalesReport::MEASUREMENT_TYPE,
+                    null,
+                    $domains
+                );
 
-                $periodic = $service->sumMeasurement('product.' . $product_id . '.sales_periodic', $domains);
-                $fixed = $service->sumMeasurement('product.' . $product_id . '.sales_fixed', $domains);
-                $periodic_payment = $service->sumMeasurement('product.' . $product_id . '.periodic_payment', $domains);
+                $periodic = $service->sumMeasurement(
+                    'product.' . $product_id . '.sales_periodic',
+                    ProductPurchasedCountReport::MEASUREMENT_TYPE,
+                    null,
+                    $domains
+                );
+                $fixed = $service->sumMeasurement(
+                    'product.' . $product_id . '.sales_fixed',
+                    ProductPurchasedCountReport::MEASUREMENT_TYPE,
+                    null,
+                    $domains
+                );
+                $periodic_payment = $service->sumMeasurement(
+                    'product.' . $product_id . '.periodic_payment',
+                    ProductPurchasedCountReport::MEASUREMENT_TYPE,
+                    null,
+                    $domains
+                );
 
                 return [
                     'real' => $real,
@@ -122,12 +122,9 @@ class ProductService implements IProductService
                     'fixed' => $fixed,
                     'periodic_payment' => $periodic_payment
                 ];
-            },
-            ['product.sales:' . $product_id],
-            null
+            }
         );
     }
-
 
     /**
      * Undocumented function

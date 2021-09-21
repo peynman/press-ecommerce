@@ -1,32 +1,26 @@
 <?php
 
-namespace Larapress\ECommerce\Controllers;
+namespace Larapress\ECommerce\Services\Cart;
 
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
-use Larapress\CRUD\Services\CRUD\BaseCRUDController;
-use Larapress\ECommerce\Services\Cart\CartGiftCodeRequest;
+use Larapress\CRUD\Services\CRUD\CRUDController;
+use Larapress\ECommerce\Services\Cart\Requests\CartGiftCodeRequest;
 use Larapress\ECommerce\Services\Cart\IPurchasingCartService;
 use Larapress\ECommerce\Services\GiftCodes\IGiftCodeService;
 use Larapress\ECommerce\IECommerceUser;
-use Larapress\ECommerce\Services\Cart\CartContentModifyRequest;
-use Larapress\ECommerce\Services\Cart\CartUpdateRequest;
-use Larapress\ECommerce\Services\Cart\IInstallmentCartService;
+use Larapress\ECommerce\Services\Cart\Requests\CartContentModifyRequest;
+use Larapress\ECommerce\Services\Cart\Requests\CartUpdateRequest;
 
 /**
  * Standard CRUD Controller for Cart Resource
  *
  * @group Customer Cart
  */
-class CartPurchasingController extends BaseCRUDController
+class PurchasingCartController extends CRUDController
 {
     public static function registerRoutes()
     {
-        Route::post(
-            '/me/installments',
-            '\\' . self::class . '@getUserInstallments'
-        )->name(config('larapress.ecommerce.routes.carts.name') . '.any.purchasing.installments.all');
-
         Route::post(
             '/me/current-cart/update',
             '\\' . self::class . '@updatePurchasingCart'
@@ -43,7 +37,7 @@ class CartPurchasingController extends BaseCRUDController
         )->name(config('larapress.ecommerce.routes.carts.name') . '.any.purchasing.remove');
 
         Route::post(
-            '/me/current-cart/gift-code/apply',
+            '/me/current-cart/apply/gift-code',
             '\\' . self::class . '@checkPurchasingCartGiftCode'
         )->name(config('larapress.ecommerce.routes.carts.name') . '.any.purchasing.gift-code');
     }
@@ -59,11 +53,11 @@ class CartPurchasingController extends BaseCRUDController
     {
         /** @var IECommerceUser $user */
         $user = Auth::user();
-        return $service->getGiftUsageDetailsForCart(
+        return response()->json((array)$service->getGiftUsageDetailsForCart(
             $user,
             $pService->getPurchasingCart($user, $request->getCurrency()),
             $request->getGiftCode(),
-        );
+        ));
     }
 
     /**
@@ -101,17 +95,5 @@ class CartPurchasingController extends BaseCRUDController
         /** @var IECommerceUser $user */
         $user = Auth::user();
         return $service->removeItemFromPurchasingCart($request, $user, $request->getProduct(), $request->getCurrency());
-    }
-
-    /**
-     * Get Customer Installments
-     *
-     * @return Response
-     */
-    public function getUserInstallments(IInstallmentCartService $service)
-    {
-        /** @var IECommerceUser $user */
-        $user = Auth::user();
-        return $service->getUserInstallments($user);
     }
 }

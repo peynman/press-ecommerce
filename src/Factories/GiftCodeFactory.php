@@ -19,7 +19,7 @@ class GiftCodeFactory extends Factory
             'code' => $this->faker->password,
             'data' => [
                 'type' => 'percent',
-                'value' => 0.3
+                'value' => $this->faker->numberBetween(10, 50),
             ],
         ];
     }

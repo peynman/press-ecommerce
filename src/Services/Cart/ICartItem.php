@@ -8,12 +8,6 @@ use Illuminate\Database\Eloquent\Model;
 
 interface ICartItem
 {
-    /**
-     * Undocumented function
-     *
-     * @return float
-     */
-    public function price($currency);
 
     /**
      * Undocumented function
@@ -21,6 +15,20 @@ interface ICartItem
      * @return bool
      */
     public function isFree();
+
+    /**
+     * Undocumented function
+     *
+     * @return bool
+     */
+    public function isPriceZero();
+
+    /**
+     * Undocumented function
+     *
+     * @return float
+     */
+    public function price($currency);
 
     /**
      * Undocumented function

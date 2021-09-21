@@ -3,14 +3,11 @@
 return [
     'banking' => [
         'messages' => [
-            'bank-forwared' => 'درخواست خرید سبد با شماره :cart_id',
-            'wallet-descriptions' => [
+            'bank_forwared' => 'درخواست خرید سبد با شماره :cart_id',
+            'wallet_descriptions' => [
                 'cart_increased' => 'افزایش موجودی برای سبد خرید :cart_id',
                 'cart_purchased' => 'خرید محصولات در سبد خرید :cart_id',
-                'introducer_gift_wallet_desc' => 'هدیه ثبت نام با کد معرف :introducer_id',
-                'introducer_gift_purchase_wallet_desc' => 'هدیه ثبت نام و خرید با کد معرف شما',
-                'register_gift_wallet_desc' => 'هدیه ثبت نام',
-                'profile_gift_wallet_desc' => 'هدیه تکمیل پروفایل',
+                'cart_purchased_product' => 'خرید مخصول :product در سبد :cart_id',
             ]
         ],
     ],
@@ -25,6 +22,10 @@ return [
     'products' => [
         'courses' => [
             'send_form_title' => 'ارسال تکلیف کلاس با شناسه :session_id'
-        ]
+        ],
+        'review' => [
+            'success' => 'نظر شما ارسال شد',
+            'success_preview' => 'نظر شما ارسال شد و پس از تایید در سایت نمایش داده خواهد شد',
+        ],
     ]
 ];

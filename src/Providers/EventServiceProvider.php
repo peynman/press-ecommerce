@@ -13,13 +13,20 @@ class EventServiceProvider extends ServiceProvider
      * @var array
      */
     protected $listen = [
-        'Larapress\ECommerce\Services\Banking\Events\BankGatewayTransactionEvent' => [
-            'Larapress\ECommerce\Services\Banking\Reports\BankGatewayTransactionReport',
+        // bank gateway transactions reports
+        'Larapress\ECommerce\Services\Banking\BankGatewayTransactionEvent' => [
+            'Larapress\ECommerce\Services\Banking\BankGatewayTransactionReport',
         ],
-        'Larapress\ECommerce\Services\Banking\Events\CartPurchasedEvent' => [
-            // send general reports
-            'Larapress\ECommerce\Services\Banking\Reports\CartPurchasedReport',
+
+        // cart and product reports
+        'Larapress\ECommerce\Services\Cart\CartPurchasedEvent' => [
+            // send cart reports
+            'Larapress\ECommerce\Services\Cart\CartPurchasedReport',
+            // send product reports
+            'Larapress\ECommerce\Services\Product\Reports\ProductPurchasedCountReport',
+            'Larapress\ECommerce\Services\Product\Reports\ProductPurchasedSalesReport',
         ],
+
         'Larapress\ECommerce\Services\Banking\Events\WalletTransactionEvent' => [
             'Larapress\ECommerce\Services\Banking\Reports\WalletTransactionReport'
         ],

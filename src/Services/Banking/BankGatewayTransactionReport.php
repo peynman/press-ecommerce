@@ -3,61 +3,119 @@
 namespace Larapress\ECommerce\Services\Banking;
 
 use Larapress\CRUD\Services\CRUD\ICRUDReportSource;
-use Larapress\Reports\Services\BaseReportSource;
-use Larapress\Reports\Services\IReportsService;
+use Larapress\Reports\Services\Reports\ReportSourceTrait;
+use Larapress\Reports\Services\Reports\IMetricsService;
+use Larapress\Reports\Services\Reports\IReportsService;
+use Larapress\Reports\Services\Reports\MetricsSourceProperties;
+use Larapress\Reports\Services\Reports\ReportSourceProperties;
 
 class BankGatewayTransactionReport implements ICRUDReportSource
 {
-    use BaseReportSource;
+    use ReportSourceTrait;
 
     /** @var IReportsService */
     private $reports;
 
+    /** @var IMetricsService */
+    private $metrics;
+
     /** @var array */
     private $avReports;
 
-    public function __construct(IReportsService $reports)
+    // start dot groups from 1 position_1.position_2.position_3...
+    private $metricsDotGroups = [
+        // has filter status in dot group position 1
+        'gateway' => 2,
+        'status' => 4,
+    ];
+
+    public function __construct()
     {
-        $this->reports = $reports;
+        /** @var IReportsService */
+        $this->reports = app(IReportsService::class);
+        /** @var IMetricsService */
+        $this->metrics = app(IMetricsService::class);
+
         $this->avReports = [
-            'bank.gateway.total' => function ($user, array $options = []) {
-                [$filters, $fromC, $toC, $groups] = $this->getCommonReportProps($user, $options);
+            'reports.total' => function ($user, array $options = []) {
+                $props = ReportSourceProperties::fromReportSourceOptions($user, $options);
                 return $this->reports->queryMeasurement(
                     'bank.gateway',
-                    $filters,
-                    $groups,
-                    array_merge(["_value"], $groups),
-                    $fromC,
-                    $toC,
+                    $props->filters,
+                    $props->groups,
+                    array_merge(["_value"], $props->groups),
+                    $props->from,
+                    $props->to,
                     'sum()'
                 );
             },
-            'bank.gateway.windowed' => function ($user, array $options = []) {
-                [$filters, $fromC, $toC, $groups] = $this->getCommonReportProps($user, $options);
-                $window = isset($options['window']) ? $options['window'] : '1h';
+            'reports.windowed' => function ($user, array $options = []) {
+                $props = ReportSourceProperties::fromReportSourceOptions($user, $options);
                 return $this->reports->queryMeasurement(
                     'bank.gateway',
-                    $filters,
-                    $groups,
-                    array_merge(["_value", "_time"], $groups),
-                    $fromC,
-                    $toC,
-                    'aggregateWindow(every: '.$window.', fn: sum)'
+                    $props->filters,
+                    $props->groups,
+                    array_merge(["_value", "_time"], $props->groups),
+                    $props->from,
+                    $props->to,
+                    'aggregateWindow(every: '.$props->widnow.', fn: sum)'
                 );
-            }
+            },
+            'metrics.total' => function ($user, array $options = []) {
+                $props = MetricsSourceProperties::fromReportSourceOptions($user, $options, $this->metricsDotGroups);
+                return $this->metrics->queryMeasurement(
+                    '^transaction\.[0-9]*$',
+                    'bank_transaction',
+                    null,
+                    $props->filters,
+                    $props->groups,
+                    $props->domains,
+                    $props->from,
+                    $props->to
+                );
+            },
+            'metrics.windowed' => function ($user, array $options = []) {
+                $props = MetricsSourceProperties::fromReportSourceOptions($user, $options, $this->metricsDotGroups);
+                return $this->metrics->aggregateMeasurement(
+                    '^transaction\.[0-9]*$',
+                    'bank_transaction',
+                    null,
+                    $props->filters,
+                    $props->groups,
+                    $props->domains,
+                    $props->from,
+                    $props->to,
+                    $props->window,
+                );
+            },
         ];
     }
 
     public function handle(BankGatewayTransactionEvent $event)
     {
         $transaction = $event->getGatewayTransaction();
-        $tags = [
-            'domain' => $event->domainId,
-            'currency' => $transaction->currency,
-            'tr_id' => $transaction->id,
-            'gateway' => $transaction->bank_gateway_id,
-            'status' => $transaction->status,
-        ];
-        $this->reports->pushMeasurement('bank.gateway', intval($transaction->amount), $tags, [], $event->timestamp);
+
+        if (config('larapress.reports.reports.reports_service')) {
+            $tags = [
+                'domain' => $transaction->domain_id,
+                'currency' => $transaction->currency,
+                'tr_id' => $transaction->id,
+                'gateway' => $transaction->bank_gateway_id,
+            ];
+            $this->reports->pushMeasurement('bank.gateway', $transaction->amount, $tags, [
+                'status' => $transaction->status,
+            ], $event->timestamp);
+        }
+
+        if (config('larapress.reports.reports.metrics_table')) {
+            $this->metrics->pushMeasurement(
+                $transaction->domain_id,
+                'bank_transaction',
+                'bank_transaction:'.$transaction->id,
+                'bank_gateway.'.$transaction->bank_gateway_id.'transaction.'.$transaction->status,
+                $transaction->amount,
+                $event->timestamp,
+            );
+        }
     }
 }

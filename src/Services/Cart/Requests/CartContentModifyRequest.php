@@ -1,6 +1,6 @@
 <?php
 
-namespace Larapress\ECommerce\Services\Cart;
+namespace Larapress\ECommerce\Services\Cart\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Larapress\ECommerce\Models\Product;
@@ -31,9 +31,10 @@ class CartContentModifyRequest extends FormRequest
     public function rules()
     {
         return [
-            'product_id' => 'required|exists:products,id',
-            'currency' => 'required|numeric',
+            'productId' => 'required|exists:products,id',
+            'currency' => 'nullable|numeric',
             'quantity' => 'nullable|numeric',
+            'data' => 'nullable|json_object',
         ];
     }
 
@@ -46,7 +47,7 @@ class CartContentModifyRequest extends FormRequest
     public function getProduct()
     {
         if (is_null($this->product)) {
-            $this->product = Product::find($this->get('product_id'));
+            $this->product = Product::find($this->get('productId'));
         }
 
         return $this->product;
@@ -59,7 +60,7 @@ class CartContentModifyRequest extends FormRequest
      */
     public function getCurrency()
     {
-        return $this->get('currency');
+        return $this->get('currency', config('larapress.ecommerce.banking.currency.id'));
     }
 
     /**
@@ -70,5 +71,14 @@ class CartContentModifyRequest extends FormRequest
     public function getQuantity()
     {
         return $this->get('quantity', 1);
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return array
+     */
+    public function getExtraData() {
+        return $this->get('data', []);
     }
 }

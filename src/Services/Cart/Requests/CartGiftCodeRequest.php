@@ -1,6 +1,6 @@
 <?php
 
-namespace Larapress\ECommerce\Services\Cart;
+namespace Larapress\ECommerce\Services\Cart\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 

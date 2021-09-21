@@ -3,9 +3,9 @@
 namespace Larapress\ECommerce\Services\Cart;
 
 use Carbon\Carbon;
-use Larapress\ECommerce\Models\Cart;
 use Larapress\ECommerce\Models\Product;
-use Larapress\ECommerce\Services\Cart\CartGiftDetails;
+use Larapress\ECommerce\Services\Cart\Base\CartGiftDetails;
+use Larapress\ECommerce\Services\Cart\Base\CartCustomInstallmentPeriod;
 
 interface ICart {
     const CustomAccessStatusPaid = 1;
@@ -28,6 +28,20 @@ interface ICart {
     /**
      * Undocumented function
      *
+     * @return int
+     */
+    public function hasPeriodicProducts();
+
+    /**
+     * Undocumented function
+     *
+     * @return boolean
+     */
+    public function isPeriodicPaymentCart();
+
+    /**
+     * Undocumented function
+     *
      * @param callable $callback
      * @return array
      */
@@ -43,9 +57,16 @@ interface ICart {
     /**
      * Undocumented function
      *
-     * @return array
+     * @return CartCustomInstallmentPeriod[]
      */
     public function getCustomPeriodsOrdered();
+
+    /**
+     * Undocumented function
+     *
+     * @return ICart
+     */
+    public function getPeriodicPaymentOriginalCart();
 
     /**
      * Undocumented function
@@ -88,6 +109,27 @@ interface ICart {
     /**
      * Undocumented function
      *
+     * @return boolean
+     */
+    public function isSingleInstallmentCart();
+
+    /**
+     * Undocumented function
+     *
+     * @return ICart[]
+     */
+    public function getSingleInstallmentOriginalCarts();
+
+    /**
+     * Undocumented function
+     *
+     * @return void
+     */
+    public function setSingleInstallmentCarts(array $carts);
+
+    /**
+     * Undocumented function
+     *
      * @return Carbon
      */
     public function getPeriodStart();
@@ -112,8 +154,7 @@ interface ICart {
      * @param [type] $ids
      * @return void
      */
-    public function setPeriodicProductIds($ids);
-
+    public function setPeriodicProductIds(array $ids);
 
     /**
      * Undocumented function
@@ -139,7 +180,6 @@ interface ICart {
      */
     public function setUseBalance(bool $useBalance);
 
-
     /**
      * Undocumented function
      *
@@ -155,4 +195,13 @@ interface ICart {
      * @return void
      */
     public function setGiftCodeUsage(CartGiftDetails $details);
+
+    /**
+     * Undocumented function
+     *
+     * @param CartCustomInstallmentPeriod[] $customInstallments
+     *
+     * @return void
+     */
+    public function setCustomPeriodInstallments($customInstallments);
 }

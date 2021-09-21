@@ -2,7 +2,7 @@
 
 namespace Larapress\ECommerce\Services\Wallet;
 
-use Illuminate\Support\Facades\Cache;
+use Carbon\Carbon;
 use Larapress\CRUD\Extend\Helpers;
 use Larapress\ECommerce\IECommerceUser;
 use Larapress\ECommerce\Models\WalletTransaction;
@@ -19,11 +19,12 @@ class WalletService implements IWalletService
      * @param integer $type
      * @param integer $flags
      * @param string $desc
+     * @param array $data
+     *
      * @return WalletTransaction
      */
-    public function addBalanceForUser(IECommerceUser $user, float $amount, int $currency, int $type, int $flags, string $desc)
+    public function addBalanceForUser(IECommerceUser $user, float $amount, int $currency, int $type, int $flags, string $desc, array $data)
     {
-        $supportProfileId = isset($user->supportProfile['id']) ? $user->supportProfile['id'] : null;
         $wallet = WalletTransaction::create([
             'user_id' => $user->id,
             'domain_id' => $user->getMembershipDomainId(),
@@ -31,15 +32,14 @@ class WalletService implements IWalletService
             'currency' => $currency,
             'type' => $type,
             'flags' => $flags,
-            'data' => [
+            'data' => array_merge([
                 'description' => $desc,
                 'balance' => $this->getUserBalance($user, $currency),
-                'support' => $supportProfileId,
-            ]
+            ], $data)
         ]);
 
         $this->resetBalanceCache($user->id);
-        WalletTransactionEvent::dispatch($wallet, time());
+        WalletTransactionEvent::dispatch($wallet, Carbon::now());
 
         return $wallet;
     }
@@ -49,22 +49,23 @@ class WalletService implements IWalletService
      *
      * @param IECommerceUser $user
      * @param integer $currency
-     * @return void
+     * @return float
      */
     public function getUserBalance(IECommerceUser $user, int $currency)
     {
-        return Helpers::getCachedValue(
+        return floatval(Helpers::getCachedValue(
             'larapress.ecommerce.user.' . $user->id . '.user-balance',
+            ['user.wallet:' . $user->id],
+            3600,
+            true,
             function () use ($user, $currency) {
                 return WalletTransaction::query()
                     ->where('user_id', $user->id)
                     ->where('currency', $currency)
                     ->where('type', '!=', WalletTransaction::TYPE_UNVERIFIED)
                     ->sum('amount');
-            },
-            ['user.wallet:' . $user->id],
-            null
-        );
+            }
+        ));
     }
 
     /**
@@ -76,18 +77,19 @@ class WalletService implements IWalletService
      */
     public function getUserVirtualBalance(IECommerceUser $user, int $currency)
     {
-        return Helpers::getCachedValue(
+        return floatval(Helpers::getCachedValue(
             'larapress.ecommerce.user.' . $user->id . '.virtual-balance',
+            ['user.wallet:' . $user->id],
+            3600,
+            true,
             function () use ($user, $currency) {
                 return WalletTransaction::query()
                     ->where('user_id', $user->id)
                     ->where('currency', $currency)
                     ->where('type', WalletTransaction::TYPE_VIRTUAL_MONEY)
                     ->sum('amount');
-            },
-            ['user.wallet:' . $user->id],
-            null
-        );
+            }
+        ));
     }
 
 
@@ -100,18 +102,19 @@ class WalletService implements IWalletService
      */
     public function getUserTotalAquiredGiftBalance(IECommerceUser $user, int $currency)
     {
-        return Helpers::getCachedValue(
+        return floatval(Helpers::getCachedValue(
             'larapress.ecommerce.user.' . $user->id . '.gift-balance',
+            ['user.wallet:' . $user->id],
+            3600,
+            true,
             function () use ($user, $currency) {
                 return WalletTransaction::query()
                     ->where('user_id', $user->id)
                     ->where('currency', $currency)
                     ->where('flags', '&', WalletTransaction::FLAGS_REGISTRATION_GIFT)
                     ->sum('amount');
-            },
-            ['user.wallet:' . $user->id],
-            null
-        );
+            }
+        ));
     }
 
 
@@ -119,8 +122,8 @@ class WalletService implements IWalletService
      * @param int $userId
      * @return void
      */
-    protected function resetBalanceCache($userId)
+    public function resetBalanceCache($userId)
     {
-        Cache::tags(['user.wallet:' . $userId])->flush();
+        Helpers::forgetCachedValues(['user.wallet:' . $userId]);
     }
 }

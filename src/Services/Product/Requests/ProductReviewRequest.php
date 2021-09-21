@@ -1,15 +1,13 @@
 <?php
 
-namespace Larapress\ECommerce\Services\Product;
+namespace Larapress\ECommerce\Services\Product\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Larapress\ECommerce\Models\Product;
 
 /**
- * @bodyParam duplicate int Clone target product how many times? Example: 3
- * @bodyParam product_id int required The target prouct id to clone. Example: 1
  */
-class ProductCloneRequest extends FormRequest
+class ProductReviewRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -30,8 +28,11 @@ class ProductCloneRequest extends FormRequest
     public function rules()
     {
         return [
-            'duplicate' => 'nullable|numeric',
             'product_id' => 'required|numeric|exists:products,id',
+            'stars' => 'nullable|numeric',
+            'review' => 'nullable|string',
+            'reaction' => 'nullable|string',
+            'data' => 'nullable|json_object',
         ];
     }
 
@@ -58,10 +59,39 @@ class ProductCloneRequest extends FormRequest
     /**
      * Undocumented function
      *
-     * @return int
+     * @return string|null
      */
-    public function getCloneCount()
+    public function getReviewMessage()
     {
-        return $this->get('duplicate', 1);
+        return $this->get('review');
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return int|null
+     */
+    public function getReviewStars()
+    {
+        return $this->get('stars');
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return string|null
+     */
+    public function getReviewReaction()
+    {
+        return $this->get('reaction');
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return array
+     */
+    public function getReviewData() {
+        return $this->get('data', []);
     }
 }

@@ -2,71 +2,43 @@
 
 namespace Larapress\ECommerce\CRUD;
 
-use Illuminate\Database\Query\Builder;
-use Illuminate\Http\Request;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
-use Larapress\CRUD\Services\CRUD\BaseCRUDProvider;
+use Larapress\CRUD\Services\CRUD\Traits\CRUDProviderTrait;
 use Larapress\CRUD\Services\CRUD\ICRUDProvider;
-use Larapress\CRUD\Services\RBAC\IPermissionsMetadata;
-use Larapress\CRUD\ICRUDUser;
-use Larapress\ECommerce\Models\BankGatewayTransaction;
-use Larapress\ECommerce\Services\Banking\Reports\BankGatewayTransactionReport;
+use Larapress\CRUD\Services\CRUD\ICRUDVerb;
+use Larapress\ECommerce\Services\Banking\BankGatewayTransactionReport;
 use Larapress\Profiles\IProfileUser;
 use Larapress\Profiles\Models\Domain;
-use Larapress\Reports\Services\IReportsService;
 
-class BankGatewayTransactionCRUDProvider implements ICRUDProvider, IPermissionsMetadata
+class BankGatewayTransactionCRUDProvider implements ICRUDProvider
 {
-    use BaseCRUDProvider;
+    use CRUDProviderTrait;
 
     public $name_in_config = 'larapress.ecommerce.routes.bank_gateway_transactions.name';
+    public $model_in_config = 'larapress.ecommerce.routes.bank_gateway_transactions.model';
+    public $compositions_in_config = 'larapress.ecommerce.routes.bank_gateway_transactions.compositions';
+
     public $verbs = [
-        self::VIEW,
-        self::CREATE,
-        self::EDIT,
-        self::DELETE,
-        self::REPORTS,
-    ];
-    public $model = BankGatewayTransaction::class;
-    public $createValidations = [
-        'bank_gateway_id' => 'required|numeric|exists:bank_gateways,id',
-        'domain_id' => 'required|numeric|exists:domains,id',
-        'customer_id' => 'required|numeric|exists:users,id',
-        'amount' => 'required|numeric',
-        'currency' => 'required|numeric|exists:filters,id',
-        'tracking_code' => 'nullable|string',
-        'reference_code' => 'nullable|string',
-        'status' => 'required|numeric',
-        'flags' => 'nullable|numeric',
-        'data' => 'nullable|json',
-    ];
-    public $updateValidations = [
-        'bank_gateway_id' => 'required|numeric|exists:bank_gateways,id',
-        'domain_id' => 'required|numeric|exists:domains,id',
-        'customer_id' => 'required|numeric|exists:users,id',
-        'amount' => 'required|numeric',
-        'currency' => 'required|numeric|exists:filters,id',
-        'tracking_code' => 'nullable|string',
-        'reference_code' => 'nullable|string',
-        'status' => 'required|numeric',
-        'flags' => 'nullable|numeric',
-        'data' => 'nullable|json',
+        ICRUDVerb::VIEW,
+        ICRUDVerb::DELETE,
+        ICRUDVerb::REPORTS,
     ];
     public $searchColumns = [
-        'has:customer.phones,number',
+        'has:customer.phones.number',
+        'tracking_code',
+        'reference_code',
     ];
     public $validSortColumns = [
         'id',
-        'name',
+        'flags',
+        'status',
+        'domain_id',
+        'user_id',
+        'cart_id',
         'created_at',
         'updated_at',
-        'flags',
-    ];
-    public $validRelations = [
-        'customer',
-        'domain',
-        'cart',
-        'bank_gateway'
+        'deleted_at',
     ];
     public $defaultShowRelations = [
         'customer',
@@ -81,45 +53,44 @@ class BankGatewayTransactionCRUDProvider implements ICRUDProvider, IPermissionsM
         'status' => 'equals:status',
     ];
 
-
     /**
-     * Exclude current id in name unique request
+     * Undocumented function
      *
-     * @param Request $request
-     * @return void
+     * @return array
      */
-    public function getUpdateRules(Request $request)
+    public function getValidRelations(): array
     {
-        $this->updateValidations['name'] .= ',' . $request->route('id');
-        return $this->updateValidations;
+        return [
+            'customer' => config('larapress.crud.user.provider'),
+            'domain' => config('larapress.profiles.routes.domains.provider'),
+            'cart' => config('larapress.ecommerce.routes.carts.provider'),
+            'bank_gateway' => config('larapress.ecommerce.routes.bank_gateways.provider'),
+        ];
     }
 
     /**
+     * Undocumented function
      *
+     * @return array
      */
-    public function getReportSources()
+    public function getReportSources(): array
     {
-        /** @var IReportsService */
-        $service = app(IReportsService::class);
         return [
-            new BankGatewayTransactionReport($service)
+            new BankGatewayTransactionReport()
         ];
     }
 
     /**
      * @param Builder $query
      *
-     * @return \Illuminate\Database\Query\Builder
+     * @return Builder
      */
-    public function onBeforeQuery($query)
+    public function onBeforeQuery(Builder $query): Builder
     {
-        /** @var IProfileUser|ICRUDUser $user */
+        /** @var IProfileUser $user */
         $user = Auth::user();
-        if (! $user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
-            $query->orWhereIn('domain_id', $user->getAffiliateDomainIds());
-            $query->orWhereHas('customer.form_entries', function ($q) use ($user) {
-                $q->where('tags', 'support-group-'.$user->id);
-            });
+        if (! $user->hasRole(config('larapress.profiles.security.roles.super_role'))) {
+            $query->whereIn('domain_id', $user->getAffiliateDomainIds());
         }
 
         return $query;
@@ -130,11 +101,11 @@ class BankGatewayTransactionCRUDProvider implements ICRUDProvider, IPermissionsM
      *
      * @return bool
      */
-    public function onBeforeAccess($object)
+    public function onBeforeAccess($object): bool
     {
-        /** @var ICRUDUser|IProfileUser $user */
+        /** @var IProfileUser $user */
         $user = Auth::user();
-        if (! $user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
+        if (! $user->hasRole(config('larapress.profiles.security.roles.super_role'))) {
             return in_array($object->id, $user->getAffiliateDomainIds());
         }
 

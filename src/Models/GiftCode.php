@@ -6,14 +6,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Larapress\Profiles\IProfileUser;
-use Larapress\Profiles\Models\Domain;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Larapress\ECommerce\Factories\GiftCodeFactory;
 
 /**
  * @property int            $id
  * @property int            $author_id
- * @property int            $status
  * @property int            $flags
  * @property float          $amount
  * @property int            $currency
@@ -28,8 +26,7 @@ class GiftCode extends Model
 {
     use HasFactory;
 
-    const STATUS_AVAILABLE = 1;
-    const STATUS_EXPIRED = 2;
+    const FLAGS_EXPIRED = 2;
 
     use SoftDeletes;
 
@@ -40,7 +37,6 @@ class GiftCode extends Model
         'code',
         'amount',
         'currency',
-        'status',
         'flags',
         'data',
     ];
@@ -64,7 +60,7 @@ class GiftCode extends Model
      */
     public function author()
     {
-        return $this->belongsTo(config('larapress.crud.user.class'), 'author_id');
+        return $this->belongsTo(config('larapress.crud.user.model'), 'author_id');
     }
 
 
@@ -76,25 +72,5 @@ class GiftCode extends Model
     public function use_list()
     {
         return $this->hasMany(GiftCodeUse::class, 'code_id');
-    }
-
-    /**
-     * Undocumented function
-     *
-     * @return boolean
-     */
-    public function isPercentGift()
-    {
-        return $this->data['type'] === 'percent';
-    }
-
-    /**
-     * Undocumented function
-     *
-     * @return boolean
-     */
-    public function isFixedGift()
-    {
-        return $this->data['type'] === 'fixed';
     }
 }

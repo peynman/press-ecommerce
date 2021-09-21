@@ -1,30 +1,25 @@
 <?php
 
-namespace Larapress\ECommerce\Services\Product;
+namespace Larapress\ECommerce\Services\Product\Relations;
 
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Larapress\ECommerce\Models\WalletTransaction;
 use Larapress\Reports\Models\MetricCounter;
 use Larapress\ECommerce\IECommerceUser;
-use Larapress\Profiles\Models\FormEntry;
 
-class ProductSalesAmountRelationship extends Relation
+class ProductSalesCountRelation extends Relation
 {
 
     protected $filterType = null;
     protected $isReadyToLoad = false;
-    protected $extraSuffix = "";
     protected $groupBy = [];
-    public function __construct(Model $parent, $filterType = null, $extraSuffix = "", $groupBy = ['metrics_counters.domain_id', 'metrics_counters.key'])
+
+    public function __construct(Model $parent, string $filterType, $groupBy = ['metrics_counters.domain_id', 'metrics_counters.key'])
     {
         parent::__construct(MetricCounter::query(), $parent);
         $this->filterType = $filterType;
-        $this->extraSuffix = $extraSuffix;
         $this->groupBy = $groupBy;
     }
 
@@ -46,22 +41,22 @@ class ProductSalesAmountRelationship extends Relation
      */
     public function addEagerConstraints(array $models)
     {
-        $this->query->selectRaw(implode(",", array_merge(['sum(metrics_counters.value) as total_amount'], $this->groupBy)));
+        $this->query->selectRaw(implode(",", array_merge(['sum(metrics_counters.value) as total_count'], $this->groupBy)));
 
-        $suffix = ".amount";
+        $suffix = $this->filterType;
         $domains = null;
         /** @var IECommerceUser */
         $user = Auth::user();
 
-        if (isset($models[0]['id'])) {
+        if (isset($models[0]) && is_object($models[0])) {
             $models = collect($models)->pluck('id');
         } else {
             $models = collect($models);
         }
 
-        if (!$user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
+        if (!$user->hasRole(config('larapress.profiles.security.roles.super_role'))) {
             if ($user->hasRole(config('larapress.lcms.support_role_id'))) {
-                $suffix = $suffix . ".$user->id";
+                $suffix = $suffix . "\.$user->id";
             } elseif ($user->hasRole(config('larapress.lcms.owner_role_id'))) {
                 $ownerEntries = $user->getOwenedProductsIds();
                 $models = $models->filter(function ($model) use ($ownerEntries) {
@@ -72,17 +67,15 @@ class ProductSalesAmountRelationship extends Relation
             }
         }
 
-
         $ids = $models->join("|");
 
-        $fullSuffix = str_replace(".", "\.", $this->extraSuffix . $suffix);
-        $this->query->where('metrics_counters.key', 'RLIKE', "^product\.($ids)\.sales\.".(is_null($this->filterType) ? "(1|2)": $this->filterType)."$fullSuffix$");
+        $this->query->where('metrics_counters.key', 'RLIKE', "^product\.($ids)\.$suffix$");
 
         if (!is_null($domains)) {
             $this->query->whereIn('domain_id', $domains);
         }
 
-        if (count($this->groupBy) > 0) {
+        if (count($this->groupBy)) {
             $this->query->groupBy($this->groupBy);
         }
 
@@ -124,22 +117,18 @@ class ProductSalesAmountRelationship extends Relation
             return $models;
         }
 
-        $suffix = ".amount";
+        $suffix = $this->filterType;
         /** @var IECommerceUser */
         $user = Auth::user();
 
-        if (!$user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
+        if (!$user->hasRole(config('larapress.profiles.security.roles.super_role'))) {
             if ($user->hasRole(config('larapress.lcms.support_role_id'))) {
                 $suffix = $suffix . ".$user->id";
             }
         }
-
         foreach ($models as $model) {
             $resultset = array_values($results->filter(function (Model $contract) use ($model, $suffix) {
-                return in_array($contract->key, [
-                    "product.$model->id.sales." . WalletTransaction::TYPE_REAL_MONEY. $this->extraSuffix . $suffix,
-                    "product.$model->id.sales." . WalletTransaction::TYPE_VIRTUAL_MONEY . $this->extraSuffix . $suffix,
-                ]);
+                return $contract->key === "product.$model->id.$suffix";
             })->toArray());
             $model->setRelation(
                 $relation,

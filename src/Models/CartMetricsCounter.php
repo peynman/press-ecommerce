@@ -2,7 +2,7 @@
 
 namespace Larapress\ECommerce\Models;
 
-use Larapress\ECommerce\Services\Product\MetricCounterGroupCartRelationship;
+use Larapress\ECommerce\Services\Product\Relations\MetricCounterGroupCartRelation;
 use Larapress\Reports\Models\MetricCounter;
 
 class CartMetricsCounter extends MetricCounter
@@ -14,7 +14,7 @@ class CartMetricsCounter extends MetricCounter
      */
     public function group_cart()
     {
-        return new MetricCounterGroupCartRelationship(
+        return new MetricCounterGroupCartRelation(
             $this
         );
     }

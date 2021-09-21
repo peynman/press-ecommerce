@@ -3,9 +3,8 @@
 namespace Larapress\ECommerce\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Route;
-use Larapress\CRUD\Services\CRUD\BaseCRUDController;
-use Larapress\ECommerce\CRUD\BankGatewayCRUDProvider;
 use Larapress\ECommerce\Models\BankGatewayTransaction;
 use Larapress\ECommerce\Models\Cart;
 use Larapress\ECommerce\Services\Banking\IBankingService;
@@ -15,17 +14,8 @@ use Larapress\ECommerce\Services\Banking\IBankingService;
  *
  * @group Bank Gateway Management
  */
-class BankGatewayController extends BaseCRUDController
+class BankGatewayController extends Controller
 {
-    public static function registerRoutes()
-    {
-        parent::registerCrudRoutes(
-            config('larapress.ecommerce.routes.bank_gateways.name'),
-            self::class,
-            BankGatewayCRUDProvider::class
-        );
-    }
-
     public static function registerPublicWebRoutes()
     {
         Route::any(config('larapress.ecommerce.routes.bank_gateways.name') . '/{gateway_id}/redirect/increase/{amount}/currency/{currency}', '\\' . self::class . '@redirectToBankForIncreaseAmount')
@@ -54,23 +44,25 @@ class BankGatewayController extends BaseCRUDController
             $currency,
             // failed to redirect
             function ($request, Cart $cart, $e = null) {
-                return response()->redirectTo(isset($cart->data['return_to']) ? $cart->data['return_to']:config('larapress.ecommerce.banking.redirect.failed'))
-                ->with([
-                    'answer' => [
-                        'message' => trans('larapress::ecommerce.messaging.purchase_failed'),
-                        'type' => 'error',
-                    ]
-                ]);
+                return response()
+                    ->redirectTo(isset($cart->data['return_to']) ? $cart->data['return_to'] : config('larapress.ecommerce.banking.redirect.failed'))
+                    ->with([
+                        'answer' => [
+                            'message' => trans('larapress::ecommerce.messaging.purchase_failed'),
+                            'type' => 'error',
+                        ]
+                    ]);
             },
             // already purchased cart
             function ($request, Cart $cart) {
-                return response()->redirectTo(isset($cart->data['return_to']) ? $cart->data['return_to']:config('larapress.ecommerce.banking.redirect.already'))
-                ->with([
-                    'answer' => [
-                        'message' => trans('larapress::ecommerce.messaging.purchase_success'),
-                        'type' => 'success',
-                    ]
-                ]);
+                return response()
+                    ->redirectTo(isset($cart->data['return_to']) ? $cart->data['return_to'] : config('larapress.ecommerce.banking.redirect.already'))
+                    ->with([
+                        'answer' => [
+                            'message' => trans('larapress::ecommerce.messaging.purchase_success'),
+                            'type' => 'success',
+                        ]
+                    ]);
             },
         );
     }
@@ -91,22 +83,24 @@ class BankGatewayController extends BaseCRUDController
             $cart_id,
             $gateway_id,
             function ($request, Cart $cart, $e = null) {
-                return response()->redirectTo(isset($cart->data['return_to']) ? $cart->data['return_to']:config('larapress.ecommerce.banking.redirect.failed'))
-                ->with([
-                    'answer' => [
-                        'message' => trans('larapress::ecommerce.messaging.purchase_failed'),
-                        'type' => 'error',
-                    ]
-                ]);
+                return response()
+                    ->redirectTo(isset($cart->data['return_to']) ? $cart->data['return_to'] : config('larapress.ecommerce.banking.redirect.failed'))
+                    ->with([
+                        'answer' => [
+                            'message' => trans('larapress::ecommerce.messaging.purchase_failed'),
+                            'type' => 'error',
+                        ]
+                    ]);
             },
             function ($request, Cart $cart) {
-                return response()->redirectTo(isset($cart->data['return_to']) ? $cart->data['return_to']:config('larapress.ecommerce.banking.redirect.already'))
-                ->with([
-                    'answer' => [
-                        'message' => trans('larapress::ecommerce.messaging.purchase_success'),
-                        'type' => 'success',
-                    ]
-                ]);
+                return response()
+                    ->redirectTo(isset($cart->data['return_to']) ? $cart->data['return_to'] : config('larapress.ecommerce.banking.redirect.already'))
+                    ->with([
+                        'answer' => [
+                            'message' => trans('larapress::ecommerce.messaging.purchase_success'),
+                            'type' => 'success',
+                        ]
+                    ]);
             },
         );
     }
@@ -126,40 +120,44 @@ class BankGatewayController extends BaseCRUDController
             $request,
             $transaction_id,
             function ($request, Cart $cart, BankGatewayTransaction $transaction) {
-                return response()->redirectTo(isset($cart->data['return_to']) ? $cart->data['return_to']:config('larapress.ecommerce.banking.redirect.already'))
-                ->with([
-                    'answer' => [
-                        'message' => trans('larapress::ecommerce.messaging.purchase_success'),
-                        'type' => 'success',
-                    ]
-                ]);
+                return response()
+                    ->redirectTo(isset($cart->data['return_to']) ? $cart->data['return_to'] : config('larapress.ecommerce.banking.redirect.already'))
+                    ->with([
+                        'answer' => [
+                            'message' => trans('larapress::ecommerce.messaging.purchase_success'),
+                            'type' => 'success',
+                        ]
+                    ]);
             },
             function ($request, Cart $cart, BankGatewayTransaction $transaction) {
-                return response()->redirectTo(isset($cart->data['return_to']) ? $cart->data['return_to']:config('larapress.ecommerce.banking.redirect.success'))
-                ->with([
-                    'answer' => [
-                        'message' => trans('larapress::ecommerce.messaging.purchase_success'),
-                        'type' => 'success',
-                    ]
-                ]);
+                return response()
+                    ->redirectTo(isset($cart->data['return_to']) ? $cart->data['return_to'] : config('larapress.ecommerce.banking.redirect.success'))
+                    ->with([
+                        'answer' => [
+                            'message' => trans('larapress::ecommerce.messaging.purchase_success'),
+                            'type' => 'success',
+                        ]
+                    ]);
             },
             function ($request, Cart $cart, $e) {
-                return response()->redirectTo(isset($cart->data['return_to']) ? $cart->data['return_to']:config('larapress.ecommerce.banking.redirect.failed'))
-                ->with([
-                    'answer' => [
-                        'message' => trans('larapress::ecommerce.messaging.purchase_failed'),
-                        'type' => 'error',
-                    ]
-                ]);
+                return response()
+                    ->redirectTo(isset($cart->data['return_to']) ? $cart->data['return_to'] : config('larapress.ecommerce.banking.redirect.failed'))
+                    ->with([
+                        'answer' => [
+                            'message' => trans('larapress::ecommerce.messaging.purchase_failed'),
+                            'type' => 'error',
+                        ]
+                    ]);
             },
             function ($request, Cart $cart, $e) {
-                return response()->redirectTo(isset($cart->data['return_to']) ? $cart->data['return_to']:config('larapress.ecommerce.banking.redirect.failed'))
-                ->with([
-                    'answer' => [
-                        'message' => trans('larapress::ecommerce.messaging.purchase_canceled'),
-                        'type' => 'warning',
-                    ]
-                ]);
+                return response()
+                    ->redirectTo(isset($cart->data['return_to']) ? $cart->data['return_to'] : config('larapress.ecommerce.banking.redirect.canceled'))
+                    ->with([
+                        'answer' => [
+                            'message' => trans('larapress::ecommerce.messaging.purchase_canceled'),
+                            'type' => 'warning',
+                        ]
+                    ]);
             }
         );
     }

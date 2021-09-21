@@ -6,7 +6,8 @@ namespace Larapress\ECommerce\Services\Cart;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Larapress\ECommerce\IECommerceUser;
-use Larapress\ECommerce\Models\Cart;
+use Larapress\ECommerce\Services\Cart\Requests\CartContentModifyRequest;
+use Larapress\ECommerce\Services\Cart\Requests\CartUpdateRequest;
 
 interface IPurchasingCartService
 {
@@ -29,7 +30,7 @@ interface IPurchasingCartService
      * @param ICartItem $cartItem
      * @param int $currency
      *
-     * @return Cart
+     * @return ICart
      */
     public function addItemToPurchasingCart(CartContentModifyRequest $request, IECommerceUser $user, ICartItem $cartItem, int $currency);
 
@@ -42,7 +43,7 @@ interface IPurchasingCartService
      * @param ICartItem $cartItem
      * @param int $currency
      *
-     * @return Cart
+     * @return ICart
      */
     public function removeItemFromPurchasingCart(CartContentModifyRequest $request, IECommerceUser $user, ICartItem $cartItem, int $currency);
 
@@ -53,7 +54,15 @@ interface IPurchasingCartService
      * @param IECommerceUser $user
      * @param integer $currency
      *
-     * @return Cart
+     * @return ICart
      */
     public function getPurchasingCart(IECommerceUser $user, int $currency);
+
+    /**
+     * Undocumented function
+     *
+     * @param int $userId
+     * @return void
+     */
+    public function resetPurchasingCache($userId);
 }

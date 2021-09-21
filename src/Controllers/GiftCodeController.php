@@ -2,36 +2,16 @@
 
 namespace Larapress\ECommerce\Controllers;
 
-use Illuminate\Http\Request;
-use Larapress\CRUD\Services\CRUD\BaseCRUDController;
-use Larapress\ECommerce\CRUD\GiftCodeCRUDProvider;
-use Larapress\ECommerce\Services\GiftCodes\GiftCodeCloneRequest;
+use Larapress\CRUD\Services\CRUD\CRUDController;
 use Larapress\ECommerce\Services\GiftCodes\IGiftCodeService;
 use Illuminate\Http\Response;
+use Larapress\ECommerce\Services\GiftCodes\GiftCodeCloneRequest;
 
 /**
- * Standard CRUD Controller for Gift Code resource.
- *
  * @group Gift Code Management
  */
-class GiftCodeController extends BaseCRUDController
+class GiftCodeController extends CRUDController
 {
-    public static function registerRoutes()
-    {
-        parent::registerCrudRoutes(
-            config('larapress.ecommerce.routes.gift_codes.name'),
-            self::class,
-            GiftCodeCRUDProvider::class,
-            [
-                'create.clone' => [
-                    'methods' => ['POST'],
-                    'uses' => '\\'.self::class.'@cloneGiftCode',
-                    'url' => config('larapress.ecommerce.routes.gift_codes.name').'/clone',
-                ]
-            ]
-        );
-    }
-
     /**
      * Clone Gift Code
 

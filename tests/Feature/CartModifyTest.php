@@ -5,10 +5,9 @@ namespace Larapress\ECommerce\Tests\Feature;
 use Larapress\CRUD\Tests\CustomerTestApplication;
 use Larapress\ECommerce\Models\Product;
 use Larapress\ECommerce\IECommerceUser;
-use Larapress\ECommerce\Models\GiftCode;
 use Larapress\ECommerce\Models\ProductType;
 
-class CustomerCartTest extends CustomerTestApplication
+class CartModifyTest extends CustomerTestApplication
 {
     /** @var IECommerceUser|\Illuminate\Contracts\Auth\Authenticatable */
     protected $customer;
@@ -204,12 +203,10 @@ class CustomerCartTest extends CustomerTestApplication
         ])
             ->assertStatus(200)
             ->assertJson([
-                'cart' => [
-                    'amount' => $p1->price(config('larapress.ecommerce.banking.currency.id')) * 3 +
-                        $p2->pricePeriodic(config('larapress.ecommerce.banking.currency.id')) +
-                        $p3->pricePeriodic(config('larapress.ecommerce.banking.currency.id')) +
-                        $p4->pricePeriodic(config('larapress.ecommerce.banking.currency.id')),
-                ]
+                'amount' => $p1->price(config('larapress.ecommerce.banking.currency.id')) * 3 +
+                    $p2->pricePeriodic(config('larapress.ecommerce.banking.currency.id')) +
+                    $p3->pricePeriodic(config('larapress.ecommerce.banking.currency.id')) +
+                    $p4->pricePeriodic(config('larapress.ecommerce.banking.currency.id')),
             ]);
     }
 }

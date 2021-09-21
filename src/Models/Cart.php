@@ -40,6 +40,7 @@ class Cart extends Model implements ICart
     const FLAGS_ADMIN = 64;
     const FLAGS_PERIODIC_COMPLETED = 128;
     const FLGAS_FORWARDED_TO_BANK = 256;
+    const FLGAS_SINGLE_INSTALLMENT = 512;
 
     use SoftDeletes;
     use BaseCartTrait;
@@ -58,6 +59,7 @@ class Cart extends Model implements ICart
 
     public $casts = [
         'data' => 'array',
+        'amount' => 'float',
     ];
 
     /**
@@ -74,7 +76,7 @@ class Cart extends Model implements ICart
      */
     public function customer()
     {
-        return $this->belongsTo(config('larapress.crud.user.class'), 'customer_id');
+        return $this->belongsTo(config('larapress.crud.user.model'), 'customer_id');
     }
 
     /**
@@ -92,10 +94,16 @@ class Cart extends Model implements ICart
         )
             ->using(CartItem::class)
             ->withPivot([
-                'data'
+                'id',
+                'data',
             ]);
     }
 
+    /**
+     * Undocumented function
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
     public function cart_items()
     {
         return $this->hasMany(
@@ -113,15 +121,5 @@ class Cart extends Model implements ICart
     public function isPaid()
     {
         return $this->status === self::STATUS_ACCESS_GRANTED || $this->status === self::STATUS_ACCESS_COMPLETE;
-    }
-
-    /**
-     * Undocumented function
-     *
-     * @return array
-     */
-    public function getPeriodicProductIds()
-    {
-        return isset($this->data['periodic_product_ids']) ? $this->data['periodic_product_ids'] : [];
     }
 }

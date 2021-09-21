@@ -2,24 +2,28 @@
 
 namespace Larapress\ECommerce\CRUD;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
-use Larapress\CRUD\Services\CRUD\BaseCRUDProvider;
+use Larapress\CRUD\Services\CRUD\Traits\CRUDProviderTrait;
 use Larapress\CRUD\Services\CRUD\ICRUDProvider;
+use Larapress\CRUD\Services\CRUD\ICRUDVerb;
 use Larapress\CRUD\Services\RBAC\IPermissionsMetadata;
 use Larapress\ECommerce\Models\ProductReview;
 use Larapress\ECommerce\IECommerceUser;
 
-class ProductReviewCRUDProvider implements ICRUDProvider, IPermissionsMetadata
+class ProductReviewCRUDProvider implements ICRUDProvider
 {
-    use BaseCRUDProvider;
+    use CRUDProviderTrait;
 
     public $name_in_config = 'larapress.ecommerce.routes.product_reviews.name';
-    public $model = ProductReview::class;
+    public $model_in_config = 'larapress.ecommerce.routes.product_reviews.model';
+    public $compositions_in_config = 'larapress.ecommerce.routes.product_reviews.compositions';
+
     public $verbs = [
-        self::VIEW,
-        self::CREATE,
-        self::EDIT,
-        self::DELETE,
+        ICRUDVerb::VIEW,
+        ICRUDVerb::CREATE,
+        ICRUDVerb::EDIT,
+        ICRUDVerb::DELETE,
     ];
     public $createValidations = [
         'description' => 'required|string',
@@ -39,18 +43,32 @@ class ProductReviewCRUDProvider implements ICRUDProvider, IPermissionsMetadata
     public $validSortColumns = [
         'id',
         'author_id',
+        'flags',
         'created_at',
         'updated_at',
-        'flags',
-    ];
-    public $validRelations = [
-        'author',
-    ];
-    public $defaultShowRelations = [
-        'author',
+        'deleted_at',
     ];
 
-    public function onBeforeCreate($args)
+    /**
+     * Undocumented function
+     *
+     * @return array
+     */
+    public function getValidRelations(): array
+    {
+        return [
+            'author' => config('larapress.crud.user.provider'),
+        ];
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param array $args
+     *
+     * @return array
+     */
+    public function onBeforeCreate(array $args): array
     {
         $args['author_id'] = Auth::user()->id;
 
@@ -61,13 +79,18 @@ class ProductReviewCRUDProvider implements ICRUDProvider, IPermissionsMetadata
      * Undocumented function
      *
      * @param ProductReview $object
+     *
      * @return bool
      */
-    public function onBeforeAccess($object)
+    public function onBeforeAccess($object): bool
     {
         /** @var IECommerceUser $user */
         $user = Auth::user();
-        if (! $user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
+        if (! $user->hasRole(config('larapress.profiles.security.roles.super_role'))) {
+            if ($user->hasRole(config('larapress.ecommerce.product_owner_role_ids'))) {
+                return in_array($object->id, $user->getOwenedProductsIds());
+            }
+
             return $user->id === $object->author_id;
         }
 
@@ -77,14 +100,18 @@ class ProductReviewCRUDProvider implements ICRUDProvider, IPermissionsMetadata
     /**
      * @param Builder $query
      *
-     * @return \Illuminate\Database\Query\Builder
+     * @return Builder
      */
-    public function onBeforeQuery($query)
+    public function onBeforeQuery(Builder $query): Builder
     {
-        /** @var ICRUDUser $user */
+        /** @var IECommerceUser $user */
         $user = Auth::user();
-        if (!$user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
-            $query->where('author_id', $user->id);
+        if (!$user->hasRole(config('larapress.profiles.security.roles.super_role'))) {
+            if ($user->hasRole(config('larapress.ecommerce.product_owner_role_ids'))) {
+                $query->orWhereIn('id', $user->getOwenedProductsIds());
+            } else {
+                $query->orWhere('author_id', $user->id);
+            }
         }
 
         return $query;

@@ -13,23 +13,13 @@ trait BaseCartItemTrait
      */
     public function price($currency)
     {
-        if (!isset($this->data['pricing']) || count($this->data['pricing']) === 0) {
+        if (!isset($this->data['fixedPrice']['amount'])) {
             return 0;
         }
 
-        $currencyPricing = array_filter($this->data['pricing'], function($price) use($currency) {
-            return (isset($price['currency']) && $price['currency'] == $currency) || !isset($price['currency']);
-        });
-        usort($currencyPricing, function($a, $b) {
-            $pA = isset($a['priority']) ? $a['priority'] : 0;
-            $pB = isset($b['priority']) ? $b['priority'] : 0;
-            return $pA - $pB;
-        });
-
-        if (isset($currencyPricing[0]['currency']) && $currencyPricing[0]['currency'] == $currency)  {
-            return floatval($currencyPricing[0]['amount']);
+        if (is_numeric($this->data['fixedPrice']['amount'])) {
+            return floatval($this->data['fixedPrice']['amount']);
         }
-        // @todo: currency convert for future
 
         return 0;
     }
@@ -41,20 +31,12 @@ trait BaseCartItemTrait
      */
     public function pricePeriodic($currency)
     {
-        if (!isset($this->data['price_periodic']) || count($this->data['pricing']) === 0) {
+        if (!isset($this->data['periodicPrice']['amount'])) {
             return 0;
         }
 
-        $currencyPricing = array_filter($this->data['price_periodic'], function($price) use($currency) {
-            return (isset($price['currency']) && $price['currency'] == $currency) || !isset($price['currency']);
-        });
-        usort($currencyPricing, function($a, $b) {
-            $pA = isset($a['priority']) ? $a['priority'] : 0;
-            $pB = isset($b['priority']) ? $b['priority'] : 0;
-            return $pA - $pB;
-        });
-        if (isset($currencyPricing[0]['currency']) && $currencyPricing[0]['currency'] == $currency)  {
-            return floatval($currencyPricing[0]['amount']);
+        if (is_numeric($this->data['periodicPrice']['amount'])) {
+            return floatval($this->data['periodicPrice']['amount']);
         }
 
         return 0;
@@ -65,7 +47,8 @@ trait BaseCartItemTrait
      *
      * @return boolean
      */
-    public function isQuantized() {
+    public function isQuantized()
+    {
         return isset($this->data['quantized']) && $this->data['quantized'];
     }
 
@@ -74,8 +57,9 @@ trait BaseCartItemTrait
      *
      * @return boolean
      */
-    public function isPeriodicSaleOnly() {
-        return isset($this->data['sale_periodic_only']) && $this->data['sale_periodic_only'];
+    public function isPeriodicSaleOnly()
+    {
+        return isset($this->data['salePeriodicOnly']) && $this->data['salePeriodicOnly'];
     }
 
     /**
@@ -83,21 +67,30 @@ trait BaseCartItemTrait
      *
      * @return boolean
      */
-    public function isPeriodicSaleAvailable() {
-        return isset($this->data['price_periodic']) && count($this->data['pricing']) > 0 &&
-                ((isset($this->data['is_periodic_available']) && $this->data['is_periodic_available']) || !isset($this->data['is_periodic_available']));
+    public function isPeriodicSaleAvailable()
+    {
+        return isset($this->data['periodicPrice']['amount']) &&
+            is_numeric($this->data['periodicPrice']['amount']) &&
+            floatval($this->data['periodicPrice']['amount']) > 0;
     }
 
     /**
      * Undocumented function
      *
-     * @return float
+     * @return boolean
      */
     public function isFree()
     {
-        return
-            $this->price(config('larapress.ecommerce.banking.currency')) == 0 &&
-            isset($this->data['pricing']) && !is_null($this->data['pricing']) && count($this->data['pricing']) > 0;
+        return !isset($this->data['fixedPrice']['amount']) || is_null($this->data['fixedPrice']['amount']);
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return boolean
+     */
+    public function isPriceZero() {
+        return isset($this->data['fixedPrice']['amount']) && $this->data['fixedPrice']['amount'] === "0";
     }
 
     /**
@@ -125,8 +118,9 @@ trait BaseCartItemTrait
      *
      * @return int
      */
-    public function getMaxPurchaseCountPerUser() : int {
-        return isset($this->data['max_quantity']) ? Carbon::parse($this->data['max_quantity']) : 0;
+    public function getMaxPurchaseCountPerUser(): int
+    {
+        return isset($this->data['maxQuantity']) ? Carbon::parse($this->data['maxQuantity']) : 0;
     }
 
     /**
@@ -135,11 +129,12 @@ trait BaseCartItemTrait
      * @param integer $max
      * @return void
      */
-    public function setMaxPurchaseCountPerUser(int $max) {
+    public function setMaxPurchaseCountPerUser(int $max)
+    {
         if (!isset($this->data)) {
             $this->data = [];
         }
-        $this->data['max_quantity'] = $max;
+        $this->data['maxQuantity'] = $max;
     }
 
     /**
@@ -147,8 +142,9 @@ trait BaseCartItemTrait
      *
      * @return Carbon|null
      */
-    public function getPeriodicPurchaseEndDate() {
-        return isset($this->data['calucalte_periodic']['ends_at']) ? Carbon::parse($this->data['calucalte_periodic']['ends_at']) : null;
+    public function getPeriodicPurchaseEndDate()
+    {
+        return isset($this->data['periodicPrice']['endsAt']) ? Carbon::parse($this->data['periodicPrice']['endsAt']) : null;
     }
 
     /**
@@ -157,17 +153,18 @@ trait BaseCartItemTrait
      * @param Carbon|string $date
      * @return void
      */
-    public function setPeriodicPurchaseEndDate($date) {
-        if (! isset($this->data['calucalte_periodic'])) {
+    public function setPeriodicPurchaseEndDate($date)
+    {
+        if (!isset($this->data['periodicPrice'])) {
             if (!isset($this->data)) {
                 $this->data = [];
             }
-            $this->data['calucalte_periodic'] = [];
+            $this->data['periodicPrice'] = [];
         }
         if (is_string($date)) {
             $date = Carbon::parse($date);
         }
-        $this->data['calucalte_periodic']['ends_at'] = $date;
+        $this->data['periodicPrice']['endsAt'] = $date;
     }
 
     /**
@@ -175,8 +172,9 @@ trait BaseCartItemTrait
      *
      * @return integer
      */
-    public function getPeriodicPurchaseDuration() : int {
-        return isset($this->data['calucalte_periodic']['period_duration']) ? $this->data['calucalte_periodic']['period_duration'] : 0;
+    public function getPeriodicPurchaseDuration(): int
+    {
+        return isset($this->data['periodicPrice']['periodsDuration']) ? $this->data['periodicPrice']['periodsDuration'] : 0;
     }
 
     /**
@@ -185,14 +183,15 @@ trait BaseCartItemTrait
      * @param integer $days
      * @return void
      */
-    public function setPeriodicPurchaseDuration(int $days) {
-        if (! isset($this->data['calucalte_periodic'])) {
+    public function setPeriodicPurchaseDuration(int $days)
+    {
+        if (!isset($this->data['periodicPrice'])) {
             if (!isset($this->data)) {
                 $this->data = [];
             }
-            $this->data['calucalte_periodic'] = [];
+            $this->data['periodicPrice'] = [];
         }
-        $this->data['calucalte_periodic']['period_duration'] = $days;
+        $this->data['periodicPrice']['periodsDuration'] = $days;
     }
 
     /**
@@ -201,14 +200,15 @@ trait BaseCartItemTrait
      * @param float $amount
      * @return void
      */
-    public function setPeriodicPurchaseAmount(float $amount) {
-        if (! isset($this->data['calucalte_periodic'])) {
+    public function setPeriodicPurchaseAmount(float $amount)
+    {
+        if (!isset($this->data['periodicPrice'])) {
             if (!isset($this->data)) {
                 $this->data = [];
             }
-            $this->data['calucalte_periodic'] = [];
+            $this->data['periodicPrice'] = [];
         }
-        $this->data['calucalte_periodic']['period_amount'] = $amount;
+        $this->data['periodicPrice']['periodsAmount'] = $amount;
     }
 
     /**
@@ -216,8 +216,9 @@ trait BaseCartItemTrait
      *
      * @return float
      */
-    public function getPeriodicPurchaseAmount() : float {
-        return isset($this->data['calucalte_periodic']['period_amount']) ? $this->data['calucalte_periodic']['period_amount'] : 0;
+    public function getPeriodicPurchaseAmount(): float
+    {
+        return isset($this->data['periodicPrice']['periodsAmount']) ? $this->data['periodicPrice']['periodsAmount'] : 0;
     }
 
     /**
@@ -225,8 +226,9 @@ trait BaseCartItemTrait
      *
      * @return integer
      */
-    public function getPeriodicPurchaseCount() : int {
-        return isset($this->data['calucalte_periodic']['period_count']) ? $this->data['calucalte_periodic']['period_count'] : 0;
+    public function getPeriodicPurchaseCount(): int
+    {
+        return isset($this->data['periodicPrice']['periodCount']) ? $this->data['periodicPrice']['periodCount'] : 0;
     }
 
     /**
@@ -235,13 +237,14 @@ trait BaseCartItemTrait
      * @param integer $count
      * @return void
      */
-    public function setPeriodicPurchaseCount(int $count) {
-        if (! isset($this->data['calucalte_periodic'])) {
+    public function setPeriodicPurchaseCount(int $count)
+    {
+        if (!isset($this->data['periodicPrice'])) {
             if (!isset($this->data)) {
                 $this->data = [];
             }
-            $this->data['calucalte_periodic'] = [];
+            $this->data['periodicPrice'] = [];
         }
-        $this->data['calucalte_periodic']['period_count'] = $count;
+        $this->data['periodicPrice']['periodCount'] = $count;
     }
 }

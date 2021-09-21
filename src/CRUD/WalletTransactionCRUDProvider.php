@@ -3,107 +3,69 @@
 namespace Larapress\ECommerce\CRUD;
 
 use App\Models\User;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Cache;
-use Larapress\CRUD\Services\CRUD\BaseCRUDProvider;
+use Larapress\CRUD\Services\CRUD\Traits\CRUDProviderTrait;
 use Larapress\CRUD\Services\CRUD\ICRUDProvider;
-use Larapress\CRUD\Services\RBAC\IPermissionsMetadata;
 use Larapress\CRUD\Exceptions\AppException;
+use Larapress\CRUD\Services\CRUD\ICRUDService;
+use Larapress\CRUD\Services\CRUD\ICRUDVerb;
+use Larapress\ECommerce\Controllers\WalletTransactionController;
 use Larapress\ECommerce\Models\WalletTransaction;
-use Larapress\ECommerce\Services\Banking\Events\WalletTransactionEvent;
-use Larapress\Pages\Models\Page;
-use Larapress\Profiles\CRUD\UserCRUDProvider;
+use Larapress\ECommerce\Services\Wallet\WalletTransactionEvent;
+use Larapress\ECommerce\Services\Wallet\WalletTransactionReport;
+use Larapress\Profiles\IProfileUser;
+use Larapress\Reports\Models\MetricCounter;
 
-class WalletTransactionCRUDProvider implements ICRUDProvider, IPermissionsMetadata
+class WalletTransactionCRUDProvider implements ICRUDProvider
 {
-    use BaseCRUDProvider;
+    use CRUDProviderTrait;
 
     public $name_in_config = 'larapress.ecommerce.routes.wallet_transactions.name';
-    public $verbs = [
-        self::VIEW,
-        self::CREATE,
-        self::EDIT,
-        self::DELETE,
-        self::REPORTS,
-    ];
-    public $model = WalletTransaction::class;
+    public $model_in_config = 'larapress.ecommerce.routes.wallet_transactions.model';
+    public $compositions_in_config = 'larapress.ecommerce.routes.wallet_transactions.compositions';
 
-    public function getCreateRules(Request $request)
-    {
-        return [
-            'type' => 'required|numeric|in:'.implode(',', [
-                WalletTransaction::TYPE_REAL_MONEY,
-                WalletTransaction::TYPE_VIRTUAL_MONEY,
-            ]),
-            'target_user' => 'required|numeric|exists:users,id',
-            'amount' => 'required|numeric',
-            'currency' => 'required|numeric',
-            'flags' => 'nullable|numeric',
-            'data.description' => 'required|string',
-        ];
-    }
-    public function getUpdateRules(Request $request)
-    {
-        return [
-            'type' => 'required|numeric|in:'.implode(',', [
-                WalletTransaction::TYPE_REAL_MONEY,
-                WalletTransaction::TYPE_VIRTUAL_MONEY,
-            ]),
-            'target_user' => 'required|numeric|exists:users,id',
-            'amount' => 'required|numeric',
-            'currency' => 'required|numeric',
-            'flags' => 'nullable|numeric',
-            'data.description' => 'required|string',
-        ];
-    }
     public $updateValidations = [
         'amount' => 'required|numeric',
         'currency' => 'required|numeric',
         'flags' => 'nullable|numeric',
         'data.description' => 'required|string',
     ];
-    public $autoSyncRelations = [];
     public $validSortColumns = [
         'id',
         'user_id',
         'domain_id',
         'amount',
         'type',
+        'created_at',
+        'updated_at',
+        'deleted_at',
     ];
     public $searchColumns = [
         'has_exact:user,name',
         'has_exact:user.phones,number',
     ];
-    public $defaultShowRelations = [];
 
-    public function getValidRelations()
+    /**
+     * Undocumented function
+     *
+     * @return array
+     */
+    public function getPermissionVerbs(): array
     {
         return [
-            'user' => function ($user) {
-                return $user->hasPermission(config('larapress.profiles.routes.users.name').'.view');
-            },
-            'domain' => function ($user) {
-                return $user->hasPermission(config('larapress.profiles.routes.domains.name').'.view');
-            },
-            'user.phones' => function ($user) {
-                return $user->hasPermission(config('larapress.profiles.routes.phone-numbers.name').'.view');
-            },
-            'user.form_support_user_profile' => function ($user) {
-                return $user->hasPermission(config('larapress.profiles.routes.form-entries.name').'.view');
-            },
-            'user.form_profile_default' => function ($user) {
-                return $user->hasPermission(config('larapress.profiles.routes.form-entries.name').'.view');
-            },
-            'user.form_profile_support' => function ($user) {
-                return $user->hasPermission(config('larapress.profiles.routes.form-entries.name').'.view');
-            },
-            'user.form_support_registration_entry' => function ($user) {
-                return $user->hasPermission(config('larapress.profiles.routes.form-entries.name').'.view');
-            },
-            'user.wallet_balance'  => function ($user) {
-                return $user->hasPermission(config('larapress.ecommerce.routes.wallet_transactions.name').'.view');
-            },
+            ICRUDVerb::VIEW,
+            ICRUDVerb::CREATE,
+            ICRUDVerb::EDIT,
+            ICRUDVerb::DELETE,
+            ICRUDVerb::REPORTS,
+            'any.request_unverified' => [
+                'uses' => '\\'.WalletTransactionController::class.'@requestUnverifiedWalletTransaction',
+                'methods' => ['POST'],
+                'url' => config('larapress.ecommerce.routes.wallet_transactions.name').'/request',
+            ],
         ];
     }
 
@@ -112,7 +74,78 @@ class WalletTransactionCRUDProvider implements ICRUDProvider, IPermissionsMetada
      *
      * @return array
      */
-    public function getFilterFields()
+    public function getReportSources(): array
+    {
+        return [
+            new WalletTransactionReport(),
+        ];
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param Request $request
+     *
+     * @return array
+     */
+    public function getCreateRules(Request $request): array
+    {
+        return [
+            'type' => 'required|numeric|in:' . implode(',', [
+                WalletTransaction::TYPE_REAL_MONEY,
+                WalletTransaction::TYPE_VIRTUAL_MONEY,
+                WalletTransaction::TYPE_UNVERIFIED,
+            ]),
+            'target_user' => 'required|numeric|exists:users,id',
+            'amount' => 'required|numeric',
+            'currency' => 'required|numeric',
+            'flags' => 'nullable|numeric',
+            'data.description' => 'required|string',
+        ];
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param Request $request
+     *
+     * @return array
+     */
+    public function getUpdateRules(Request $request): array
+    {
+        return [
+            'type' => 'required|numeric|in:' . implode(',', [
+                WalletTransaction::TYPE_REAL_MONEY,
+                WalletTransaction::TYPE_VIRTUAL_MONEY,
+                WalletTransaction::TYPE_UNVERIFIED,
+            ]),
+            'target_user' => 'required|numeric|exists:users,id',
+            'amount' => 'required|numeric',
+            'currency' => 'required|numeric',
+            'flags' => 'nullable|numeric',
+            'data.description' => 'required|string',
+        ];
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return array
+     */
+    public function getValidRelations(): array
+    {
+        return [
+            'user' => config('larapress.crud.user.provider'),
+            'domain' => config('larapress.profiles.routes.domains.provider'),
+        ];
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return array
+     */
+    public function getFilterFields(): array
     {
         return [
             'created_from' => 'after:created_at',
@@ -140,17 +173,19 @@ class WalletTransactionCRUDProvider implements ICRUDProvider, IPermissionsMetada
     /**
      * Undocumented function
      *
-     * @param [type] $args
-     * @return void
+     * @param array $args
+     *
+     * @return array
      */
-    public function onBeforeCreate($args)
+    public function onBeforeCreate(array $args): array
     {
-        /** @var IProfileUser|ICRUDUser */
+        /** @var ICRUDService */
+        $crudService = app(ICRUDService::class);
+        /** @var IProfileUser */
         $targetUser = User::find($args['target_user']);
-        $userCrudClass = config('larapress.crud.user.crud-provider');
-        /** @var UserCRUDProvider */
-        $userCrud = new $userCrudClass();
-        if ($userCrud->onBeforeAccess($targetUser)) {
+        /** @var ICRUDProvider */
+        $userProvider = $crudService->makeCompositeProvider(config('larapress.crud.user.provider'));
+        if ($userProvider->onBeforeAccess($targetUser)) {
             $args['user_id'] = $targetUser->id;
             $args['domain_id'] = $targetUser->getMembershipDomainId();
         } else {
@@ -164,22 +199,25 @@ class WalletTransactionCRUDProvider implements ICRUDProvider, IPermissionsMetada
     /**
      * Undocumented function
      *
-     * @param [type] $args
-     * @return void
+     * @param array $args
+     *
+     * @return array
      */
-    public function onBeforeUpdate($args)
+    public function onBeforeUpdate($args): array
     {
-        /** @var IProfileUser|ICRUDUser */
+        /** @var ICRUDService */
+        $crudService = app(ICRUDService::class);
+        /** @var IProfileUser */
         $targetUser = User::find($args['target_user']);
-        $userCrudClass = config('larapress.crud.user.crud-provider');
-        /** @var UserCRUDProvider */
-        $userCrud = new $userCrudClass();
-        if ($userCrud->onBeforeAccess($targetUser)) {
+        $provider = $crudService->makeCompositeProvider(config('larapress.crud.user.provider'));
+
+        if ($provider->onBeforeAccess($targetUser)) {
             $args['user_id'] = $targetUser->id;
             $args['domain_id'] = $targetUser->getMembershipDomainId();
         } else {
             throw new AppException(AppException::ERR_OBJ_ACCESS_DENIED);
         }
+
 
         return $args;
     }
@@ -187,32 +225,29 @@ class WalletTransactionCRUDProvider implements ICRUDProvider, IPermissionsMetada
     /**
      * @param Builder $query
      *
-     * @return \Illuminate\Database\Query\Builder
+     * @return Builder
      */
-    public function onBeforeQuery($query)
+    public function onBeforeQuery(Builder $query): Builder
     {
-        /** @var ICRUDUser $user */
+        /** @var IProfileUser $user */
         $user = Auth::user();
-        if (! $user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
+        if (!$user->hasRole(config('larapress.profiles.security.roles.super_role'))) {
             $query->orWhereIn('domain_id', $user->getAffiliateDomainIds());
-            $query->orWhereHas('user.form_entries', function ($q) use ($user) {
-                $q->where('tags', 'support-group-'.$user->id);
-            });
         }
 
         return $query;
     }
 
     /**
-     * @param Page $object
+     * @param  $object
      *
      * @return bool
      */
-    public function onBeforeAccess($object)
+    public function onBeforeAccess($object): bool
     {
-        /** @var ICRUDUser|IProfileUser $user */
+        /** @var IProfileUser $user */
         $user = Auth::user();
-        if (! $user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
+        if (!$user->hasRole(config('larapress.profiles.security.roles.super_role'))) {
             return in_array($object->domain_id, $user->getAffiliateDomainIds());
         }
 
@@ -224,11 +259,12 @@ class WalletTransactionCRUDProvider implements ICRUDProvider, IPermissionsMetada
      *
      * @param WalletTransaction $object
      * @param array $input_data
+     *
      * @return void
      */
-    public function onAfterCreate($object, $input_data)
+    public function onAfterCreate($object, array $input_data): void
     {
-        WalletTransactionEvent::dispatch($object, time());
+        WalletTransactionEvent::dispatch($object, Carbon::now());
     }
 
     /**
@@ -236,11 +272,28 @@ class WalletTransactionCRUDProvider implements ICRUDProvider, IPermissionsMetada
      *
      * @param WalletTransaction $object
      * @param array $input_data
+     *
      * @return void
      */
-    public function onAfterUpdate($object, $input_data)
+    public function onAfterUpdate($object, array $input_data): void
     {
-        WalletTransactionEvent::dispatch($object, time());
+        // remove related data
+        $this->removeWalletTransactionRelatedDate($object);
+        // fire wallet event
+        WalletTransactionEvent::dispatch($object, Carbon::now());
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param WalletTransaction $object
+     *
+     * @return void
+     */
+    public function onAfterDestroy($object): void
+    {
+        // remove related data
+        $this->removeWalletTransactionRelatedDate($object);
     }
 
     /**
@@ -249,7 +302,11 @@ class WalletTransactionCRUDProvider implements ICRUDProvider, IPermissionsMetada
      * @param WalletTransaction $object
      * @return void
      */
-    public function onAfterDestroy($object)
+    protected function removeWalletTransactionRelatedDate(WalletTransaction $object)
     {
+        // remove metrics about this cart
+        MetricCounter::query()
+            ->where('group', 'transaction:' . $object->id)
+            ->delete();
     }
 }

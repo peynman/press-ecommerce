@@ -3,20 +3,11 @@
 namespace Larapress\ECommerce\Services\Product;
 
 use Larapress\ECommerce\IECommerceUser;
+use Larapress\ECommerce\Services\Product\Requests\ProductCloneRequest;
+use Larapress\ECommerce\Services\Product\Requests\ProductQueryRequest;
 
 interface IProductService
 {
-
-    /**
-     * Undocumented function
-     *
-     * @param ProductQueryRequest $request
-     *
-     * @return array
-     */
-    public function queryProductsFromRequest(ProductQueryRequest $request);
-
-
     /**
      * Undocumented function
      *

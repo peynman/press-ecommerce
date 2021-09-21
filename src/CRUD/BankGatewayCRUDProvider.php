@@ -2,29 +2,30 @@
 
 namespace Larapress\ECommerce\CRUD;
 
-use Illuminate\Database\Query\Builder;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Larapress\CRUD\Services\CRUD\BaseCRUDProvider;
+use Larapress\CRUD\Services\CRUD\Traits\CRUDProviderTrait;
 use Larapress\CRUD\Services\CRUD\ICRUDProvider;
-use Larapress\CRUD\Services\RBAC\IPermissionsMetadata;
 use Larapress\CRUD\ICRUDUser;
+use Larapress\CRUD\Services\CRUD\ICRUDVerb;
 use Larapress\ECommerce\Models\BankGateway;
-use Larapress\ECommerce\Repositories\IBankGatewayRepository;
 use Larapress\Profiles\IProfileUser;
 
-class BankGatewayCRUDProvider implements ICRUDProvider, IPermissionsMetadata
+class BankGatewayCRUDProvider implements ICRUDProvider
 {
-    use BaseCRUDProvider;
+    use CRUDProviderTrait;
 
     public $name_in_config = 'larapress.ecommerce.routes.bank_gateways.name';
+    public $model_in_config = 'larapress.ecommerce.routes.bank_gateways.model';
+    public $compositions_in_config = 'larapress.ecommerce.routes.bank_gateways.compositions';
+
     public $verbs = [
-        self::VIEW,
-        self::CREATE,
-        self::EDIT,
-        self::DELETE,
+        ICRUDVerb::VIEW,
+        ICRUDVerb::CREATE,
+        ICRUDVerb::EDIT,
+        ICRUDVerb::DELETE,
     ];
-    public $model = BankGateway::class;
     public $searchColumns = [
         'type',
         'data',
@@ -32,30 +33,35 @@ class BankGatewayCRUDProvider implements ICRUDProvider, IPermissionsMetadata
     public $validSortColumns = [
         'id',
         'author_id',
+        'flags',
         'created_at',
         'updated_at',
-        'flags',
+        'deleted_at',
     ];
-    public $validRelations = [
-        'author',
-    ];
-    public $defaultShowRelations = [
-    ];
+
+    /**
+     * Undocumented function
+     *
+     * @return array
+     */
+    public function getValidRelations(): array
+    {
+        return [
+            'author' => config('larapress.crud.user.provider'),
+        ];
+    }
 
     /**
      * @param Request $request
      * @return array
      */
-    public function getUpdateRules(Request $request)
+    public function getCreateRules(Request $request): array
     {
-        /** @var IBankGatewayRepository */
-        $repo = app(IBankGatewayRepository::class);
-        $types = $repo->getAllBankGatewayTypes(Auth::user());
-
         $rules = [
-            'type' => 'required|string|in:'.(implode(",", array_keys($types))),
+            'name' => 'required|string|unique:bank_gateways,name',
+            'type' => 'required|string|in:'.(implode(",", array_keys(config('larapress.ecommerce.banking.ports')))),
             'flags' => 'nullable|numeric',
-            'data' => 'nullable',
+            'data' => 'nullable|object_json',
         ];
 
         return $rules;
@@ -65,32 +71,38 @@ class BankGatewayCRUDProvider implements ICRUDProvider, IPermissionsMetadata
      * @param Request $request
      * @return array
      */
-    public function getCreateRules(Request $request)
+    public function getUpdateRules(Request $request): array
     {
-        /** @var IBankGatewayRepository */
-        $repo = app(IBankGatewayRepository::class);
-        $types = $repo->getAllBankGatewayTypes(Auth::user());
-
-        $rules = [
-            'type' => 'required|string|in:'.(implode(",", array_keys($types))),
-            'flags' => 'nullable|numeric',
-            'data' => 'nullable',
-        ];
-
+        $rules = $this->getCreateRules($request);
+        $rules['name'] .= ','.$request->route('id');
         return $rules;
     }
 
+    /**
+     * @param array $args
+     *
+     * @return array
+     */
+    public function onBeforeCreate(array $args): array
+    {
+        /** @var ICRUDUser|IProfileUser $user */
+        $user = Auth::user();
+
+        $args['author_id'] = $user->id;
+
+        return $args;
+    }
 
     /**
      * @param Builder $query
      *
-     * @return \Illuminate\Database\Query\Builder
+     * @return Builder
      */
-    public function onBeforeQuery($query)
+    public function onBeforeQuery(Builder $query): Builder
     {
-        /** @var ICRUDUser $user */
+        /** @var IProfileUser $user */
         $user = Auth::user();
-        if (! $user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
+        if (! $user->hasRole(config('larapress.profiles.security.roles.super_role'))) {
             $query->where('author_id', $user->id);
         }
 
@@ -102,29 +114,14 @@ class BankGatewayCRUDProvider implements ICRUDProvider, IPermissionsMetadata
      *
      * @return bool
      */
-    public function onBeforeAccess($object)
+    public function onBeforeAccess($object): bool
     {
-        /** @var ICRUDUser|IProfileUser $user */
+        /** @var IProfileUser $user */
         $user = Auth::user();
         if (! $user->hasRole(config('larapress.profiles.security.roles.super-user'))) {
             return $object->author_id === $user->id;
         }
 
         return true;
-    }
-
-    /**
-     * @param array $args
-     *
-     * @return array
-     */
-    public function onBeforeCreate($args)
-    {
-        /** @var ICRUDUser|IProfileUser $user */
-        $user = Auth::user();
-
-        $args['author_id'] = $user->id;
-
-        return $args;
     }
 }

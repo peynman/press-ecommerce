@@ -11,10 +11,11 @@ use Larapress\Profiles\IProfileUser;
  * @property int             $flags
  * @property int             $author_id
  * @property int             $stars
- * @property string          $description
+ * @property string          $mesage
  * @property array           $data
  * @property IProfileUser    $author
  * @property Product         $product
+ * @property ProductReview   $review
  * @property \Carbon\Carbon  $created_at
  * @property \Carbon\Carbon  $updated_at
  * @property \Carbon\Carbon  $deleted_at
@@ -23,12 +24,15 @@ class ProductReview extends Model
 {
     use SoftDeletes;
 
-    protected $table = 'product_categories';
+    const FLAGS_PUBLIC = 1;
+
+    protected $table = 'product_reviews';
 
     protected $fillable = [
         'author_id',
         'product_id',
-        'description',
+        'review_id',
+        'message',
         'flags',
         'stars',
         'data',
@@ -43,7 +47,7 @@ class ProductReview extends Model
      */
     public function author()
     {
-        return $this->belongsTo(config('larapress.crud.user.class'), 'author_id');
+        return $this->belongsTo(config('larapress.crud.user.model'), 'author_id');
     }
 
     /**

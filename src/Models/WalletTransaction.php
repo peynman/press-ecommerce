@@ -32,6 +32,8 @@ class WalletTransaction extends Model
 
     const FLAGS_REGISTRATION_GIFT = 1;
     const FLAGS_AUTO_IMPORT = 2;
+    const FLAGS_BALANCE_PURCHASED = 4;
+    const FLAGS_CART_PURCHASE = 8;
 
     use SoftDeletes;
 
@@ -58,7 +60,7 @@ class WalletTransaction extends Model
      */
     public function user()
     {
-        return $this->belongsTo(config('larapress.crud.user.class'), 'user_id');
+        return $this->belongsTo(config('larapress.crud.user.model'), 'user_id');
     }
 
     /**

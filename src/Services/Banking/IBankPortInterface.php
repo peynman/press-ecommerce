@@ -8,7 +8,6 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\View\View;
 use Larapress\ECommerce\Models\BankGatewayTransaction;
-use Larapress\Profiles\IProfileUser;
 
 interface IBankPortInterface
 {
@@ -24,7 +23,7 @@ interface IBankPortInterface
      *
      * @param float $price
      * @param int $currency
-     * @return [int, int]
+     * @return mixed
      */
     public function convertForPriceAndCurrency(float $price, int $currency);
 

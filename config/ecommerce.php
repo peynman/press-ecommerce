@@ -1,6 +1,118 @@
 <?php
 
 return [
+    // default repository retrieve limits
+    'repository' => [
+        'limit' => 50,
+        'max_limit' => 200,
+        'min_limit' => 5,
+    ],
+
+    // banking settings
+    'banking' => [
+        // available ports
+        'ports' => [
+            'zarinpal' => Larapress\ECommerce\Services\Banking\Ports\Zarrinpal\ZarrinPalPortInterface::class
+        ],
+
+        // default currency
+        'currency' => [
+            'id' => 1,
+            'title' => 'تومان'
+        ],
+
+        // available currencies
+        'available_currencies' => [
+            [
+                'id' => 1,
+                'title' => 'تومان',
+            ],
+        ],
+
+        // url redirects after cart purchase
+        'redirect' => [
+            'already' => '/me/carts',
+            'success' => '/me/products',
+            'failed' => '/me/current-cart/',
+            'canceled' => '/me/current-cart/',
+        ],
+
+        // default bank gateway id
+        'default_gateway' => null,
+    ],
+
+    // product owner role ids
+    'product_owner_role_ids' => [9, 10],
+
+    // product reviews management
+    'product_reviews' => [
+        // signed in users can only post reviews
+        'review_users_only' => true,
+
+        // users are allowed to review purchased products only
+        'review_purchased_product' => true,
+
+        // automatically confirm reviews for displaying
+        'review_auto_confirm' => true,
+
+        // number of reviews loaded per page
+        'reviews_per_page' => 5,
+    ],
+
+    // crud resources in package
+    'routes' => [
+        'bank_gateways' => [
+            'name' => 'bank-gateways',
+            'model' => \Larapress\ECommerce\Models\BankGateway::class,
+            'provider' => \Larapress\ECommerce\CRUD\BankGatewayCRUDProvider::class,
+        ],
+        'bank_gateway_transactions' => [
+            'name' => 'bank-gateway-transactions',
+            'model' => \Larapress\ECommerce\Models\BankGatewayTransaction::class,
+            'provider' => \Larapress\ECommerce\CRUD\BankGatewayTransactionCRUDProvider::class,
+        ],
+        'carts' => [
+            'name' => 'carts',
+            'model' => \Larapress\ECommerce\Models\Cart::class,
+            'provider' => \Larapress\ECommerce\CRUD\CartCRUDProvider::class,
+        ],
+        'products' => [
+            'name' => 'products',
+            'model' => \Larapress\ECommerce\Models\Product::class,
+            'provider' => \Larapress\ECommerce\CRUD\ProductCRUDProvider::class,
+        ],
+        'product_categories' => [
+            'name' => 'product-categories',
+            'model' => \Larapress\ECommerce\Models\ProductCategory::class,
+            'provider' => \Larapress\ECommerce\CRUD\ProductCategoryCRUDProvider::class,
+        ],
+        'product_types' => [
+            'name' => 'product-types',
+            'model' => \Larapress\ECommerce\Models\ProductType::class,
+            'provider' => \Larapress\ECommerce\CRUD\ProductTypeCRUDProvider::class,
+        ],
+        'product_reviews' => [
+            'name' => 'product-reviews',
+            'model' => \Larapress\ECommerce\Models\ProductReview::class,
+            'provider' => \Larapress\ECommerce\CRUD\ProductReviewCRUDProvider::class,
+        ],
+        'wallet_transactions' => [
+            'name' => 'wallet-transactions',
+            'model' => \Larapress\ECommerce\Models\WalletTransaction::class,
+            'provider' => \Larapress\ECommerce\CRUD\WalletTransactionCRUDProvider::class,
+        ],
+        'gift_codes' => [
+            'name' => 'gift-codes',
+            'model' => \Larapress\ECommerce\Models\GiftCode::class,
+            'provider' => \Larapress\ECommerce\CRUD\GiftCodeCRUDProvider::class,
+        ],
+        'gift_code_usage' => [
+            'name' => 'gift-code-usage',
+            'model' => \Larapress\ECommerce\Models\GiftCodeUse::class,
+            'provider' => \Larapress\ECommerce\CRUD\GiftCodeUsageCRUDProvider::class,
+        ],
+    ],
+
     'permissions' => [
         \Larapress\ECommerce\CRUD\ProductCRUDProvider::class,
         \Larapress\ECommerce\CRUD\ProductCategoryCRUDProvider::class,
@@ -10,95 +122,5 @@ return [
         \Larapress\ECommerce\CRUD\WalletTransactionCRUDProvider::class,
         \Larapress\ECommerce\CRUD\CartCRUDProvider::class,
         \Larapress\ECommerce\CRUD\GiftCodeCRUDProvider::class,
-    ],
-
-    'controllers' => [
-        \Larapress\ECommerce\Controllers\ProductController::class,
-        \Larapress\ECommerce\Controllers\ProductCategoryController::class,
-        \Larapress\ECommerce\Controllers\ProductTypeController::class,
-        \Larapress\ECommerce\Controllers\BankGatewayController::class,
-        \Larapress\ECommerce\Controllers\BankGatewayTransactionController::class,
-        \Larapress\ECommerce\Controllers\WalletTransactionController::class,
-        \Larapress\ECommerce\Controllers\CartController::class,
-        \Larapress\ECommerce\Controllers\CartPurchasingController::class,
-        \Larapress\ECommerce\Controllers\GiftCodeController::class,
-    ],
-
-    'routes' => [
-        'bank_gateways' => [
-            'name' => 'bank-gateways'
-        ],
-        'bank_gateway_transactions' => [
-            'name' => 'bank-gateway-transactions'
-        ],
-        'carts' => [
-            'name' => 'carts',
-        ],
-        'products' => [
-            'name' => 'products'
-        ],
-        'product_categories' => [
-            'name' => 'product-categories',
-        ],
-        'product_types' => [
-            'name' => 'product-types',
-        ],
-        'product_reviews' => [
-            'name' => 'product-reviews',
-        ],
-        'wallet_transactions' => [
-            'name' => 'wallet-transactions',
-        ],
-        'gift_codes' => [
-            'name' => 'gift-codes',
-        ]
-    ],
-
-    'repository' => [
-        'limit' => 50,
-        'max_limit' => 200,
-        'min_limit' => 5,
-    ],
-
-    'customer_role_id' => 3,
-
-    'banking' => [
-        'ports' => [
-            'zarinpal' => Larapress\ECommerce\Services\Banking\Ports\Zarrinpal\ZarrinPalPortInterface::class
-        ],
-
-        'currency' => [
-            'id' => 1,
-            'title' => 'تومان'
-        ],
-
-        'available_currencies' => [
-            [
-                'id' => 1,
-                'title' => 'تومان',
-            ],
-        ],
-
-
-        'redirect' => [
-            'already' => '/me/carts',
-            'success' => '/me/products',
-            'failed' => '/me/current-cart/',
-
-            'increase_success' => '/me/carts',
-            'increase_failed' => '/me/carts',
-        ],
-
-        'default_gateway' => 1,
-
-        'registeration_gift' => [
-            'amount' => 0,
-            'currency' => 1,
-        ],
-
-        'profle_gift' => [
-            'amount' => 0,
-            'currency' => 1,
-        ]
     ],
 ];

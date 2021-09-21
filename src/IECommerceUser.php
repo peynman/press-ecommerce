@@ -37,36 +37,7 @@ interface IECommerceUser extends IProfileUser
     /**
      * Undocumented function
      *
-     * @return \Illuminate\Database\Eloquent\Relations\HasOne
-     */
-    public function form_profile_default();
-
-    /**
-     * Undocumented function
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\HasOne
-     */
-    public function form_profile_support();
-
-    /**
-     * Undocumented function
-     *
-     * @return array
-     */
-    public function getBalanceAttribute();
-
-
-    /**
-     * Undocumented function
-     *
      * @return array
      */
     public function getOwenedProductsIds();
-
-    /**
-     * Undocumented function
-     *
-     * @return null|FormEntry
-     */
-    public function getProfileAttribute();
 }

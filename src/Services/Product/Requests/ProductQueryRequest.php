@@ -1,6 +1,6 @@
 <?php
 
-namespace Larapress\ECommerce\Services\Product;
+namespace Larapress\ECommerce\Services\Product\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Larapress\ECommerce\Models\Product;
@@ -44,6 +44,5 @@ class ProductQueryRequest extends FormRequest
     }
 
     public function showOnlyPurchased() {
-
     }
 }

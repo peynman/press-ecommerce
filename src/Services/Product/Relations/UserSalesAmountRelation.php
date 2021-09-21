@@ -1,18 +1,15 @@
 <?php
 
-namespace Larapress\ECommerce\Services\Product;
+namespace Larapress\ECommerce\Services\Product\Relations;
 
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Larapress\ECommerce\Models\WalletTransaction;
 use Larapress\Reports\Models\MetricCounter;
 use Larapress\ECommerce\IECommerceUser;
-use Larapress\Profiles\Models\FormEntry;
 
-class UserSalesAmountRelationship extends Relation
+class UserSalesAmountRelation extends Relation
 {
 
     protected $filterType = null;
@@ -57,7 +54,7 @@ class UserSalesAmountRelationship extends Relation
             $models = collect($models);
         }
 
-        if (!$user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
+        if (!$user->hasRole(config('larapress.profiles.security.roles.super_role'))) {
             $domains = $user->getAffiliateDomainIds();
         }
 
@@ -113,7 +110,7 @@ class UserSalesAmountRelationship extends Relation
         /** @var IECommerceUser */
         $user = Auth::user();
 
-        if (!$user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
+        if (!$user->hasRole(config('larapress.profiles.security.roles.super_role'))) {
             if ($user->hasRole(config('larapress.lcms.support_role_id'))) {
                 $suffix = $suffix . ".$user->id";
             }

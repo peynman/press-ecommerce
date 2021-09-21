@@ -54,7 +54,7 @@ class ProductFactory extends Factory
 
     public function randomPrice()
     {
-        return $this->addPrice($this->faker->numberBetween(10000, 100000), config('larapress.ecommerce.banking.currency.id'), 1);
+        return $this->addPrice($this->faker->numberBetween(1, 20) * 10000, config('larapress.ecommerce.banking.currency.id'), 1);
     }
 
     public function withType($type)
@@ -69,15 +69,43 @@ class ProductFactory extends Factory
     public function randomPeriodicPrice()
     {
         return $this->addPeriodicPrice(
-            $this->faker->numberBetween(5000, 10000),
+            $this->faker->numberBetween(1, 5) * 10000,
             config('larapress.ecommerce.banking.currency.id'),
             1
         )->periodicPriceDetails(
-            $this->faker->numberBetween(10000, 30000),
+            $this->faker->numberBetween(1, 5) * 10000,
             $this->faker->numberBetween(15, 30),
-            $this->faker->numberBetween(5, 10),
-            Carbon::parse($this->faker->date())
+            $this->faker->numberBetween(3, 5),
+            Carbon::now()->addDays($this->faker->numberBetween(30, 90)),
         );
+    }
+
+    public function emptyPriceList() {
+        return $this->state(function ($attrs) {
+            return [
+                'data' => array_merge($attrs['data'], [
+                    'pricing' => []
+                ])
+            ];
+        });
+    }
+
+    public function childOf($id) {
+        return $this->state(function ($attrs) use ($id) {
+            return [
+                'parent_id' => $id,
+            ];
+        });
+    }
+
+    public function freeAccess($free) {
+        return $this->state(function ($attrs) use ($free) {
+            return [
+                'data' => array_merge($attrs['data'], [
+                    'free_access' => $free,
+                ])
+            ];
+        });
     }
 
     public function addPrice(float $amount, int $currency, int $priority = 0)
@@ -124,7 +152,7 @@ class ProductFactory extends Factory
                         'period_duration' => $duration,
                         'period_amount' => $amount,
                         'period_count' => $count,
-                        'ends_at' => $endDate,
+                        'ends_at' => $endDate->format(config('larapress.crud.datetime-format')),
                     ]
                 ])
             ];

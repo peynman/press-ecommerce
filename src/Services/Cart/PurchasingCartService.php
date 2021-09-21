@@ -3,16 +3,21 @@
 namespace Larapress\ECommerce\Services\Cart;
 
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Larapress\CRUD\Events\CRUDUpdated;
 use Larapress\CRUD\Exceptions\AppException;
 use Larapress\CRUD\Extend\Helpers;
 use Larapress\ECommerce\CRUD\CartCRUDProvider;
 use Larapress\ECommerce\IECommerceUser;
 use Larapress\ECommerce\Models\Cart;
+use Larapress\ECommerce\Models\Product;
 use Larapress\ECommerce\Repositories\IProductRepository;
+use Larapress\ECommerce\Services\Cart\Requests\CartContentModifyRequest;
+use Larapress\ECommerce\Services\Cart\Requests\CartUpdateRequest;
 use Larapress\ECommerce\Services\GiftCodes\IGiftCodeService;
 use Larapress\ECommerce\Services\Wallet\IWalletService;
 
@@ -42,12 +47,40 @@ class PurchasingCartService implements IPurchasingCartService
         /** @var Cart $cart */
         $cart = $this->getPurchasingCart($user, $currency);
 
-        $cart->setPeriodicProductIds($request->getPeriodicIds());
-        $cart->setUseBalance($request->getUseBalance());
+        $productsData = new Collection($request->getProducts());
+        $products = Product::whereIn('id', $productsData->pluck('id'))->get();
 
+        // check if periodics requested are periodic purchasable
+        $periodicIds = $request->getPeriodicIds();
+        foreach ($products as $product) {
+            if (!$product->isPeriodicSaleAvailable() && in_array($product->id, $periodicIds)) {
+                throw new AppException(AppException::ERR_INVALID_PARAMS);
+            }
+        }
+
+        // update cart data
+        $cart->products()->sync([]);
+        $products = $products->keyBy('id');
+        foreach ($productsData as $productData) {
+            $product = $products->get($productData['id']);
+            $itemPrice = in_array($product->id, $periodicIds) ? $product->pricePeriodic($currency) : $product->price($currency);
+            $cart->products()->attach($product->id, [
+                'data' => [
+                    'amount' => $itemPrice,
+                    'currency' => $cart->currency,
+                    'quantity' => (isset($productData['quantity']) ? $productData['quantity'] : 1),
+                    'extra' => (isset($productData['data']) ? $productData['data'] : []),
+                ],
+            ]);
+        }
+        $cart->setPeriodicProductIds($periodicIds);
+        $cart->setUseBalance($request->getUseBalance());
+        $cart->load('products');
+
+        // check and update gift code usage
         $giftDetails = null;
         if (!is_null($request->getGiftCode())) {
-            $giftDetails = $this->giftService->getGiftDetailsForCart(
+            $giftDetails = $this->giftService->getGiftUsageDetailsForCart(
                 $user,
                 $cart,
                 $request->getGiftCode()
@@ -56,11 +89,11 @@ class PurchasingCartService implements IPurchasingCartService
                 $cart->setGiftCodeUsage($giftDetails);
             }
         }
-        $this->cartService->updateCartAmountFromDataAndProducts($cart);
 
-        /** @var IWalletService $walletService */
-        $walletService = app(IWalletService::class);
-        $balance = $walletService->getUserBalance($user, $currency);
+        // update amount based on products and gift code
+        $cart->amount = $this->cartService->calculateCartAmountFromDataAndProducts($cart);
+        // save cart updates
+        $cart->update();
 
         $this->resetPurchasingCache($user->id);
         $cart = $this->getPurchasingCart($user, $currency);
@@ -71,10 +104,7 @@ class PurchasingCartService implements IPurchasingCartService
             Carbon::now()
         );
 
-        return [
-            'cart' => $cart,
-            'balance' => $balance,
-        ];
+        return $cart;
     }
 
 
@@ -86,7 +116,7 @@ class PurchasingCartService implements IPurchasingCartService
      * @param ICartItem $cartItem
      * @param int $currency
      *
-     * @return Cart
+     * @return ICart
      */
     public function addItemToPurchasingCart(CartContentModifyRequest $request, IECommerceUser $user, ICartItem $product, int $currency)
     {
@@ -100,9 +130,12 @@ class PurchasingCartService implements IPurchasingCartService
         foreach ($products as $existingProd) {
             $existingItemsIds[] = $existingProd->id;
             if ($product->id === $existingProd->id) {
-                $existingPivot = $existingProd;
-                if ($product->isQuantized()) {
-                    $quantity += $existingProd->pivot->data['quantity'];
+                if ($existingProd->pivot->data['extra'] == $request->getExtraData()) {
+                    $existingPivot = $existingProd;
+                    if ($product->isQuantized()) {
+                        $quantity += $existingProd->pivot->data['quantity'];
+                    }
+                    break;
                 }
             }
         }
@@ -121,34 +154,34 @@ class PurchasingCartService implements IPurchasingCartService
             }
         }
 
+        // if product is not quantized and already exists in cart, throw error
+        if (!$product->isQuantized() && !is_null($existingPivot)) {
+            throw new AppException(AppException::ERR_INVALID_QUERY);
+        }
+
         $itemPrice = $product->price($cart->currency);
         // remove item children if already in the cart
         if (count($product->children)) {
             $childIds = $product->children->pluck('id');
             $cart->products()->detach($childIds);
         }
-        // update quantiy if already exists in cart
-        if (!is_null($existingPivot)) {
-            $existingPivot->pivot->update([
-                'data' => [
-                    'amount' => $itemPrice,
-                    'currency' => $cart->currency,
-                    'quantity' => $quantity,
-                ],
-            ]);
-        } else {
-            $cart->products()->attach($product->model(), [
-                'data' => [
-                    'amount' => $itemPrice,
-                    'currency' => $cart->currency,
-                    'quantity' => $quantity,
-                ],
-            ]);
-            $cart->load('products');
-        }
 
-        $products = $cart->products;
-        $this->cartService->updateCartAmountFromDataAndProducts($cart, $products);
+        if (!is_null($existingPivot)) {
+            $existingPivot->pivot->delete();
+        }
+        // add product to cart with extra informations
+        $cart->products()->attach($product->model(), [
+            'data' => [
+                'amount' => $itemPrice,
+                'currency' => $cart->currency,
+                'quantity' => $quantity,
+                'extra' => $request->getExtraData(),
+            ],
+        ]);
+
+        $cart->load('products');
+        $cart->amount = $this->cartService->calculateCartAmountFromDataAndProducts($cart);
+        $cart->update();
 
         $this->resetPurchasingCache($user->id);
         $cart = $this->getPurchasingCart($user, $currency);
@@ -168,34 +201,34 @@ class PurchasingCartService implements IPurchasingCartService
      *
      * @param Request $request
      * @param ICartItem $cartItem
-     * @return Cart
+     *
+     * @return ICart
      */
     public function removeItemFromPurchasingCart(CartContentModifyRequest $request, IECommerceUser $user, ICartItem $product, int $currency)
     {
         /** @var Cart */
         $cart = $this->getPurchasingCart($user, $currency);
 
-        /** @var ICartItem $existingProd */
-        $existingProd = $cart->products()->wherePivot('product_id', $product->id)->first();
-        if (is_null($existingProd)) {
+        $products = $cart->products()->get();
+        $existingPivot = null;
+        foreach ($products as $existingProd) {
+            if ($product->id === $existingProd->id) {
+                if ($existingProd->pivot->data['extra'] == $request->getExtraData()) {
+                    $existingPivot = $existingProd;
+                    break;
+                }
+            }
+        }
+
+        if (is_null($existingPivot)) {
             return $cart;         // this item does not exist in our users current cart
         }
 
-        $existingProdData = $existingProd->pivot->data;
-
-        $removeQuantity = $product->isQuantized() ? $request->getQuantity() : 1;
-
-        if ($existingProdData['quantity'] <= $removeQuantity) {
-            $cart->products()->detach($product->id);
-        } else {
-            $existingProdData['quantity'] -= $removeQuantity;
-            $existingProd->pivot->update([
-                'data' => $existingProdData
-            ]);
-        }
+        $existingPivot->pivot->delete();
 
         $cart->load('products');
-        $this->cartService->updateCartAmountFromDataAndProducts($cart);
+        $cart->amount = $this->cartService->calculateCartAmountFromDataAndProducts($cart);
+        $cart->update();
 
         $this->resetPurchasingCache($user->id);
         $cart = $this->getPurchasingCart($user, $currency);
@@ -217,26 +250,33 @@ class PurchasingCartService implements IPurchasingCartService
      * @param Request $request
      * @param IECommerceUser $user
      * @param integer $currency
-     * @return Cart
+     *
+     * @return ICart
      */
     public function getPurchasingCart(IECommerceUser $user, int $currency)
     {
         return Helpers::getCachedValue(
             'larapress.ecommerce.user.' . $user->id . '.purchase-cart',
+            ['purchasing-cart:' . $user->id],
+            3600,
+            false,
             function () use ($user, $currency) {
-                if (is_null($user->getMembershipDomainId())) {
+                $membershipDomain = $user->getMembershipDomainId();
+
+                if (is_null($membershipDomain)) {
                     throw new AppException(AppException::ERR_USER_HAS_NO_DOMAIN);
                 }
 
                 $cart = Cart::query()
                     ->with(['products'])
                     ->where('customer_id', $user->id)
-                    ->where('domain_id', $user->getMembershipDomainId())
+                    ->where('domain_id', $membershipDomain)
                     ->where('currency', $currency)
                     ->where('flags', '&', Cart::FLAGS_USER_CART) // is a user cart
                     ->whereRaw('(flags & ' . Cart::FLGAS_FORWARDED_TO_BANK . ') = 0') // has never been forwarded to bank page
                     ->where('status', '=', Cart::STATUS_UNVERIFIED)
                     ->first();
+
 
                 if (is_null($cart)) {
                     $cart = Cart::create([
@@ -250,9 +290,7 @@ class PurchasingCartService implements IPurchasingCartService
                     ]);
                 }
                 return $cart;
-            },
-            ['purchasing-cart:' . $user->id],
-            null
+            }
         );
     }
 
@@ -262,8 +300,8 @@ class PurchasingCartService implements IPurchasingCartService
      * @param int $userId
      * @return void
      */
-    protected function resetPurchasingCache($userId)
+    public function resetPurchasingCache($userId)
     {
-        Cache::tags(['purchasing-cart:' . $userId])->flush();
+        Helpers::forgetCachedValues(['purchasing-cart:' . $userId]);
     }
 }

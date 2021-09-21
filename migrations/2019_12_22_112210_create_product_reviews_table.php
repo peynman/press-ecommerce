@@ -15,12 +15,13 @@ class CreateProductReviewsTable extends Migration
     {
         Schema::create('product_reviews', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->bigInteger('author_id', false, true);
+            $table->bigInteger('author_id', false, true)->nullable();
             $table->bigInteger('product_id', false, true);
-            $table->text('description');
+            $table->bigInteger('review_id', false, true)->nullable();
             $table->integer('stars', false, false)->default(0);
-            $table->integer('flags', false, true)->default(0);
+            $table->text('message')->nullable();
             $table->json('data')->nullable();
+            $table->integer('flags', false, true)->default(0);
             $table->timestamps();
             $table->softDeletes();
 
@@ -31,6 +32,7 @@ class CreateProductReviewsTable extends Migration
                     'updated_at',
                     'author_id',
                     'product_id',
+                    'review_id',
                     'flags',
                     'stars',
                 ],
@@ -39,6 +41,7 @@ class CreateProductReviewsTable extends Migration
 
             $table->foreign('author_id')->references('id')->on('users');
             $table->foreign('product_id')->references('id')->on('products');
+            $table->foreign('review_id')->references('id')->on('product_reviews');
         });
     }
 

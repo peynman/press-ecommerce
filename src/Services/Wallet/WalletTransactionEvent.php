@@ -5,7 +5,6 @@ namespace Larapress\ECommerce\Services\Wallet;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Larapress\ECommerce\Models\BankGatewayTransaction;
 use Larapress\ECommerce\Models\WalletTransaction;
 
 class WalletTransactionEvent implements ShouldQueue
@@ -29,5 +28,15 @@ class WalletTransactionEvent implements ShouldQueue
     {
         $this->transactionId = is_numeric($transaction) ? $transaction : $transaction->id;
         $this->timestamp = $timestamp;
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return WalletTransaction
+     */
+    public function getWalletTransaction()
+    {
+        return WalletTransaction::find($this->transactionId);
     }
 }

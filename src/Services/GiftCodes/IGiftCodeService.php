@@ -6,7 +6,7 @@ use Larapress\ECommerce\Models\Cart;
 use Larapress\ECommerce\Models\GiftCode;
 use Larapress\ECommerce\IECommerceUser;
 use Larapress\CRUD\Exceptions\AppException;
-use Larapress\ECommerce\Services\Cart\CartGiftDetails;
+use Larapress\ECommerce\Services\Cart\Base\CartGiftDetails;
 
 interface IGiftCodeService {
 

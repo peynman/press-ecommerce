@@ -14,6 +14,7 @@ class CreateCartsProductsPivotTable extends Migration
     public function up()
     {
         Schema::create('carts_products_pivot', function (Blueprint $table) {
+            $table->bigIncrements('id');
             $table->bigInteger('cart_id', false, true);
             $table->bigInteger('product_id', false, true);
             $table->json('data')->nullable();

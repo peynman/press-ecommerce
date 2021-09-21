@@ -3,6 +3,7 @@
 namespace Larapress\ECommerce\Services\Wallet;
 
 use Larapress\ECommerce\IECommerceUser;
+use Larapress\ECommerce\Models\WalletTransaction;
 
 interface IWalletService {
 
@@ -42,8 +43,16 @@ interface IWalletService {
      * @param integer $type
      * @param integer $flags
      * @param string $desc
-     * @return [Cart, WalletTransaction]
+     * @param array $data
+     *
+     * @return WalletTransaction
      */
-    public function addBalanceForUser(IECommerceUser $user, float $amount, int $currency, int $type, int $flags, string $desc);
+    public function addBalanceForUser(IECommerceUser $user, float $amount, int $currency, int $type, int $flags, string $desc, array $data);
 
+
+    /**
+     * @param int $userId
+     * @return void
+     */
+    public function resetBalanceCache($userId);
 }

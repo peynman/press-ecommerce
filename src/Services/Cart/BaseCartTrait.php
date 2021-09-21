@@ -3,8 +3,14 @@
 namespace Larapress\ECommerce\Services\Cart;
 
 use Carbon\Carbon;
+use Larapress\ECommerce\Models\Cart;
+use Larapress\ECommerce\Models\CartItem;
 use Larapress\ECommerce\Models\Product;
-use Larapress\ECommerce\Services\Cart\CartGiftDetails;
+use Larapress\CRUD\BaseFlags;
+use Larapress\CRUD\Exceptions\AppException;
+use Larapress\ECommerce\Services\Cart\Base\CartCustomInstallmentPeriod;
+use Larapress\ECommerce\Services\Cart\Base\CartGiftDetails;
+use Larapress\ECommerce\Services\Cart\Base\CartProductPurchaseDetails;
 
 trait BaseCartTrait
 {
@@ -24,17 +30,28 @@ trait BaseCartTrait
         return $ids;
     }
 
+    /**
+     * Undocumented function
+     *
+     * @return int
+     */
+    public function getPeriodicProductsCount()
+    {
+        $currIds = $this->products->pluck('id')->toArray();
+        $perrIds = $this->getPeriodicProductIds();
+        $diff = array_diff($perrIds, $currIds);
+        return count($perrIds) - count($diff);
+    }
+
 
     /**
      * Undocumented function
      *
      * @return int
      */
-    public function getPeriodicProductsCount() {
-        $currIds = $this->products->pluck('id');
-        $perrIds = $this->getPeriodicProductIds();
-        $diff = array_diff($perrIds, $currIds);
-        return count($perrIds) - count($diff);
+    public function hasPeriodicProducts()
+    {
+        return $this->getPeriodicProductsCount() > 0;
     }
 
     /**
@@ -58,7 +75,7 @@ trait BaseCartTrait
      */
     public function getProductIds()
     {
-        return $this->items->pluck('id');
+        return $this->products->pluck('id');
     }
 
     /**
@@ -79,20 +96,59 @@ trait BaseCartTrait
     /**
      * Undocumented function
      *
+     * @param Product|int $product
+     *
+     * @return CartProductPurchaseDetails|null
+     */
+    public function getPurchaseDetailsForProduct($product)
+    {
+        $productPivotData = null;
+        if (is_object($product)) {
+            if (isset($product->pivot->data['paidPeriods'])) {
+                $productPivotData = $product->pivot->data;
+            }
+            $product = $product->id;
+        }
+
+        if (is_null($productPivotData)) {
+            // find appropriate cart item to extract CartProductPurchaseDetails
+            if ($this->isPeriodicPaymentCart()) {
+                // use original cart pivot data if this is a periodic payment cart
+                $pivot = CartItem::where('product_id', $product)->where('cart_id', $this->getPeriodicPaymentOriginalCartID())->first();
+                if (!is_null($pivot)) {
+                    $productPivotData = $pivot->data;
+                }
+            } else {
+                // use current cart pivot data
+                $pivot = CartItem::where('product_id', $product)->where('cart_id', $this->id)->first();
+                if (!is_null($pivot)) {
+                    $productPivotData = $pivot->data;
+                }
+            }
+        }
+
+        if (!is_null($productPivotData)) {
+            /** @var CartItem */
+            return new CartProductPurchaseDetails($productPivotData);
+        }
+
+        return null;
+    }
+
+    /**
+     * Undocumented function
+     *
      * @property int|Product $product
      * @return int
      */
     public function getPaymentsCountForInstallmentsOnProduct($product)
     {
-        if ($this->isCustomPeriodicPayment()) {
-            return count($this->data['periodic_custom']);
-        } else {
-            if (is_object($product)) {
-                $product = $product->id;
-            }
-            $alreadyPaidPeriods = isset($this->data['periodic_payments']) ? $this->data['periodic_payments'] : [];
-            return isset($alreadyPaidPeriods[$product]) ? count($alreadyPaidPeriods[$product]) : 0;
+        $purchaseDetails = $this->getPurchaseDetailsForProduct($product);
+        if (!is_null($purchaseDetails)) {
+            return $purchaseDetails->paidPeriods;
         }
+
+        throw new AppException(AppException::ERR_OBJECT_NOT_FOUND);
     }
 
     /**
@@ -103,10 +159,12 @@ trait BaseCartTrait
      */
     public function getInstallmentsCountOnProduct($product)
     {
-        if (is_object($product)) {
-            $product = $product->id;
+        $purchaseDetails = $this->getPurchaseDetailsForProduct($product);
+        if (!is_null($purchaseDetails)) {
+            return $purchaseDetails->periodsCount;
         }
-        return isset($this->data['period_details'][$product]) ? $this->data['period_details'][$product]['count'] : 0;
+
+        throw new AppException(AppException::ERR_OBJECT_NOT_FOUND);
     }
 
     /**
@@ -117,26 +175,58 @@ trait BaseCartTrait
      */
     public function isPeriodicPaymentsCompletedOnProduct($product)
     {
-        return $this->getPaymentsCountForInstallmentsOnProduct($product) >= $this->getInstallmentsCountOnProduct($product);
+        $purchaseDetails = $this->getPurchaseDetailsForProduct($product);
+        if (!is_null($purchaseDetails)) {
+            return $purchaseDetails->paidPeriods >= $purchaseDetails->periodsCount;
+        }
+
+        throw new AppException(AppException::ERR_OBJECT_NOT_FOUND);
     }
 
     /**
      * Undocumented function
      *
-     * @return array
+     * @return CartCustomInstallmentPeriod[]
      */
     public function getCustomPeriodsOrdered()
     {
-        $periodConfig = array_map(function ($data) {
-            $data['payment_at'] = Carbon::parse($data['payment_at']);
-            return $data;
-        }, array_filter($this->data['periodic_custom'], function ($data) {
-            return isset($data['payment_at']) && !is_null($data['payment_at']);
-        }));
-        usort($periodConfig, function ($a, $b) {
+        /** @var CartCustomInstallmentPeriod[] */
+        $periodsConfig = array_map(
+            function ($data) {
+                return new CartCustomInstallmentPeriod($data);
+            },
+            $this->data['periodic_custom']
+        );
+
+        $periodsConfig = array_filter($periodsConfig, function (CartCustomInstallmentPeriod $period) {
+            return !is_null($period->payment_at);
+        });
+
+        usort($periodsConfig, function ($a, $b) {
             return $a['payment_at']->getTimestamp() - $b['payment_at']->getTimestamp();
         });
-        return $periodConfig;
+
+        $indexer = 0;
+        return array_map(function (CartCustomInstallmentPeriod $details) use ($indexer) {
+            $details->index = $indexer++;
+        }, $periodsConfig);
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param CartCustomInstallmentPeriod $customInstallments
+     *
+     * @return void
+     */
+    public function setCustomPeriodInstallments($customInstallments)
+    {
+        if (is_null($this->data)) {
+            $this->data = [];
+        }
+        $this->data = array_merge($this->data, [
+            'periodic_custom' => $customInstallments,
+        ]);
     }
 
     /**
@@ -162,6 +252,42 @@ trait BaseCartTrait
     /**
      * Undocumented function
      *
+     * @return boolean
+     */
+    public function isPeriodicPaymentCart()
+    {
+        return BaseFlags::isActive($this->flags, Cart::FLAGS_PERIOD_PAYMENT_CART);
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return Cart|null
+     */
+    public function getPeriodicPaymentOriginalCart()
+    {
+        if (isset($this->data['periodic_pay']['originalCart'])) {
+            return Cart::find($this->data['periodic_pay']['originalCart']);
+        }
+        return null;
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return int|null
+     */
+    public function getPeriodicPaymentOriginalCartID()
+    {
+        if (isset($this->data['periodic_pay']['originalCart'])) {
+            return $this->data['periodic_pay']['originalCart'];
+        }
+        return null;
+    }
+
+    /**
+     * Undocumented function
+     *
      * @return Carbon
      */
     public function getPeriodStart()
@@ -172,7 +298,7 @@ trait BaseCartTrait
     /**
      * Undocumented function
      *
-     * @param int|Product $product
+     * @param int|Product|null $product
      * @return Carbon|null
      */
     public function getNextPeriodDueDateForProduct($product)
@@ -180,26 +306,19 @@ trait BaseCartTrait
         if (is_object($product)) {
             $product = $product->id;
         }
-        if ($this->isCustomPeriodicPayment()) {
-            $payment_index = -1;
-            $paymentInfo = null;
-            $indexer = 0;
-            $orderedPeriods = $this->getCustomPeriodsOrdered();
-            foreach ($orderedPeriods as $custom) {
-                if (isset($custom['status']) && $custom['status'] == ICart::CustomAccessStatusNotPaid) {
-                    $payment_index = $indexer;
-                    $paymentInfo = $custom;
-                    break;
-                }
-                $indexer++;
+
+        if (! $this->isCustomPeriodicPayment()) {
+            $details = $this->getPurchaseDetailsForProduct($product);
+
+            $periodStart = $this->getPeriodStart();
+            $duration = $details->periodsDuration;
+            $total = $details->periodsCount;
+            $periodEnd = $details->periodsEnds;
+            $daysRemaining = $periodStart->diffInDays($periodEnd);
+            if ($daysRemaining < $duration * $total) {
+                $duration = floor($daysRemaining / $total);
             }
-            if ($payment_index >= 0 && !is_null($paymentInfo) && isset($paymentInfo['amount']) && isset($paymentInfo['payment_at'])) {
-                return Carbon::parse($paymentInfo['payment_at']);
-            }
-        } else {
-            $details = $this->getPeriodicDetailsForProduct($product);
-            $duration = $details['duration'];
-            $total = $details['count'];
+            return $periodStart->addDays($duration * ($details->paidPeriods + 1));
         }
 
         return null;
@@ -208,12 +327,24 @@ trait BaseCartTrait
     /**
      * Undocumented function
      *
-     * @param [type] $productId
-     * @return array|null
+     * @return CartCustomInstallmentPeriod|null
      */
-    protected function getPeriodicDetailsForProduct($productId)
+    public function getNextPeriodForCustomInstallments()
     {
-        return isset($this->data['period_details'][$productId]) ? $this->data['period_details'][$productId] : null;
+        if ($this->isCustomPeriodicPayment()) {
+            $periodDetails = null;
+            $orderedPeriods = $this->getCustomPeriodsOrdered();
+            foreach ($orderedPeriods as $custom) {
+                if ($custom->status === ICart::CustomAccessStatusNotPaid) {
+                    $periodDetails = $custom;
+                    break;
+                }
+            }
+
+            return $periodDetails;
+        }
+
+        return null;
     }
 
 
@@ -222,7 +353,8 @@ trait BaseCartTrait
      *
      * @return CartGiftDetails|null
      */
-    public function getGiftCodeUsage() {
+    public function getGiftCodeUsage()
+    {
         if (isset($this->data['gift_code'])) {
             return new CartGiftDetails($this->data['gift_code']);
         }
@@ -235,7 +367,8 @@ trait BaseCartTrait
      *
      * @return boolean
      */
-    public function getUseBalance() {
+    public function getUseBalance()
+    {
         return isset($this->data['use_balance']) && $this->data['use_balance'];
     }
 
@@ -243,11 +376,14 @@ trait BaseCartTrait
     /**
      * Undocumented function
      *
-     * @param [type] $ids
+     * @param array $ids
      * @return void
      */
-    public function setPeriodicProductIds($ids) {
-        if (is_null($this->data)) { $this->data = []; }
+    public function setPeriodicProductIds(array $ids)
+    {
+        if (is_null($this->data)) {
+            $this->data = [];
+        }
         $this->data = array_merge($this->data, [
             'periodic_product_ids' => $ids,
         ]);
@@ -259,13 +395,51 @@ trait BaseCartTrait
      * @param boolean $useBalance
      * @return void
      */
-    public function setUseBalance(bool $useBalance) {
-        if (is_null($this->data)) { $this->data = []; }
+    public function setUseBalance(bool $useBalance)
+    {
+        if (is_null($this->data)) {
+            $this->data = [];
+        }
         $this->data = array_merge($this->data, [
             'use_balance' => $useBalance,
         ]);
     }
 
+    /**
+     * Undocumented function
+     *
+     * @return boolean
+     */
+    public function isSingleInstallmentCart()
+    {
+        return $this->flags & Cart::FLGAS_SINGLE_INSTALLMENT;
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return ICart[]
+     */
+    public function getSingleInstallmentOriginalCarts()
+    {
+        $cartIds = isset($this->data['single_installment_carts']) ? $this->data['single_installment_carts']: [];
+        return Cart::whereIn('id', $cartIds);
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return void
+     */
+    public function setSingleInstallmentCarts(array $carts)
+    {
+        if (is_null($this->data)) {
+            $this->data = [];
+        }
+        $this->data = array_merge($this->data, [
+            'single_installment_carts' => $carts,
+        ]);
+    }
 
     /**
      * Undocumented function
@@ -273,8 +447,11 @@ trait BaseCartTrait
      * @param boolean $useBalance
      * @return void
      */
-    public function setGateway($gateway) {
-        if (is_null($this->data)) { $this->data = []; }
+    public function setGateway($gateway)
+    {
+        if (is_null($this->data)) {
+            $this->data = [];
+        }
         $this->data = array_merge($this->data, [
             'gateway' => $gateway,
         ]);
@@ -286,10 +463,13 @@ trait BaseCartTrait
      * @param CartGiftDetails $details
      * @return void
      */
-    public function setGiftCodeUsage(CartGiftDetails $details) {
-        if (is_null($this->data)) { $this->data = []; }
+    public function setGiftCodeUsage(CartGiftDetails $details)
+    {
+        if (is_null($this->data)) {
+            $this->data = [];
+        }
         $this->data = array_merge($this->data, [
-            'gift_code' => (array) $details,
+            'gift_code' => $details->toArray(),
         ]);
     }
 
@@ -300,10 +480,13 @@ trait BaseCartTrait
      * @param Carbon $timestamp
      * @return void
      */
-    public function setPeriodStart(Carbon $timestamp) {
-        if (is_null($this->data)) { $this->data = []; }
+    public function setPeriodStart(Carbon $timestamp)
+    {
+        if (is_null($this->data)) {
+            $this->data = [];
+        }
         $this->data = array_merge($this->data, [
-            'period_start' => (array) $timestamp,
+            'period_start' => $timestamp->format(config('larapress.crud.datetime-format')),
         ]);
     }
 
@@ -313,11 +496,13 @@ trait BaseCartTrait
      * @param string|null $desc
      * @return void
      */
-    public function setDescription($desc) {
-        if (is_null($this->data)) { $this->data = []; }
+    public function setDescription($desc)
+    {
+        if (is_null($this->data)) {
+            $this->data = [];
+        }
         $this->data = array_merge($this->data, [
-            'description' => (array) $desc,
+            'description' => $desc,
         ]);
     }
-
 }

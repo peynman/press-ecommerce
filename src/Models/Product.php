@@ -9,8 +9,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Larapress\ECommerce\Factories\ProductFactory;
 use Larapress\ECommerce\Services\Cart\BaseCartItemTrait;
 use Larapress\ECommerce\Services\Cart\ICartItem;
-use Larapress\ECommerce\Services\Product\ProductSalesAmountRelationship;
-use Larapress\ECommerce\Services\Product\ProductSalesCountRelationship;
+use Larapress\ECommerce\Services\Product\Relations\ProductSalesAmountRelation;
+use Larapress\ECommerce\Services\Product\Relations\ProductSalesCountRelation;
 use Larapress\Profiles\IProfileUser;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Collection;
@@ -91,7 +91,7 @@ class Product extends Model implements ICartItem
      */
     public function author()
     {
-        return $this->belongsTo(config('larapress.crud.user.class'), 'author_id');
+        return $this->belongsTo(config('larapress.crud.user.model'), 'author_id');
     }
 
     /**
@@ -127,8 +127,8 @@ class Product extends Model implements ICartItem
     {
         return $this->hasMany(
             ProductReview::class,
-            'product_reviews',
-            'product_id'
+            'product_id',
+            'id'
         );
     }
 
@@ -181,7 +181,7 @@ class Product extends Model implements ICartItem
      */
     public function sales_real_amount()
     {
-        return new ProductSalesAmountRelationship($this, WalletTransaction::TYPE_REAL_MONEY);
+        return new ProductSalesAmountRelation($this, WalletTransaction::TYPE_REAL_MONEY);
     }
 
     /**
@@ -191,7 +191,7 @@ class Product extends Model implements ICartItem
      */
     public function sales_virtual_amount()
     {
-        return new ProductSalesAmountRelationship($this, WalletTransaction::TYPE_VIRTUAL_MONEY);
+        return new ProductSalesAmountRelation($this, WalletTransaction::TYPE_VIRTUAL_MONEY);
     }
 
     /**
@@ -201,7 +201,7 @@ class Product extends Model implements ICartItem
      */
     public function sales_role_support_amount()
     {
-        return new ProductSalesAmountRelationship($this, WalletTransaction::TYPE_REAL_MONEY, ".roles.support");
+        return new ProductSalesAmountRelation($this, WalletTransaction::TYPE_REAL_MONEY, ".roles.support");
     }
 
     /**
@@ -211,7 +211,7 @@ class Product extends Model implements ICartItem
      */
     public function sales_role_support_ext_amount()
     {
-        return new ProductSalesAmountRelationship($this, WalletTransaction::TYPE_REAL_MONEY, ".roles.support-external");
+        return new ProductSalesAmountRelation($this, WalletTransaction::TYPE_REAL_MONEY, ".roles.support-external");
     }
 
     /**
@@ -221,7 +221,7 @@ class Product extends Model implements ICartItem
      */
     public function sales_fixed()
     {
-        return new ProductSalesCountRelationship($this, 'sales_fixed');
+        return new ProductSalesCountRelation($this, 'sales_fixed');
     }
 
     /**
@@ -231,7 +231,7 @@ class Product extends Model implements ICartItem
      */
     public function sales_periodic()
     {
-        return new ProductSalesCountRelationship($this, 'sales_periodic');
+        return new ProductSalesCountRelation($this, 'sales_periodic');
     }
 
     /**
@@ -241,7 +241,7 @@ class Product extends Model implements ICartItem
      */
     public function sales_periodic_payment()
     {
-        return new ProductSalesCountRelationship($this, 'periodic_payment');
+        return new ProductSalesCountRelation($this, 'periodic_payment');
     }
 
     /**
@@ -251,7 +251,7 @@ class Product extends Model implements ICartItem
      */
     public function remaining_periodic_count()
     {
-        return new ProductSalesCountRelationship($this, 'remain_count');
+        return new ProductSalesCountRelation($this, 'remain_count');
     }
 
     /**
@@ -261,6 +261,6 @@ class Product extends Model implements ICartItem
      */
     public function remaining_periodic_amount()
     {
-        return new ProductSalesCountRelationship($this, 'remain_amount');
+        return new ProductSalesCountRelation($this, 'remain_amount');
     }
 }

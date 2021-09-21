@@ -1,13 +1,13 @@
 <?php
 
-namespace Larapress\ECommerce\Services\Product;
+namespace Larapress\ECommerce\Services\Product\Relations;
 
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Larapress\ECommerce\Models\Cart;
 
-class MetricCounterGroupCartRelationship extends Relation
+class MetricCounterGroupCartRelation extends Relation
 {
     protected $filterType = null;
     protected $isReadyToLoad = false;

@@ -2,69 +2,75 @@
 
 namespace Larapress\ECommerce\CRUD;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
-use Larapress\CRUD\Services\CRUD\BaseCRUDProvider;
+use Larapress\CRUD\Services\CRUD\Traits\CRUDProviderTrait;
 use Larapress\CRUD\Services\CRUD\ICRUDProvider;
-use Larapress\CRUD\Services\RBAC\IPermissionsMetadata;
-use Larapress\ECommerce\Models\Product;
+use Larapress\CRUD\Services\CRUD\ICRUDVerb;
 use Larapress\ECommerce\Models\ProductCategory;
-use Larapress\Pages\Models\Page;
+use Larapress\FileShare\Services\FileUpload\IFileUploadService;
 use Larapress\Profiles\Services\FormEntry\IFormEntryService;
 
-class ProductCategoryCRUDProvider implements ICRUDProvider, IPermissionsMetadata
+class ProductCategoryCRUDProvider implements ICRUDProvider
 {
-    use BaseCRUDProvider;
+    use CRUDProviderTrait;
 
     public $name_in_config = 'larapress.ecommerce.routes.product_categories.name';
+    public $model_in_config = 'larapress.ecommerce.routes.product_categories.model';
+    public $compositions_in_config = 'larapress.ecommerce.routes.product_categories.compositions';
+
     public $verbs = [
-        self::VIEW,
-        self::CREATE,
-        self::EDIT,
-        self::DELETE,
+        ICRUDVerb::VIEW,
+        ICRUDVerb::CREATE,
+        ICRUDVerb::EDIT,
+        ICRUDVerb::DELETE,
     ];
-    public $model = ProductCategory::class;
     public $createValidations = [
         'parent_id' => 'nullable|numeric|exists:product_categories,id',
-        'name' => 'required|string|unique:products,name',
+        'name' => 'required|string|unique:product_categories,name',
         'data.title' => 'required',
         'flags' => 'nullable|numeric',
     ];
     public $updateValidations = [
         'parent_id' => 'nullable|numeric|exists:product_categories,id',
-        'name' => 'required|string|unique:products,name',
+        'name' => 'required|string|unique:product_categories,name',
         'data.title' => 'required',
         'flags' => 'nullable|numeric',
     ];
-    public $autoSyncRelations = [];
     public $validSortColumns = [
         'id',
         'author_id',
         'created_at',
         'updated_at',
+        'deleted_at',
     ];
     public $searchColumns = [
         'id',
         'name',
         'data'
     ];
-    public $validRelations = [
-        'author'
-    ];
-    public $validFilters = [];
-    public $defaultShowRelations = [];
-    public $excludeIfNull = [];
-    public $filterFields = [];
-    public $filterDefaults = [];
+
+    /**
+     * Undocumented function
+     *
+     * @return array
+     */
+    public function getValidRelations(): array
+    {
+        return [
+            'author' => config('larapress.crud.user.provider')
+        ];
+    }
 
     /**
      * Exclude current id in name unique request
      *
      * @param Request $request
-     * @return void
+     *
+     * @return array
      */
-    public function getUpdateRules(Request $request)
+    public function getUpdateRules(Request $request): array
     {
         $this->updateValidations['name'] .= ',' . $request->route('id');
         return $this->updateValidations;
@@ -73,16 +79,16 @@ class ProductCategoryCRUDProvider implements ICRUDProvider, IPermissionsMetadata
     /**
      * Undocumented function
      *
-     * @param [type] $args
-     * @return void
+     * @param array $args
+     * @return array
      */
-    public function onBeforeCreate($args)
+    public function onBeforeCreate(array $args): array
     {
         $args['author_id'] = Auth::user()->id;
 
-        /** @var IFormEntryService */
-        $service = app(IFormEntryService::class);
-        $data = $service->replaceBase64ImagesInInputs($args['data']);
+        /** @var IFileUploadService */
+        $service = app(IFileUploadService::class);
+        $data = $service->replaceBase64WithFilePathValuesRecursuve($args['data'], null);
         $args['data'] = $data;
 
         return $args;
@@ -91,14 +97,15 @@ class ProductCategoryCRUDProvider implements ICRUDProvider, IPermissionsMetadata
     /**
      * Undocumented function
      *
-     * @param [type] $args
-     * @return void
+     * @param array $args
+     *
+     * @return array
      */
-    public function onBeforeUpdate($args)
+    public function onBeforeUpdate(array $args): array
     {
-        /** @var IFormEntryService */
-        $service = app(IFormEntryService::class);
-        $data = $service->replaceBase64ImagesInInputs($args['data']);
+        /** @var IFileUploadService */
+        $service = app(IFileUploadService::class);
+        $data = $service->replaceBase64WithFilePathValuesRecursuve($args['data'], null);
 
         $args['data'] = $data;
 
@@ -108,13 +115,13 @@ class ProductCategoryCRUDProvider implements ICRUDProvider, IPermissionsMetadata
     /**
      * @param Builder $query
      *
-     * @return \Illuminate\Database\Query\Builder
+     * @return Builder
      */
-    public function onBeforeQuery($query)
+    public function onBeforeQuery(Builder $query): Builder
     {
         /** @var ICRUDUser $user */
         $user = Auth::user();
-        if (! $user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
+        if (! $user->hasRole(config('larapress.profiles.security.roles.super_role'))) {
             $query->where('author_id', $user->id);
         }
 
@@ -122,15 +129,15 @@ class ProductCategoryCRUDProvider implements ICRUDProvider, IPermissionsMetadata
     }
 
     /**
-     * @param Page $object
+     * @param ProductCategory $object
      *
      * @return bool
      */
-    public function onBeforeAccess($object)
+    public function onBeforeAccess($object): bool
     {
         /** @var ICRUDUser|IProfileUser $user */
         $user = Auth::user();
-        if (! $user->hasRole(config('larapress.profiles.security.roles.super-role'))) {
+        if (! $user->hasRole(config('larapress.profiles.security.roles.super_role'))) {
             return $user->id === $object->author_id;
         }
 

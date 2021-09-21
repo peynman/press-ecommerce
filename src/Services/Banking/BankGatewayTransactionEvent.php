@@ -2,6 +2,7 @@
 
 namespace Larapress\ECommerce\Services\Banking;
 
+use Carbon\Carbon;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -11,8 +12,6 @@ class BankGatewayTransactionEvent implements ShouldQueue
 {
     use Dispatchable, SerializesModels;
 
-    /** @var \Larapress\Profiles\Models\Domain */
-    public $domainId;
     /** @var string */
     public $ip;
     /** @var int */
@@ -28,14 +27,18 @@ class BankGatewayTransactionEvent implements ShouldQueue
      * @param $ip
      * @param $timestamp
      */
-    public function __construct($domain, $ip, $timestamp, BankGatewayTransaction $transaction)
+    public function __construct(BankGatewayTransaction $transaction, $ip, Carbon $timestamp)
     {
         $this->transactionId = $transaction->id;
-        $this->domainId = is_numeric($domain) ? $domain : $domain->id;
         $this->ip = $ip;
-        $this->timestamp = $timestamp;
+        $this->timestamp = $timestamp->getTimestamp();
     }
 
+    /**
+     * Undocumented function
+     *
+     * @return BankGatewayTransaction
+     */
     public function getGatewayTransaction()
     {
         return BankGatewayTransaction::find($this->transactionId);

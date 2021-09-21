@@ -8,26 +8,31 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Larapress\CRUD\BaseFlags;
 use Larapress\CRUD\Events\CRUDCreated;
 use Larapress\CRUD\Events\CRUDUpdated;
 use Larapress\CRUD\Exceptions\AppException;
-use Larapress\CRUD\Extend\Helpers;
 use Larapress\ECommerce\CRUD\BankGatewayTransactionCRUDProvider;
 use Larapress\ECommerce\CRUD\CartCRUDProvider;
 use Larapress\ECommerce\IECommerceUser;
 use Larapress\ECommerce\Models\BankGateway;
 use Larapress\ECommerce\Models\BankGatewayTransaction;
 use Larapress\ECommerce\Models\Cart;
-use Larapress\ECommerce\Models\GiftCode;
-use Larapress\ECommerce\Models\Product;
 use Larapress\ECommerce\Models\WalletTransaction;
-use Larapress\ECommerce\Services\Banking\Events\BankGatewayTransactionEvent;
-use Larapress\ECommerce\Services\Banking\Events\CartPurchasedEvent;
-use Larapress\ECommerce\Services\Banking\Events\WalletTransactionEvent;
+use Larapress\ECommerce\Services\Cart\ICartService;
+use Larapress\ECommerce\Services\Cart\IPurchasingCartService;
+use Larapress\ECommerce\Services\Wallet\IWalletService;
+use Larapress\ECommerce\Services\Wallet\WalletTransactionEvent;
 
 class BankingService implements IBankingService
 {
+
+    /** @var IWalletService */
+    protected $walletService;
+    public function __construct(IWalletService $walletService)
+    {
+        $this->walletService = $walletService;
+    }
+
     /**
      * Undocumented function
      *
@@ -38,7 +43,7 @@ class BankingService implements IBankingService
      * @param callback|null $onFailed
      * @return Response
      */
-    public function redirectToBankForAmount(Request $request, $gateway_id, $amount, $currency, $onFailed, $onAlreadyPurchased)
+    public function redirectToBankForAmount(Request $request, $gateway_id, $amount, $currency, $onFailed, $onSuccess)
     {
         /** @var IECommerceUser */
         $user = Auth::user();
@@ -55,7 +60,7 @@ class BankingService implements IBankingService
         ]);
         CRUDUpdated::dispatch($user, $cart, CartCRUDProvider::class, Carbon::now());
 
-        return $this->redirectToBankForCart($request, $cart, $gateway_id, $onFailed, $onAlreadyPurchased);
+        return $this->redirectToBankForCart($request, $cart, $gateway_id, $onFailed, $onSuccess);
     }
 
     /**
@@ -63,14 +68,15 @@ class BankingService implements IBankingService
      * @param Cart|int           $cart
      * @param BankGateway|int    $gateway_id
      * @param callable           $onFailed
+     * @param callable           $onSuccess
      *
      * @return Response
      */
-    public function redirectToBankForCart(Request $request, $cart, $gateway_id, $onFailed, $onAlreadyPurchased)
+    public function redirectToBankForCart(Request $request, $cart, $gateway_id, $onFailed, $onSuccess)
     {
         if (is_numeric($cart)) {
             /** @var Cart $cart */
-            $cart = Cart::with(['products'])->find($cart);
+            $cart = Cart::find($cart);
         }
 
         /** @var IECommerceUser */
@@ -80,29 +86,21 @@ class BankingService implements IBankingService
         }
 
         if ($cart->isPaid()) {
-            return $onAlreadyPurchased($request, $cart);
+            return $onSuccess($request, $cart);
         }
 
         $domain = $user->getMembershipDomain();
-        $balance = $this->getUserBalance($user, $cart->currency);
+        $balance = $this->walletService->getUserBalance($user, $cart->currency);
 
-        if ((isset($cart->data['use_balance']) && $cart->data['use_balance'] && floatval($balance['amount']) >= floatval($cart->amount)) || floatval($cart->amount) === 0) {
-            try {
-                DB::beginTransaction();
-                $this->markCartPurchased($request, $cart);
-                DB::commit();
-            } catch (\Exception $e) {
-                DB::rollBack();
-                Log::critical('Bank Gateway failed redirect', [
-                    'message' => $e->getMessage(),
-                    'file' => $e->getFile(),
-                    'stack' => $e->getTraceAsString(),
-                ]);
-                return $onFailed($request, $cart, $e);
-            }
+        /** @var ICartService */
+        $cartService = app(ICartService::class);
 
-
-            return $onAlreadyPurchased($request, $cart);
+        if ((isset($cart->data['use_balance']) && $cart->data['use_balance'] == true && $balance >= $cart->amount)
+            // check amount as integer
+            || $cart->amount == 0
+        ) {
+            $cartService->markCartPurchased($cart);
+            return $onSuccess($request, $cart);
         }
 
         $avPorts = config('larapress.ecommerce.banking.ports');
@@ -112,14 +110,19 @@ class BankingService implements IBankingService
             throw new AppException(AppException::ERR_OBJECT_NOT_FOUND);
         }
 
+        if (!isset($avPorts[$gatewayData->type])) {
+            throw new AppException(AppException::ERR_OBJECT_NOT_FOUND);
+        }
+
         /** @var IBankPortInterface */
         $port = new $avPorts[$gatewayData->type]($gatewayData);
 
-        [$portPrice, $portCurrency] = $port->convertForPriceAndCurrency(floatval($cart->amount), $cart->currency);
-        if (isset($cart->data['use_balance']) && $cart->data['use_balance'] && floatval($balance['amount']) < $cart->amount) {
-            $portPrice = $portPrice - floatval($balance['amount']);
+        [$portPrice, $portCurrency] = $port->convertForPriceAndCurrency($cart->amount, $cart->currency);
+        if (isset($cart->data['use_balance']) && $cart->data['use_balance'] && $balance < $cart->amount) {
+            $portPrice = $portPrice - $balance;
         }
 
+        // update cart before forwarding to bank
         $return_to = $request->get('return_to', null);
         $cartData = $cart->data;
         $cartData['return_to'] = $return_to;
@@ -128,6 +131,10 @@ class BankingService implements IBankingService
             'data' => $cartData,
             'flags' => $flags | Cart::FLGAS_FORWARDED_TO_BANK,
         ]);
+
+        /** @var IPurchasingCartService */
+        $purchasingService = app(IPurchasingCartService::class);
+        $purchasingService->resetPurchasingCache($user->id);
 
         /** @var BankGatewayTransaction */
         $transaction = BankGatewayTransaction::create([
@@ -139,11 +146,10 @@ class BankingService implements IBankingService
             'domain_id' => $domain->id,
             'status' => BankGatewayTransaction::STATUS_CREATED,
             'data' => [
-                'description' => 'درخواست خرید سبد با شماره ' . $cart->id,
+                'description' => trans('larepress::ecommerce.banking.messages.bank_forwared', [
+                    'cart_id' => $cart->id
+                ]),
             ]
-        ]);
-        $callback = route(config('larapress.ecommerce.routes.bank_gateways.name') . '.any.callback', [
-            'tr_id' => $transaction->id,
         ]);
         // reference keeping for redirect
         /// no logic here; just keep objects in memory update and ready
@@ -151,9 +157,13 @@ class BankingService implements IBankingService
         $transaction->domain = $domain;
         $transaction->customer = $user;
 
-        BankGatewayTransactionEvent::dispatch($domain, $request->ip(), time(), $transaction);
+        BankGatewayTransactionEvent::dispatch($transaction, $request->ip(), Carbon::now());
         CRUDCreated::dispatch($user, $transaction, BankGatewayTransactionCRUDProvider::class, Carbon::now());
 
+        // callback url for this transaction port from banking port
+        $callback = route(config('larapress.ecommerce.routes.bank_gateways.name') . '.any.callback', [
+            'tr_id' => $transaction->id,
+        ]);
         return $port->redirect($request, $transaction, $callback);
     }
 
@@ -185,55 +195,41 @@ class BankingService implements IBankingService
             return $onAlreadyPurchased($request, $cart, $transaction);
         }
 
+        /** @var ICartService */
+        $cartService = app(ICartService::class);
+
         try {
             $avPorts = config('larapress.ecommerce.banking.ports');
-            DB::beginTransaction();
             $gatewayData = $transaction->bank_gateway;
             /** @var IBankPortInterface */
             $port = new $avPorts[$gatewayData->type]($gatewayData);
             $transaction = $port->verify($request, $transaction);
+
             if ($transaction->status === BankGatewayTransaction::STATUS_SUCCESS) {
-                $supportProfileId = isset($cart->customer->supportProfile['id']) ? $cart->customer->supportProfile['id'] : null;
-                $wallet = WalletTransaction::create([
-                    'user_id' => $cart->customer_id,
-                    'domain_id' => $cart->domain_id,
-                    // increase wallet amount = transaction amount, becouse
-                    // we want to increase user wallet with the amount he just paid
-                    // cart amount may differ to this value
-                    'amount' => $transaction->amount,
-                    'currency' => $transaction->currency,
-                    'type' => WalletTransaction::TYPE_REAL_MONEY,
-                    'data' => [
+                $this->walletService->addBalanceForUser(
+                    $cart->customer,
+                    $transaction->amount,
+                    $transaction->currency,
+                    WalletTransaction::TYPE_REAL_MONEY,
+                    WalletTransaction::FLAGS_BALANCE_PURCHASED,
+                    trans('larapress::ecommerce.banking.messages.wallet_descriptions.cart_increased', ['cart_id' => $cart->id]),
+                    [
                         'cart_id' => $cart->id,
-                        'transaction_id' => $transaction->id,
-                        'description' => trans('larapress::ecommerce.banking.messages.wallet-descriptions.cart_increased', ['cart_id' => $cart->id]),
-                        'balance' => $this->getUserBalance($cart->customer, $cart->currency),
-                        'support' => $supportProfileId,
                     ]
-                ]);
-                $this->markCartPurchased($request, $cart);
-                DB::commit();
-
-                $this->resetPurchasedCache($cart->customer_id);
-                WalletTransactionEvent::dispatch($wallet, time());
-                BankGatewayTransactionEvent::dispatch($cart->domain, $request->ip(), time(), $transaction);
-                CRUDUpdated::dispatch(Auth::user(), $transaction, BankGatewayTransactionCRUDProvider::class, Carbon::now());
-                $this->resetBalanceCache($cart->customer_id);
-
+                );
+                $cartService->markCartPurchased($cart);
+                BankGatewayTransactionEvent::dispatch($transaction, $request->ip, Carbon::now());
                 return $onSuccess($request, $cart, $transaction);
             } else {
                 $transaction->update([
                     'status' => BankGatewayTransaction::STATUS_CANCELED,
                 ]);
-                DB::commit();
-
-                BankGatewayTransactionEvent::dispatch($transaction->domain, $request->ip(), time(), $transaction);
+                BankGatewayTransactionEvent::dispatch($transaction, $request->ip(), Carbon::now());
                 CRUDUpdated::dispatch(Auth::user(), $transaction, BankGatewayTransactionCRUDProvider::class, Carbon::now());
 
                 return $onCancel($request, $cart, 'Bank Request Canceled');
             }
         } catch (\Exception $e) {
-            DB::rollBack();
             Log::critical('Bank Gateway failed verify', [
                 'message' => $e->getMessage(),
                 'file' => $e->getFile(),
@@ -248,7 +244,7 @@ class BankingService implements IBankingService
                 'status' => BankGatewayTransaction::STATUS_FAILED,
                 'data' => $data,
             ]);
-            BankGatewayTransactionEvent::dispatch($transaction->domain, $request->ip(), time(), $transaction);
+            BankGatewayTransactionEvent::dispatch($transaction, $request->ip(), Carbon::now());
             CRUDUpdated::dispatch(Auth::user(), $transaction, BankGatewayTransactionCRUDProvider::class, Carbon::now());
 
             return $onFailed($request, $cart, $e->getMessage());
