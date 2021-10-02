@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Larapress\ECommerce\Models\Product;
 use Larapress\ECommerce\Services\Cart\Base\CartGiftDetails;
 use Larapress\ECommerce\Services\Cart\Base\CartCustomInstallmentPeriod;
+use Larapress\Profiles\Models\PhysicalAddress;
 
 interface ICart {
     const CustomAccessStatusPaid = 1;
@@ -204,4 +205,87 @@ interface ICart {
      * @return void
      */
     public function setCustomPeriodInstallments($customInstallments);
+
+
+    /**
+     * Undocumented function
+     *
+     * @param array $names
+     * @return void
+     */
+    public function setAvailableDeliveryAgents($names);
+
+    /**
+     * Undocumented function
+     *
+     * @return array
+     */
+    public function getAvailableDeliveryAgents();
+
+    /**
+     * Undocumented function
+     *
+     * @param int $addressId
+     * @return void
+     */
+    public function setDeliveryAddress($addressId);
+
+    /**
+     * Undocumented function
+     *
+     * @param int|Carbon $timestamp
+     * @return void
+     */
+    public function setDeliveryPreferredTimestamp($timestamp);
+
+    /**
+     * Undocumented function
+     *
+     * @return null|int
+     */
+    public function getDeliveryAddressId();
+
+    /**
+     * Undocumented function
+     *
+     * @return null|PhysicalAddress
+     */
+    public function getDeliveryAddress();
+
+    /**
+     * Undocumented function
+     *
+     * @param string $agentName
+     * @return void
+     */
+    public function setDeliveryAgentName($agentName);
+
+    /**
+     * Undocumented function
+     *
+     * @return string|null
+     */
+    public function getDeliveryAgentName();
+
+    /**
+     * Undocumented function
+     *
+     * @param float $price
+     * @return void
+     */
+    public function setDeliveryPrice($price);
+
+    /**
+     * Undocumented function
+     *
+     * @return null|float
+     */
+    public function getDeliveryPrice();
+
+    /**
+     * Undocumented function
+     *
+     * @return null|Carbon
+     */
+    public function getPreferredDeliveryTimestamp();
 }

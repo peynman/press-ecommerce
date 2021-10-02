@@ -12,5 +12,5 @@ interface IWalletTransactionRepository {
      *
      * @return PaginatedResponse
      */
-    public function getWalletTransactionsPaginated($user, $page = 0, $limit = null);
+    public function getWalletTransactionsPaginated($user, $page = 1, $limit = null);
 }

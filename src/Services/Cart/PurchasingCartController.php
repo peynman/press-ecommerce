@@ -27,6 +27,11 @@ class PurchasingCartController extends CRUDController
         )->name(config('larapress.ecommerce.routes.carts.name') . '.any.purchasing.update');
 
         Route::post(
+            '/me/current-cart/delivery',
+            '\\' . self::class . '@updatePurchasingCartDelivery'
+        )->name(config('larapress.ecommerce.routes.carts.name') . '.any.purchasing.delivery');
+
+        Route::post(
             '/me/current-cart/add',
             '\\' . self::class . '@addToPurchasingCart'
         )->name(config('larapress.ecommerce.routes.carts.name') . '.any.purchasing.add');
@@ -70,6 +75,18 @@ class PurchasingCartController extends CRUDController
         /** @var IECommerceUser $user */
         $user = Auth::user();
         return $service->updatePurchasingCart($request, $user, $request->getCurrency());
+    }
+
+        /**
+     * Update Purchasing Cart
+     *
+     * @return Response
+     */
+    public function updatePurchasingCartDelivery(IPurchasingCartService $service, CartUpdateRequest $request)
+    {
+        /** @var IECommerceUser $user */
+        $user = Auth::user();
+        return $service->updateCartDeliveryData($request, $user, $request->getCurrency());
     }
 
     /**

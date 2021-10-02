@@ -4,13 +4,24 @@
 namespace Larapress\ECommerce\Services\Cart;
 
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Larapress\ECommerce\IECommerceUser;
 use Larapress\ECommerce\Services\Cart\Requests\CartContentModifyRequest;
 use Larapress\ECommerce\Services\Cart\Requests\CartUpdateRequest;
 
 interface IPurchasingCartService
 {
+
+    /**
+     * Undocumented function
+     *
+     * @param CartUpdateRequest $request
+     * @param IECommerceUser $user
+     * @param integer $currency
+     *
+     * @return ICart
+     */
+    public function updateCartDeliveryData(CartUpdateRequest $request, IECommerceUser $user, int $currency);
+
     /**
      * Undocumented function
      *
@@ -18,7 +29,7 @@ interface IPurchasingCartService
      * @param IECommerceUser $user
      * @param int $currency
      *
-     * @return Response
+     * @return ICart
      */
     public function updatePurchasingCart(CartUpdateRequest $request, IECommerceUser $user, int $currency);
 

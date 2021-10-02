@@ -14,6 +14,9 @@ use Larapress\ECommerce\Models\ProductType;
 use Larapress\ECommerce\IECommerceUser;
 use Larapress\ECommerce\Models\ProductReview;
 use Larapress\ECommerce\Services\Cart\ICartService;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ProductRepository implements IProductRepository
 {
@@ -154,7 +157,7 @@ class ProductRepository implements IProductRepository
      *
      * @return PaginatedResponse
      */
-    public function getProductReviews($user, $productId, $page = 0, $limit = null)
+    public function getProductReviews($user, $productId, $page = 1, $limit = null)
     {
         $limit = PaginatedResponse::safeLimit($limit);
 
@@ -252,16 +255,20 @@ class ProductRepository implements IProductRepository
      */
     public function getProductsPaginated(
         $user,
-        $page = 0,
+        $page = 1,
         $limit = null,
         $inCategories = [],
         $withTypes = [],
+        $sortBy = null,
         $notIntCatgories = [],
         $withoutTypes = []
     ) {
-        $query = $this->getProductsPaginatedQuery($user, $page, $inCategories, $withTypes, $notIntCatgories, $withoutTypes, false);
+        $query = $this->getProductsPaginatedQuery($user, $page, $inCategories, $withTypes, $notIntCatgories, $withoutTypes, false, $sortBy);
         $limit = PaginatedResponse::safeLimit($limit);
-        return new PaginatedResponse($query->paginate($limit));
+        DB::enableQueryLog();
+        $r = new PaginatedResponse($query->paginate(1));
+        Log::debug("query", DB::getQueryLog());
+        return $r;
     }
 
     /**
@@ -277,14 +284,15 @@ class ProductRepository implements IProductRepository
      */
     public function getPurchasedProductsPaginated(
         $user,
-        $page = 0,
+        $page = 1,
         $limit = null,
         $inCategories = [],
         $withTypes = [],
+        $sortBy = null,
         $notIntCatgories = [],
         $withoutTypes = []
     ) {
-        $query = $this->getProductsPaginatedQuery($user, $page, $inCategories, $withTypes, $notIntCatgories, $withoutTypes, true);
+        $query = $this->getProductsPaginatedQuery($user, $page, $inCategories, $withTypes, $notIntCatgories, $withoutTypes, true, $sortBy);
         $limit = PaginatedResponse::safeLimit($limit);
         return new PaginatedResponse($query->paginate($limit));
     }
@@ -302,12 +310,13 @@ class ProductRepository implements IProductRepository
      */
     protected function getProductsPaginatedQuery(
         $user,
-        $page = 0,
+        $page = 1,
         $inCategories = [],
         $withTypes = [],
         $notIntCatgories = [],
         $withoutTypes = [],
-        $purchased = false
+        $purchased = false,
+        $sortBy = null,
     ) {
         Paginator::currentPageResolver(
             function () use ($page) {
@@ -346,14 +355,28 @@ class ProductRepository implements IProductRepository
                     $q->orWhereIn('parent_id', $purchases);
                 })->orWhere(function ($q) {
                     $q->whereNull('parent_id');
-                    $q->whereRaw("JSON_LENGTH(JSON_EXTRACT(data, '$.pricing')) = 0");
-                    $q->orWhereRaw("NULLIF(JSON_UNQUOTE(JSON_EXTRACT(data, '$.pricing')), 'null') IS NULL");
+                    $q->orWhereRaw("NULLIF(JSON_UNQUOTE(JSON_EXTRACT(data, '$.fixedPrice.amount')), 'null') IS NULL");
                 });
             });
         }
 
         $query = $this->applyPublishExpireWindow($query);
-        $query->orderBy('priority', 'desc');
+
+        if (!is_null($sortBy)) {
+            $sorters = config('larapress.ecommerce.products.sorts');
+            $sorterNames = array_keys($sorters);
+            if (in_array($sortBy, $sorterNames)) {
+                $sorterClass = $sorters[$sortBy];
+                /** @var IProductSort */
+                $sorter = new $sorterClass();
+                $sorter->applySort($query);
+            } else {
+                throw new AppException(AppException::ERR_INVALID_QUERY);
+            }
+        } else {
+            $query->orderBy('priority', 'desc');
+        }
+
         return $query;
     }
 

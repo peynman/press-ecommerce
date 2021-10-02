@@ -18,7 +18,7 @@ class CartRepository implements CartICartRepository
      *
      * @return array
      */
-    public function getPurchasedCartsPaginated(IProfileUser $user, $page = 0, $limit = null)
+    public function getPurchasedCartsPaginated(IProfileUser $user, $page = 1, $limit = null)
     {
         $limit = PaginatedResponse::safeLimit($limit);
 

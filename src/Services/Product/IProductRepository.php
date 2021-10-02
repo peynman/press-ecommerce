@@ -51,7 +51,16 @@ interface IProductRepository
      *
      * @return PaginatedResponse
      */
-    public function getProductsPaginated($user, $page = 0, $limit = null, $categories = [], $types = [], $exclude = false);
+    public function getProductsPaginated(
+        $user,
+        $page = 1,
+        $limit = null,
+        $inCategories = [],
+        $withTypes = [],
+        $sortBy = null,
+        $notIntCatgories = [],
+        $withoutTypes = []
+    );
 
     /**
      * Undocumented function
@@ -61,7 +70,16 @@ interface IProductRepository
      *
      * @return PaginatedResponse
      */
-    public function getPurchasedProductsPaginated($user, $page = 0, $limit = null, $categories = [], $types = []);
+    public function getPurchasedProductsPaginated(
+        $user,
+        $page = 1,
+        $limit = null,
+        $inCategories = [],
+        $withTypes = [],
+        $sortBy = null,
+        $notIntCatgories = [],
+        $withoutTypes = []
+    );
 
     /**
      * Undocumented function
@@ -73,7 +91,12 @@ interface IProductRepository
      *
      * @return PaginatedResponse
      */
-    public function getProductReviews($user, $productId, $page = 0, $limit = null);
+    public function getProductReviews(
+        $user,
+        $productId,
+        $page = 1,
+        $limit = null
+    );
 
     /**
      * Undocumented function

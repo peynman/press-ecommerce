@@ -12,6 +12,8 @@ use Larapress\ECommerce\Services\Banking\BankGatewayRepository;
 use Larapress\ECommerce\Services\Banking\IBankGatewayRepository;
 use Larapress\ECommerce\Services\Cart\CartRepository;
 use Larapress\ECommerce\Services\Cart\CartService;
+use Larapress\ECommerce\Services\Cart\DeliveryAgent\DeliveryAgent;
+use Larapress\ECommerce\Services\Cart\DeliveryAgent\IDeliveryAgent;
 use Larapress\ECommerce\Services\Cart\ICartRepository;
 use Larapress\ECommerce\Services\Cart\ICartService;
 use Larapress\ECommerce\Services\Cart\IInstallmentCartService;
@@ -50,6 +52,7 @@ class PackageServiceProvider extends ServiceProvider
         $this->app->bind(ICartRepository::class, CartRepository::class);
         $this->app->bind(IWalletTransactionRepository::class, WalletTransactionRepository::class);
         $this->app->bind(IBankGatewayRepository::class, BankGatewayRepository::class);
+        $this->app->bind(IDeliveryAgent::class, DeliveryAgent::class);
 
         $this->app->register(EventServiceProvider::class);
     }

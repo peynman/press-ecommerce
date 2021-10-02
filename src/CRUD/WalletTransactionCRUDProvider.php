@@ -27,12 +27,6 @@ class WalletTransactionCRUDProvider implements ICRUDProvider
     public $model_in_config = 'larapress.ecommerce.routes.wallet_transactions.model';
     public $compositions_in_config = 'larapress.ecommerce.routes.wallet_transactions.compositions';
 
-    public $updateValidations = [
-        'amount' => 'required|numeric',
-        'currency' => 'required|numeric',
-        'flags' => 'nullable|numeric',
-        'data.description' => 'required|string',
-    ];
     public $validSortColumns = [
         'id',
         'user_id',
@@ -57,6 +51,7 @@ class WalletTransactionCRUDProvider implements ICRUDProvider
     {
         return [
             ICRUDVerb::VIEW,
+            ICRUDVerb::SHOW,
             ICRUDVerb::CREATE,
             ICRUDVerb::EDIT,
             ICRUDVerb::DELETE,

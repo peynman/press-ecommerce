@@ -11,6 +11,7 @@ use Larapress\CRUD\Exceptions\AppException;
 use Larapress\ECommerce\Services\Cart\Base\CartCustomInstallmentPeriod;
 use Larapress\ECommerce\Services\Cart\Base\CartGiftDetails;
 use Larapress\ECommerce\Services\Cart\Base\CartProductPurchaseDetails;
+use Larapress\Profiles\Models\PhysicalAddress;
 
 trait BaseCartTrait
 {
@@ -307,7 +308,7 @@ trait BaseCartTrait
             $product = $product->id;
         }
 
-        if (! $this->isCustomPeriodicPayment()) {
+        if (!$this->isCustomPeriodicPayment()) {
             $details = $this->getPurchaseDetailsForProduct($product);
 
             $periodStart = $this->getPeriodStart();
@@ -422,8 +423,173 @@ trait BaseCartTrait
      */
     public function getSingleInstallmentOriginalCarts()
     {
-        $cartIds = isset($this->data['single_installment_carts']) ? $this->data['single_installment_carts']: [];
+        $cartIds = isset($this->data['single_installment_carts']) ? $this->data['single_installment_carts'] : [];
         return Cart::whereIn('id', $cartIds);
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param array $names
+     * @return void
+     */
+    public function setAvailableDeliveryAgents($names)
+    {
+        if (is_null($this->data)) {
+            $this->data = [];
+        }
+        $this->data = array_merge($this->data, [
+            'delivery_agent_names' => $names,
+        ]);
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return array
+     */
+    public function getAvailableDeliveryAgents()
+    {
+        if (isset($this->data['delivery_agent_names'])) {
+            return $this->data['delivery_agent_names'];
+        }
+
+        return [];
+    }
+
+
+    /**
+     * Undocumented function
+     *
+     * @param int $addressId
+     * @return void
+     */
+    public function setDeliveryAddress($addressId)
+    {
+        if (is_null($this->data)) {
+            $this->data = [];
+        }
+        $this->data = array_merge($this->data, [
+            'delivery_address_id' => $addressId,
+        ]);
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param int|Carbon $timestamp
+     * @return void
+     */
+    public function setDeliveryPreferredTimestamp($timestamp)
+    {
+        if (is_null($this->data)) {
+            $this->data = [];
+        }
+        $this->data = array_merge($this->data, [
+            'delivery_timestamp' => $timestamp,
+        ]);
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return null|int
+     */
+    public function getDeliveryAddressId()
+    {
+        if (isset($this->data['delivery_address_id'])) {
+            return $this->data['delivery_address_id'];
+        }
+
+        return null;
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return null|PhysicalAddress
+     */
+    public function getDeliveryAddress()
+    {
+        if (!is_null($this->getDeliveryAddressId())) {
+            return PhysicalAddress::find($this->getDeliveryAddressId());
+        }
+
+        return null;
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param string $agentName
+     * @return void
+     */
+    public function setDeliveryAgentName($agentName)
+    {
+        if (is_null($this->data)) {
+            $this->data = [];
+        }
+        $this->data = array_merge($this->data, [
+            'delivery_agent' => $agentName,
+        ]);
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return string|null
+     */
+    public function getDeliveryAgentName()
+    {
+        if (isset($this->data['delivery_agent'])) {
+            return $this->data['delivery_agent'];
+        }
+
+        return null;
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param float $price
+     * @return void
+     */
+    public function setDeliveryPrice($price)
+    {
+        if (is_null($this->data)) {
+            $this->data = [];
+        }
+        $this->data = array_merge($this->data, [
+            'delivery_price' => $price,
+        ]);
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return null|float
+     */
+    public function getDeliveryPrice()
+    {
+        if (isset($this->data['delivery_price'])) {
+            return $this->data['delivery_price'];
+        }
+
+        return null;
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return null|Carbon
+     */
+    public function getPreferredDeliveryTimestamp()
+    {
+        if (isset($this->data['delivery_timestamp'])) {
+            return Carbon::parse($this->data['delivery_timestamp']);
+        }
+
+        return null;
     }
 
     /**

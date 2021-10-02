@@ -6,8 +6,6 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Log;
 use Larapress\CRUD\Events\CRUDUpdated;
 use Larapress\CRUD\Exceptions\AppException;
 use Larapress\CRUD\Extend\Helpers;
@@ -16,10 +14,11 @@ use Larapress\ECommerce\IECommerceUser;
 use Larapress\ECommerce\Models\Cart;
 use Larapress\ECommerce\Models\Product;
 use Larapress\ECommerce\Repositories\IProductRepository;
+use Larapress\ECommerce\Services\Cart\DeliveryAgent\IDeliveryAgent;
 use Larapress\ECommerce\Services\Cart\Requests\CartContentModifyRequest;
 use Larapress\ECommerce\Services\Cart\Requests\CartUpdateRequest;
 use Larapress\ECommerce\Services\GiftCodes\IGiftCodeService;
-use Larapress\ECommerce\Services\Wallet\IWalletService;
+use Larapress\ECommerce\Services\Cart\DeliveryAgent\IDeliveryAgentClient;
 
 class PurchasingCartService implements IPurchasingCartService
 {
@@ -33,6 +32,64 @@ class PurchasingCartService implements IPurchasingCartService
         $this->cartService = $cartService;
         $this->giftService = $giftService;
     }
+
+    /**
+     * Undocumented function
+     *
+     * @param CartUpdateRequest $request
+     * @param IECommerceUser $user
+     * @param integer $currency
+     *
+     * @return mixed
+     */
+    public function updateCartDeliveryData(CartUpdateRequest $request, IECommerceUser $user, int $currency)
+    {
+        /** @var Cart $cart */
+        $cart = $this->getPurchasingCart($user, $currency);
+
+        $cart->setDeliveryAddress($request->getDeliveryAddressId());
+        $cart->setDeliveryPreferredTimestamp($request->getDeliveryTimestamp());
+
+        if (!is_null($request->getDeliveryAgentName()) && !is_null($request->getDeliveryAddressId())) {
+            $agentClass = config('larapress.ecommerce.delivery_agents.' . $request->getDeliveryAgentName());
+            if (!class_exists($agentClass)) {
+                throw new AppException(AppException::ERR_OBJ_NOT_READY);
+            }
+
+            $address = $cart->getDeliveryAddress();
+            /** @var IDeliveryAgentClient */
+            $agent = new $agentClass();
+            if ($agent->canDeliveryForAddress($address)) {
+                $price = $agent->getEstimatedPrice($address, $currency);
+                $cart->setDeliveryPrice($price);
+                $cart->setDeliveryAgentName($request->getDeliveryAgentName());
+            } else {
+                throw new AppException(AppException::ERR_INVALID_PARAMS);
+            }
+        }
+
+        /** @var IDeliveryAgent */
+        $agent = app(IDeliveryAgent::class);
+        $avAgents = $agent->getAvailableAgentsForCart($cart);
+        $cart->setAvailableDeliveryAgents($avAgents);
+
+        // update amount based on products and gift code
+        $cart->amount = $this->cartService->calculateCartAmountFromDataAndProducts($cart);
+        // save cart updates
+        $cart->update();
+
+        $this->resetPurchasingCache($user->id);
+        $cart = $this->getPurchasingCart($user, $currency);
+        CRUDUpdated::dispatch(
+            Auth::user(),
+            $cart,
+            CartCRUDProvider::class,
+            Carbon::now()
+        );
+
+        return $cart;
+    }
+
     /**
      * Undocumented function
      *
@@ -40,7 +97,7 @@ class PurchasingCartService implements IPurchasingCartService
      * @param IECommerceUser $user
      * @param int $currency
      *
-     * @return Response
+     * @return Cart
      */
     public function updatePurchasingCart(CartUpdateRequest $request, IECommerceUser $user, int $currency)
     {

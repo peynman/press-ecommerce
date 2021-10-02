@@ -41,8 +41,28 @@ return [
         'default_gateway' => null,
     ],
 
-    // product owner role ids
-    'product_owner_role_ids' => [9, 10],
+    // delivery agents
+    'delivery_agents' => [
+        'alopeyk' => \Larapress\ECommerce\Services\Cart\DeliveryAgent\AloPeyk\AloPeykDeliveryAgent::class,
+        'poste_pishtaz' => \Larapress\ECommerce\Services\Cart\DeliveryAgent\PostePishtaz\PostePishtazDeliveryAgent::class,
+    ],
+
+
+    // product management
+    'products' => [
+        'sorts' => [
+            'publish_at_desc' => Larapress\ECommerce\Services\Product\Sort\SortByPublishDesc::class,
+            'publish_at_asc' => Larapress\ECommerce\Services\Product\Sort\SortByPublishAsc::class,
+            'stars_asc' => Larapress\ECommerce\Services\Product\Sort\SortByStarsAsc::class,
+            'stars_desc' => Larapress\ECommerce\Services\Product\Sort\SortByStarsDesc::class,
+            'price_asc' => Larapress\ECommerce\Services\Product\Sort\SortByPriceAsc::class,
+            'price_desc' => Larapress\ECommerce\Services\Product\Sort\SortByPriceDesc::class,
+            'purchases_asc' => Larapress\ECommerce\Services\Product\Sort\SortByPurchasesAsc::class,
+            'purchases_desc' => Larapress\ECommerce\Services\Product\Sort\SortByPurchasesDesc::class,
+        ],
+        // product owner role ids
+        'product_owner_role_ids' => [9, 10],
+    ],
 
     // product reviews management
     'product_reviews' => [

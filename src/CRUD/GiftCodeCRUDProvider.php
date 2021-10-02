@@ -44,6 +44,7 @@ class GiftCodeCRUDProvider implements ICRUDProvider
     {
         return [
             ICRUDVerb::VIEW,
+            ICRUDVerb::SHOW,
             ICRUDVerb::CREATE,
             ICRUDVerb::EDIT,
             ICRUDVerb::DELETE,

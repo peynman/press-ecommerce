@@ -2,6 +2,7 @@
 
 namespace Larapress\ECommerce\Services\Cart\Requests;
 
+use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -40,6 +41,9 @@ class CartUpdateRequest extends FormRequest
             'gateway' => 'nullabel|exists:bank_gateways,id',
             'gift_code' => 'nullable|exists:gift_codes,code',
             'use_balance' => 'nullable|boolean',
+            'delivery_address' => 'nullable|numeric|exists:physical_addresses,id',
+            'delivery_timestamp' => 'nullable|datetime_zoned',
+            'delivery_agent' => 'nullable|string|in:'.implode(',', array_keys(config('larapress.ecommerce.delivery_agents'))),
         ];
     }
 
@@ -58,16 +62,18 @@ class CartUpdateRequest extends FormRequest
      *
      * @return int
      */
-    public function getGateway() {
+    public function getGateway()
+    {
         return $this->get('gateway', config('larapress.ecommerce.banking.default_gateway'));
     }
 
     /**
      * Undocumented function
      *
-     * @return string
+     * @return string|null
      */
-    public function getGiftCode() {
+    public function getGiftCode()
+    {
         return $this->get('gift_code');
     }
 
@@ -76,25 +82,61 @@ class CartUpdateRequest extends FormRequest
      *
      * @return bool
      */
-    public function getUseBalance() {
+    public function getUseBalance()
+    {
         return $this->get('use_balance', false);
     }
 
     /**
      * Undocumented function
      *
-     * @return array
+     * @return array|null
      */
-    public function getPeriodicIds() {
+    public function getPeriodicIds()
+    {
         return $this->get('periods', []);
     }
 
     /**
      * Undocumented function
      *
-     * @return void
+     * @return array|null
      */
-    public function getProducts() {
+    public function getProducts()
+    {
         return $this->get('products', []);
     }
-}
+
+    /**
+     * Undocumented function
+     *
+     * @return int|null
+     */
+    public function getDeliveryAddressId()
+    {
+        return $this->get('delivery_address');
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return Carbon|null
+     */
+    public function getDeliveryTimestamp()
+    {
+        if (!is_null($this->get('delivery_timestamp'))) {
+            return Carbon::parse($this->get('delivery_timestamp'));
+        }
+
+        return null;
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return string|null
+     */
+    public function getDeliveryAgentName () {
+        return $this->get('delivery_agent');
+    }
+ }

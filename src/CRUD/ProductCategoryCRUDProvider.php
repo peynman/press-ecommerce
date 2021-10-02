@@ -22,6 +22,7 @@ class ProductCategoryCRUDProvider implements ICRUDProvider
 
     public $verbs = [
         ICRUDVerb::VIEW,
+        ICRUDVerb::SHOW,
         ICRUDVerb::CREATE,
         ICRUDVerb::EDIT,
         ICRUDVerb::DELETE,

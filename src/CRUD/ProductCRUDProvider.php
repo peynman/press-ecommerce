@@ -29,8 +29,6 @@ class ProductCRUDProvider implements
     public $model_in_config = 'larapress.ecommerce.routes.products.model';
     public $compositions_in_config = 'larapress.ecommerce.routes.products.compositions';
 
-    public $verbs = [
-    ];
     public $validSortColumns = [
         'id' => 'id',
         'name' => 'name',
@@ -54,6 +52,7 @@ class ProductCRUDProvider implements
     {
         return [
             ICRUDVerb::VIEW,
+            ICRUDVerb::SHOW,
             ICRUDVerb::CREATE,
             ICRUDVerb::EDIT,
             ICRUDVerb::DELETE,
@@ -183,7 +182,7 @@ class ProductCRUDProvider implements
         /** @var IECommerceUser $user */
         $user = Auth::user();
         if (!$user->hasRole(config('larapress.profiles.security.roles.super_role'))) {
-            if ($user->hasRole(config('larapress.ecommerce.product_owner_role_ids'))) {
+            if ($user->hasRole(config('larapress.ecommerce.products.product_owner_role_ids'))) {
                 $query->orWhereIn('id', $user->getOwenedProductsIds());
             } else {
                 $query->orWhere('author_id', $user->id);
@@ -203,7 +202,7 @@ class ProductCRUDProvider implements
         /** @var IECommerceUser $user */
         $user = Auth::user();
         if (!$user->hasRole(config('larapress.profiles.security.roles.super_role'))) {
-            if ($user->hasRole(config('larapress.ecommerce.product_owner_role_ids'))) {
+            if ($user->hasRole(config('larapress.ecommerce.products.product_owner_role_ids'))) {
                 return in_array($object->id, $user->getOwenedProductsIds());
             }
             return $user->id === $object->author_id;

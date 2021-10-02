@@ -40,6 +40,7 @@ class ProductQueryRequest extends FormRequest
             'types' => 'nullable|array',
             'types.*' => 'numeric|exists:product_types,id',
             'purchased' => 'boolean',
+            'sort' => 'nullable|string|in:'.implode(',', array_keys(config('larapress.ecommerce.products.sorts'))),
         ];
     }
 

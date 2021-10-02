@@ -21,6 +21,7 @@ class ProductReviewCRUDProvider implements ICRUDProvider
 
     public $verbs = [
         ICRUDVerb::VIEW,
+        ICRUDVerb::SHOW,
         ICRUDVerb::CREATE,
         ICRUDVerb::EDIT,
         ICRUDVerb::DELETE,
@@ -87,7 +88,7 @@ class ProductReviewCRUDProvider implements ICRUDProvider
         /** @var IECommerceUser $user */
         $user = Auth::user();
         if (! $user->hasRole(config('larapress.profiles.security.roles.super_role'))) {
-            if ($user->hasRole(config('larapress.ecommerce.product_owner_role_ids'))) {
+            if ($user->hasRole(config('larapress.ecommerce.products.product_owner_role_ids'))) {
                 return in_array($object->id, $user->getOwenedProductsIds());
             }
 
@@ -107,7 +108,7 @@ class ProductReviewCRUDProvider implements ICRUDProvider
         /** @var IECommerceUser $user */
         $user = Auth::user();
         if (!$user->hasRole(config('larapress.profiles.security.roles.super_role'))) {
-            if ($user->hasRole(config('larapress.ecommerce.product_owner_role_ids'))) {
+            if ($user->hasRole(config('larapress.ecommerce.products.product_owner_role_ids'))) {
                 $query->orWhereIn('id', $user->getOwenedProductsIds());
             } else {
                 $query->orWhere('author_id', $user->id);

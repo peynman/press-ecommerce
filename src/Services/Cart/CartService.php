@@ -705,7 +705,7 @@ class CartService implements ICartService
                 }
 
                 // include owned products by user group
-                if ($user->hasRole(config('larapress.ecommerce.product_owner_role_ids'))
+                if ($user->hasRole(config('larapress.ecommerce.products.product_owner_role_ids'))
                 ) {
                     $ids = array_merge($ids, $user->getOwenedProductsIds());
                 }
@@ -871,6 +871,10 @@ class CartService implements ICartService
             } else {
                 $amount += $product->price($cart->currency) * $quantity;
             }
+        }
+
+        if (!is_null($cart->getDeliveryPrice()) && $cart->getDeliveryPrice() > 0) {
+            $amount += $cart->getDeliveryPrice();
         }
 
         if (!is_null($giftDetails)) {
