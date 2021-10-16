@@ -10,6 +10,7 @@ use Larapress\CRUD\Services\CRUD\ICRUDProvider;
 use Larapress\CRUD\ICRUDUser;
 use Larapress\CRUD\Services\CRUD\ICRUDVerb;
 use Larapress\ECommerce\Models\BankGateway;
+use Larapress\ECommerce\Services\Banking\IBankingService;
 use Larapress\Profiles\IProfileUser;
 
 class BankGatewayCRUDProvider implements ICRUDProvider
@@ -62,7 +63,8 @@ class BankGatewayCRUDProvider implements ICRUDProvider
             'name' => 'required|string|unique:bank_gateways,name',
             'type' => 'required|string|in:'.(implode(",", array_keys(config('larapress.ecommerce.banking.ports')))),
             'flags' => 'nullable|numeric',
-            'data' => 'nullable|object_json',
+            'data' => 'nullable|json_object',
+            'data.title' => 'required|string',
         ];
 
         return $rules;
@@ -90,6 +92,27 @@ class BankGatewayCRUDProvider implements ICRUDProvider
         $user = Auth::user();
 
         $args['author_id'] = $user->id;
+
+        /** @var IBankingService */
+        $service = app(IBankingService::class);
+        $port = $service->getPortInterface($args['type'], $args['data']);
+        $port->isValidGatewayConfig($args['data']);
+
+        return $args;
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param array $args
+     * @return array
+     */
+    public function onBeforeUpdate($args): array
+    {
+        /** @var IBankingService */
+        $service = app(IBankingService::class);
+        $port = $service->getPortInterface($args['type'], $args['data']);
+        $port->isValidGatewayConfig($args['data']);
 
         return $args;
     }

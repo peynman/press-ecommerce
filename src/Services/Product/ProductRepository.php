@@ -15,8 +15,6 @@ use Larapress\ECommerce\IECommerceUser;
 use Larapress\ECommerce\Models\ProductReview;
 use Larapress\ECommerce\Services\Cart\ICartService;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 
 class ProductRepository implements IProductRepository
 {
@@ -32,20 +30,26 @@ class ProductRepository implements IProductRepository
      *
      * @return array
      */
-    public function getProdcutCateogires($user)
+    public function getProdcutCategories($user)
     {
         return ProductCategory::with([
             'children' => function ($q) {
                 $q->orderBy('data->order', 'desc');
             },
-        ])->orderBy('data->order', 'desc')->get();
+            'children.children' => function ($q) {
+                $q->orderBy('data->order', 'desc');
+            },
+        ])
+            ->orderBy('data->order', 'desc')
+            ->get();
     }
 
     /**
      * Undocumented function
      *
-     * @param [type] $user
-     * @param [type] $category
+     * @param IECommerceUser $user
+     * @param string $category
+     *
      * @return array
      */
     public function getProdcutCategoryChildren($user, $category)
@@ -54,14 +58,21 @@ class ProductRepository implements IProductRepository
             'children' => function ($q) {
                 $q->orderBy('data->order', 'desc');
             },
-        ])->where('name', $category)->orderBy('data->order', 'desc')->first();
+            'children.children' => function ($q) {
+                $q->orderBy('data->order', 'desc');
+            },
+        ])
+            ->where('name', $category)
+            ->orderBy('data->order', 'desc')
+            ->first();
     }
 
     /**
      * Undocumented function
      *
-     * @param [type] $user
-     * @return void
+     * @param IECommerceUser $user
+     *
+     * @return array
      */
     public function getRootProductCategories($user)
     {
@@ -69,7 +80,13 @@ class ProductRepository implements IProductRepository
             'children' => function ($q) {
                 $q->orderBy('data->order', 'desc');
             },
-        ])->whereNull('parent_id')->orderBy('data->order', 'desc')->get();
+            'children.children' => function ($q) {
+                $q->orderBy('data->order', 'desc');
+            },
+        ])
+            ->whereNull('parent_id')
+            ->orderBy('data->order', 'desc')
+            ->get();
     }
 
     /**
@@ -84,8 +101,9 @@ class ProductRepository implements IProductRepository
     /**
      * Undocumented function
      *
-     * @param [type] $user
-     * @return void
+     * @param IECommerceUser $user
+     *
+     * @return array
      */
     public function getProductNames($user, $types = [])
     {
@@ -107,6 +125,7 @@ class ProductRepository implements IProductRepository
      * Undocumented function
      *
      * @param IECommerceUser $user
+     *
      * @return Cart[]
      */
     public function getPurchasedProductsCarts($user)
@@ -161,16 +180,17 @@ class ProductRepository implements IProductRepository
     {
         $limit = PaginatedResponse::safeLimit($limit);
 
-        return new PaginatedResponse(ProductReview::query()
-            ->where('product_id', $productId)
-            ->whereNotNull('message')
-            ->where(function ($q) use ($user) {
-                $q->where('flags', '&', ProductReview::FLAGS_PUBLIC);
-                if (!is_null($user)) {
-                    $q->orWhere('author_id', $user->id);
-                }
-            })
-            ->paginate($limit, ['*'], 'page', $page)
+        return new PaginatedResponse(
+            ProductReview::query()
+                ->where('product_id', $productId)
+                ->whereNotNull('message')
+                ->where(function ($q) use ($user) {
+                    $q->where('flags', '&', ProductReview::FLAGS_PUBLIC);
+                    if (!is_null($user)) {
+                        $q->orWhere('author_id', $user->id);
+                    }
+                })
+                ->paginate($limit, ['*'], 'page', $page)
         );
     }
 
@@ -178,8 +198,9 @@ class ProductRepository implements IProductRepository
      * Undocumented function
      *
      * @param IECommerceUser $user
-     * @param [type] $product_id
-     * @return void
+     * @param int $product_id
+     *
+     * @return array
      */
     public function getProductDetails($user, $product_id)
     {
@@ -265,9 +286,7 @@ class ProductRepository implements IProductRepository
     ) {
         $query = $this->getProductsPaginatedQuery($user, $page, $inCategories, $withTypes, $notIntCatgories, $withoutTypes, false, $sortBy);
         $limit = PaginatedResponse::safeLimit($limit);
-        DB::enableQueryLog();
-        $r = new PaginatedResponse($query->paginate(1));
-        Log::debug("query", DB::getQueryLog());
+        $r = new PaginatedResponse($query->paginate($limit));
         return $r;
     }
 

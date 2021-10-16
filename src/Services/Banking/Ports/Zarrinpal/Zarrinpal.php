@@ -126,7 +126,7 @@ class Zarrinpal
         exit;
     }
 
-    public function request($MerchantID, $Amount, $Description = "", $Email = "", $Mobile = "", $CallbackURL, $SandBox = false, $ZarinGate = false)
+    public function request($MerchantID, $Amount, $Description = "", $Email = "", $Mobile = "", $CallbackURL = null, $SandBox = false, $ZarinGate = false)
     {
         $ZarinGate = ($SandBox == true) ? false : $ZarinGate;
 

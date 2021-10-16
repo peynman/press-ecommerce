@@ -5,21 +5,30 @@ namespace Larapress\ECommerce\Services\Banking;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Larapress\ECommerce\IECommerceUser;
-use Larapress\ECommerce\Models\Cart;
 use Larapress\ECommerce\Models\BankGatewayTransaction;
 
 interface IBankingService
 {
     /**
-     * @param Request            $request
-     * @param Cart|integer       $cart
-     * @param integer            $gateway_id
-     * @param callable|null      $onFailed
+     * @param BankRedirectRequest   $request
+     * @param Cart|int $cart
+     * @param callable  $onFailed
+     * @param callable  $onAlreadyPurchased
      *
      * @return Response
      */
-    public function redirectToBankForCart(Request $request, $cart, $gateway_id, $onFailed, $onAlreadyPurchased);
+    public function redirectToBankForCart(BankRedirectRequest $request, $cart, $onFailed, $onAlreadyPurchased);
+
+    /**
+     * Undocumented function
+     *
+     * @param Request $request
+     * @param callback|null $onFailed
+     * @param callback|null $onAlreadyPurchased
+     *
+     * @return Response
+     */
+    public function redirectToBankForAmount(BankRedirectRequest $request, $onFailed, $onAlreadyPurchased);
 
     /**
      * @param Request         $request
@@ -35,13 +44,10 @@ interface IBankingService
     /**
      * Undocumented function
      *
-     * @param Request $request
-     * @param int $gateway_id
-     * @param float $amount
-     * @param int $currency
-     * @param callback|null $onFailed
-     * @return Response
+     * @param string $gateway
+     * @param array $data
+     * @return IBankPortInterface
      */
-    public function redirectToBankForAmount(Request $request, $gateway_id, $amount, $currency, $onFailed, $onAlreadyPurchased);
+    public function getPortInterface(string $gateway, array $data): IBankPortInterface;
 
 }

@@ -18,6 +18,16 @@ trait BaseCartTrait
     /**
      * Undocumented function
      *
+     * @return ICartItem
+     */
+    public function getCartItems()
+    {
+        return $this->cart_items;
+    }
+
+    /**
+     * Undocumented function
+     *
      * @return array
      */
     public function getPeriodicProductIds()
@@ -670,5 +680,98 @@ trait BaseCartTrait
         $this->data = array_merge($this->data, [
             'description' => $desc,
         ]);
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param string $url
+     *
+     * @return void
+     */
+    public function setSuccessRedirect($url)
+    {
+        if (is_null($this->data)) {
+            $this->data = [];
+        }
+        $this->data = array_merge($this->data, [
+            'success_redirect' => $url,
+        ]);
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param string $url
+     *
+     * @return void
+     */
+    public function setFailedRedirect($url)
+    {
+        if (is_null($this->data)) {
+            $this->data = [];
+        }
+        $this->data = array_merge($this->data, [
+            'failed_redirect' => $url,
+        ]);
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param string $url
+     *
+     * @return void
+     */
+    public function setCanceledRedirect($url)
+    {
+        if (is_null($this->data)) {
+            $this->data = [];
+        }
+        $this->data = array_merge($this->data, [
+            'canceled_redirect' => $url,
+        ]);
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return void
+     */
+    public function getSuccessRedirect()
+    {
+        if (isset($this->data['success_redirect'])) {
+            return $this->data['success_redirect'];
+        }
+
+        return config('larapress.ecommerce.banking.redirect.success');
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return void
+     */
+    public function getFailedRedirect()
+    {
+        if (isset($this->data['failed_redirect'])) {
+            return $this->data['failed_redirect'];
+        }
+
+        return config('larapress.ecommerce.banking.redirect.failed');
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return void
+     */
+    public function getCanceledRedirect()
+    {
+        if (isset($this->data['canceled_redirect'])) {
+            return $this->data['canceled_redirect'];
+        }
+
+        return config('larapress.ecommerce.banking.redirect.canceled');
     }
 }

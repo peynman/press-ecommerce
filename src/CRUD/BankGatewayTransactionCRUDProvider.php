@@ -8,6 +8,8 @@ use Larapress\CRUD\Services\CRUD\Traits\CRUDProviderTrait;
 use Larapress\CRUD\Services\CRUD\ICRUDProvider;
 use Larapress\CRUD\Services\CRUD\ICRUDVerb;
 use Larapress\ECommerce\Services\Banking\BankGatewayTransactionReport;
+use Larapress\ECommerce\Services\Banking\Reports\GatewayTransactionSendReport;
+use Larapress\ECommerce\Services\Banking\Reports\GatewayTransactionWindowedReport;
 use Larapress\Profiles\IProfileUser;
 use Larapress\Profiles\Models\Domain;
 
@@ -23,7 +25,6 @@ class BankGatewayTransactionCRUDProvider implements ICRUDProvider
         ICRUDVerb::VIEW,
         ICRUDVerb::SHOW,
         ICRUDVerb::DELETE,
-        ICRUDVerb::REPORTS,
     ];
     public $searchColumns = [
         'has:customer.phones.number',
@@ -77,7 +78,7 @@ class BankGatewayTransactionCRUDProvider implements ICRUDProvider
     public function getReportSources(): array
     {
         return [
-            new BankGatewayTransactionReport()
+            GatewayTransactionWindowedReport::NAME => GatewayTransactionWindowedReport::class,
         ];
     }
 

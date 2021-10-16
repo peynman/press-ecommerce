@@ -55,7 +55,6 @@ class WalletTransactionCRUDProvider implements ICRUDProvider
             ICRUDVerb::CREATE,
             ICRUDVerb::EDIT,
             ICRUDVerb::DELETE,
-            ICRUDVerb::REPORTS,
             'any.request_unverified' => [
                 'uses' => '\\'.WalletTransactionController::class.'@requestUnverifiedWalletTransaction',
                 'methods' => ['POST'],

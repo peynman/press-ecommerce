@@ -16,7 +16,7 @@ class BankGatewayFactory extends Factory
             'type' => 'zarinpal',
             'flags' => 0,
             'data' => [
-                'merchant_id' => $this->faker->randomNumber(6),
+                'merchantId' => $this->faker->randomNumber(6),
                 'email' => $this->faker->email,
                 'mobile' => $this->faker->phoneNumber,
                 'isSandbox' => true,
@@ -31,7 +31,7 @@ class BankGatewayFactory extends Factory
             return [
                 'type' => 'zarinpal',
                 'data' => array_merge($attrs['data'], [
-                    'merchant_id' => $this->faker->randomNumber(6),
+                    'merchantId' => $this->faker->randomNumber(6),
                     'email' => $this->faker->email,
                     'mobile' => $this->faker->phoneNumber,
                     'isSandbox' => true,

@@ -56,7 +56,6 @@ class ProductCRUDProvider implements
             ICRUDVerb::CREATE,
             ICRUDVerb::EDIT,
             ICRUDVerb::DELETE,
-            ICRUDVerb::REPORTS,
             ICRUDVerb::CREATE.'.duplicate' => [
                 'methods' => ['POST'],
                 'uses' => '\\'.ProductController::class.'@duplicateProduct',

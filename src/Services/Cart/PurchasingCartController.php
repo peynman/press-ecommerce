@@ -11,6 +11,7 @@ use Larapress\ECommerce\Services\GiftCodes\IGiftCodeService;
 use Larapress\ECommerce\IECommerceUser;
 use Larapress\ECommerce\Services\Cart\Requests\CartContentModifyRequest;
 use Larapress\ECommerce\Services\Cart\Requests\CartUpdateRequest;
+use Larapress\ECommerce\Services\Cart\Requests\CartValidateRequest;
 
 /**
  * Standard CRUD Controller for Cart Resource
@@ -45,6 +46,11 @@ class PurchasingCartController extends CRUDController
             '/me/current-cart/apply/gift-code',
             '\\' . self::class . '@checkPurchasingCartGiftCode'
         )->name(config('larapress.ecommerce.routes.carts.name') . '.any.purchasing.gift-code');
+
+        Route::post(
+            '/me/current-cart/validate',
+            '\\' . self::class . '@validateCart'
+        )->name(config('larapress.ecommerce.routes.carts.name') . '.any.validate');
     }
 
     /**
@@ -77,7 +83,22 @@ class PurchasingCartController extends CRUDController
         return $service->updatePurchasingCart($request, $user, $request->getCurrency());
     }
 
-        /**
+    /**
+     * Undocumented function
+     *
+     * @param IPurchasingCartService $service
+     * @param CartValidateRequest $request
+     *
+     * @return Response
+     */
+    public function validateCart(IPurchasingCartService $service, CartValidateRequest $request)
+    {
+        /** @var IECommerceUser $user */
+        $user = Auth::user();
+        return $service->validateCartBeforeForwardingToBank($request, $user, $request->getCurrency());
+    }
+
+    /**
      * Update Purchasing Cart
      *
      * @return Response

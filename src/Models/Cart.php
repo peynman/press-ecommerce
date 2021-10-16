@@ -8,6 +8,7 @@ use Larapress\Profiles\Models\Domain;
 use Larapress\ECommerce\IECommerceUser;
 use Larapress\ECommerce\Services\Cart\BaseCartTrait;
 use Larapress\ECommerce\Services\Cart\ICart;
+use Illuminate\Support\Collection;
 
 /**
  * @property int            $id
@@ -19,7 +20,7 @@ use Larapress\ECommerce\Services\Cart\ICart;
  * @property int            $flags
  * @property IECommerceUser   $customer
  * @property Domain         $domain
- * @property ICartItem[]    $products
+ * @property ICartItem[]|Collection    $products
  * @property array          $data
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at

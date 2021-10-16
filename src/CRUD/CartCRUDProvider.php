@@ -36,7 +36,6 @@ class CartCRUDProvider implements
         ICRUDVerb::CREATE,
         ICRUDVerb::EDIT,
         ICRUDVerb::DELETE,
-        ICRUDVerb::REPORTS,
     ];
     public $createValidations = [
         'customer_id' => 'required|numeric|exists:users,id',

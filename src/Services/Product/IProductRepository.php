@@ -13,7 +13,7 @@ interface IProductRepository
      *
      * @return array
      */
-    public function getProdcutCateogires($user);
+    public function getProdcutCategories($user);
 
     /**
      *

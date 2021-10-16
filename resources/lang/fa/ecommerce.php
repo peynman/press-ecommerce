@@ -3,7 +3,7 @@
 return [
     'banking' => [
         'messages' => [
-            'bank_forwared' => 'درخواست خرید سبد با شماره :cart_id',
+            'bank_forward' => 'درخواست خرید سبد با شماره :cart_id',
             'wallet_descriptions' => [
                 'cart_increased' => 'افزایش موجودی برای سبد خرید :cart_id',
                 'cart_purchased' => 'خرید محصولات در سبد خرید :cart_id',

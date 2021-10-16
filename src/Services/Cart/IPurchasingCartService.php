@@ -7,9 +7,21 @@ use Illuminate\Http\Request;
 use Larapress\ECommerce\IECommerceUser;
 use Larapress\ECommerce\Services\Cart\Requests\CartContentModifyRequest;
 use Larapress\ECommerce\Services\Cart\Requests\CartUpdateRequest;
+use Larapress\ECommerce\Services\Cart\Requests\CartValidateRequest;
 
 interface IPurchasingCartService
 {
+
+    /**
+     * Undocumented function
+     *
+     * @param CartValidateRequest $request
+     * @param IECommerceUser $user
+     * @param integer $currency
+     *
+     * @return ICart
+     */
+    public function validateCartBeforeForwardingToBank(CartValidateRequest $request, IECommerceUser $user, int $currency);
 
     /**
      * Undocumented function

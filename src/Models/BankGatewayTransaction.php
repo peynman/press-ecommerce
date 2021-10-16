@@ -14,6 +14,7 @@ use Larapress\ECommerce\IECommerceUser;
  * @property int            $bank_gateway_id
  * @property int            $cart_id
  * @property int            $domain_id
+ * @property int            $customer_id
  * @property string         $tracking_code
  * @property string         $reference_code
  * @property int            $status

@@ -23,22 +23,15 @@ use Larapress\Profiles\IProfileUser;
 class ZarrinPalPortInterface implements IBankPortInterface
 {
     protected $configRules = [
-        'merchant_id' => 'required|string',
+        'merchantId' => 'required|string',
         'isZarinGate' => 'nullable|bool',
         'isSandbox' => 'nullable|bool',
         'email' => 'nullable|email',
         'mobile' => 'nullable|string',
     ];
-    /** @var Zarrinpal */
-    private $zarinpal;
 
-    /** @var BankGateway */
-    private $gateway;
-
-
-    public function __construct(BankGateway $gateway)
+    public function __construct(public array $config)
     {
-        $this->gateway = $gateway;
     }
 
     /**
@@ -76,19 +69,18 @@ class ZarrinPalPortInterface implements IBankPortInterface
      */
     public function redirect(Request $request, BankGatewayTransaction $transaction, string $callback_url)
     {
-        $this->validate($transaction);
-        $config = $transaction->bank_gateway->data;
+        $this->validate();
 
         $zarinpal = new Zarrinpal();
         $result = $zarinpal->request(
-            $config['merchantId'],
+            $this->config['merchantId'],
             $transaction->amount,
             $transaction->data['description'],
-            $config['email'],
-            $config['mobile'],
+            $this->config['email'] ?? '',
+            $this->config['mobile'] ?? '',
             $callback_url,
-            $config['isSandbox'],
-            $config['isZarinGate']
+            $this->config['isSandbox'] ?? false,
+            $this->config['isZarinGate'] ?? false,
         );
         if (isset($result["Status"]) && $result["Status"] == 100) {
             unset($transaction['bank_gateway']);
@@ -105,7 +97,7 @@ class ZarrinPalPortInterface implements IBankPortInterface
             return $zarinpal->redirect($result["StartPay"]);
         }
 
-        Log::critical('ZarrinPal error: '.json_encode($result));
+        Log::critical('ZarrinPal error: ' . json_encode($result));
         throw new Exception("could not contact bank gateway zarrinpal");
     }
 
@@ -117,15 +109,20 @@ class ZarrinPalPortInterface implements IBankPortInterface
      */
     public function verify(Request $request, BankGatewayTransaction $transaction)
     {
-        $this->validate($transaction);
-        $config = $transaction->bank_gateway->data;
-        $zp = new Zarrinpal();
+        $this->validate();
 
+        $zp = new Zarrinpal();
         $transaction->update([
             'status' => BankGatewayTransaction::STATUS_RECEIVED,
         ]);
+        CRUDUpdated::dispatch(Auth::user(), $transaction, BankGatewayTransactionCRUDProvider::class, Carbon::now());
 
-        $result = $zp->verify($config['merchant_id'], $transaction->amount, $config['isSandbox'], $config['isZarinGate']);
+        $result = $zp->verify(
+            $this->config['merchantId'],
+            $transaction->amount,
+            $this->config['isSandbox'] ?? false,
+            $this->config['isZarinGate'] ?? false
+        );
 
         if (isset($result["Status"]) && $result["Status"] == 100) {
             // Success
@@ -137,6 +134,8 @@ class ZarrinPalPortInterface implements IBankPortInterface
                 'status' => BankGatewayTransaction::STATUS_SUCCESS,
                 'data' => $data,
             ]);
+            CRUDUpdated::dispatch(Auth::user(), $transaction, BankGatewayTransactionCRUDProvider::class, Carbon::now());
+
             return $transaction;
         } else {
             // error
@@ -147,22 +146,34 @@ class ZarrinPalPortInterface implements IBankPortInterface
                 'status' => BankGatewayTransaction::STATUS_FAILED,
                 'data' => $data,
             ]);
+            CRUDUpdated::dispatch(Auth::user(), $transaction, BankGatewayTransactionCRUDProvider::class, Carbon::now());
+
             return $transaction;
         }
-
-        CRUDUpdated::dispatch(Auth::user(), $transaction, BankGatewayTransactionCRUDProvider::class, Carbon::now());
-
-        return $transaction;
     }
 
     /**
      * @return boolean
      * @throws ValidationException
      */
-    protected function validate(BankGatewayTransaction $transaction)
+    protected function validate()
     {
-        $validate = Validator::make($transaction->bank_gateway->data, $this->configRules);
+        return $this->isValidGatewayConfig($this->config);
+    }
+
+
+    /**
+     * Undocumented function
+     *
+     * @param array $config
+     *
+     * @return boolean
+     */
+    public function isValidGatewayConfig(array $config)
+    {
+        $validate = Validator::make($config, $this->configRules);
         if ($validate->fails()) {
+            Log::critical("Bank gateway " . $this->name() . " is invalid");
             throw new ValidationException($validate->errors());
         }
 

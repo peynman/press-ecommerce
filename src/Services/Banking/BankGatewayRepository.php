@@ -14,9 +14,14 @@ class BankGatewayRepository implements IBankGatewayRepository
      */
     public function getAllBankGateways($user)
     {
-        return BankGateway::query()
-            ->select(['id', 'name', 'type'])
-            ->whereRaw('(flags & ' . BankGateway::FLAGS_DISABLED . ') = 0')
-            ->get(['id', 'name', 'type']);
+        /** @var BankGateway[] */
+        $gateways = BankGateway::query()->whereRaw('(flags & ' . BankGateway::FLAGS_DISABLED . ') = 0')->get(['id', 'name', 'type', 'data']);
+
+        foreach ($gateways as $gateway) {
+            $gateway->setAttribute('title', $gateway->data['title'] ?? $gateway->name);
+            $gateway->setHidden(['data']);
+        }
+
+        return $gateways;
     }
 }

@@ -8,7 +8,8 @@ use Larapress\ECommerce\Services\Cart\Base\CartGiftDetails;
 use Larapress\ECommerce\Services\Cart\Base\CartCustomInstallmentPeriod;
 use Larapress\Profiles\Models\PhysicalAddress;
 
-interface ICart {
+interface ICart
+{
     const CustomAccessStatusPaid = 1;
     const CustomAccessStatusNotPaid = 2;
 
@@ -288,4 +289,71 @@ interface ICart {
      * @return null|Carbon
      */
     public function getPreferredDeliveryTimestamp();
+
+    /**
+     * Undocumented function
+     *
+     * @param string $url
+     *
+     * @return void
+     */
+    public function setSuccessRedirect($url);
+
+    /**
+     * Undocumented function
+     *
+     * @param string $url
+     *
+     * @return void
+     */
+    public function setFailedRedirect($url);
+
+    /**
+     * Undocumented function
+     *
+     * @param string $url
+     *
+     * @return void
+     */
+    public function setCanceledRedirect($url);
+
+    /**
+     * Undocumented function
+     *
+     * @return void
+     */
+    public function getSuccessRedirect();
+
+    /**
+     * Undocumented function
+     *
+     * @return void
+     */
+    public function getFailedRedirect();
+
+    /**
+     * Undocumented function
+     *
+     * @return void
+     */
+    public function getCanceledRedirect();
+
+    /**
+     * Undocumented function
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     */
+    public function products();
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function customer();
+
+    /**
+     * Undocumented function
+     *
+     * @return ICartItem
+     */
+    public function getCartItems();
 }

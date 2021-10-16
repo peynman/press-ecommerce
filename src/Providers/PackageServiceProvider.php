@@ -64,6 +64,7 @@ class PackageServiceProvider extends ServiceProvider
      */
     public function boot()
     {
+        $this->loadViewsFrom(__DIR__.'/../../resources/views', 'larapress-ecommerce');
         $this->loadTranslationsFrom(__DIR__.'/../../resources/lang', 'larapress');
         $this->loadMigrationsFrom(__DIR__.'/../../migrations');
         $this->loadRoutesFrom(__DIR__.'/../../routes/api.php');

@@ -31,7 +31,6 @@ return [
 
         // url redirects after cart purchase
         'redirect' => [
-            'already' => '/me/carts',
             'success' => '/me/products',
             'failed' => '/me/current-cart/',
             'canceled' => '/me/current-cart/',
@@ -44,9 +43,11 @@ return [
     // delivery agents
     'delivery_agents' => [
         'alopeyk' => \Larapress\ECommerce\Services\Cart\DeliveryAgent\AloPeyk\AloPeykDeliveryAgent::class,
+        'alopeyk_user' => \Larapress\ECommerce\Services\Cart\DeliveryAgent\AloPeyk\AloPeykUserDeliveryAgent::class,
         'poste_pishtaz' => \Larapress\ECommerce\Services\Cart\DeliveryAgent\PostePishtaz\PostePishtazDeliveryAgent::class,
+        'poste_pishtaz_user' => \Larapress\ECommerce\Services\Cart\DeliveryAgent\PostePishtaz\PostePishtazUserDeliveryAgent::class,
+        'snap_user' => \Larapress\ECommerce\Services\Cart\DeliveryAgent\Snap\SnapUserDeliveryAgent::class,
     ],
-
 
     // product management
     'products' => [
@@ -77,6 +78,15 @@ return [
 
         // number of reviews loaded per page
         'reviews_per_page' => 5,
+    ],
+
+    // ecommerce metric reports
+    'reports' => [
+        'group' => 'ecommerce',
+        // metric types
+        'bank_gateway_transactions' => 1,
+        'carts' => 2,
+        'gift_codes' => 3,
     ],
 
     // crud resources in package

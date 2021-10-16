@@ -15,7 +15,7 @@ class EventServiceProvider extends ServiceProvider
     protected $listen = [
         // bank gateway transactions reports
         'Larapress\ECommerce\Services\Banking\BankGatewayTransactionEvent' => [
-            'Larapress\ECommerce\Services\Banking\BankGatewayTransactionReport',
+            'Larapress\ECommerce\Services\Banking\Reports\GatewayTransactionSendReport',
         ],
 
         // cart and product reports

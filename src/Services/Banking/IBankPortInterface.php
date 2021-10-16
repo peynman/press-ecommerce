@@ -44,4 +44,13 @@ interface IBankPortInterface
      * @return BankGatewayTransaction
      */
     public function verify(Request $request, BankGatewayTransaction $transaction);
+
+    /**
+     * Undocumented function
+     *
+     * @param array $config
+     *
+     * @return boolean
+     */
+    public function isValidGatewayConfig(array $config);
 }
