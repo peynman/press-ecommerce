@@ -3,6 +3,9 @@
 namespace Larapress\ECommerce\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Larapress\ECommerce\Commands\CreateLocalStorageFolders;
+use Larapress\ECommerce\Commands\ExportProductTypes;
+use Larapress\ECommerce\Commands\ImportProductTypes;
 use Larapress\ECommerce\Services\Banking\BankingService;
 use Larapress\ECommerce\Services\Banking\IBankingService;
 use Larapress\ECommerce\Services\Product\IProductService;
@@ -81,6 +84,9 @@ class PackageServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 UpdateInstallmentCarts::class,
+                CreateLocalStorageFolders::class,
+                ExportProductTypes::class,
+                ImportProductTypes::class,
             ]);
         }
     }
