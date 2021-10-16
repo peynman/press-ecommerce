@@ -42,7 +42,7 @@ class ExportProductTypes extends Command
     {
         $filepath = $this->argument('path');
         if (is_null($filepath)) {
-            if (!directoryExists(storage_path('json'))) {
+            if (!file_exists(storage_path('json'))) {
                 mkdir(storage_path('json'));
             }
             $filepath = storage_path('/json/product_types.json');

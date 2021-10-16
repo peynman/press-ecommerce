@@ -53,7 +53,7 @@ class CreateLocalStorageFolders extends Command
         ];
 
         foreach ($dirs as $dir) {
-            if (!directoryExists($dir)) {
+            if (!file_exists($dir)) {
                 mkdir($dir);
             }
         }
