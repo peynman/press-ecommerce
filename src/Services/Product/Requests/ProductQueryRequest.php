@@ -34,7 +34,7 @@ class ProductQueryRequest extends FormRequest
     {
         return [
             'page' => 'nullable|numeric',
-            'limit' => 'nullable|numeric|min:'.config('larapress.ecommerce.repository.min_limit').'|max:'.config('larapress.ecommerce.repository.min_limit'),
+            'limit' => 'nullable|numeric|min:'.config('larapress.crud.repository.min_limit').'|max:'.config('larapress.crud.repository.min_limit'),
             'categories' => 'nullable|array',
             'categories.*' => 'numeric|exists:product_categories,id',
             'types' => 'nullable|array',

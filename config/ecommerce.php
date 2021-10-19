@@ -1,13 +1,6 @@
 <?php
 
 return [
-    // default repository retrieve limits
-    'repository' => [
-        'limit' => 50,
-        'max_limit' => 200,
-        'min_limit' => 5,
-    ],
-
     // banking settings
     'banking' => [
         // available ports
