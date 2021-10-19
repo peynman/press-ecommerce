@@ -8,7 +8,7 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Larapress\ECommerce\Models\Cart;
 
-class CartPurchasedEvent implements ShouldQueue
+class CartEvent implements ShouldQueue
 {
     use Dispatchable, SerializesModels;
 

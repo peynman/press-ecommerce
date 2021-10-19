@@ -7,9 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use Larapress\CRUD\Services\CRUD\Traits\CRUDProviderTrait;
 use Larapress\CRUD\Services\CRUD\ICRUDProvider;
 use Larapress\CRUD\Services\CRUD\ICRUDVerb;
-use Larapress\ECommerce\Services\Banking\BankGatewayTransactionReport;
-use Larapress\ECommerce\Services\Banking\Reports\GatewayTransactionSendReport;
-use Larapress\ECommerce\Services\Banking\Reports\GatewayTransactionWindowedReport;
+use Larapress\ECommerce\Services\Banking\Reports\GatewayTransactionReport;
 use Larapress\Profiles\IProfileUser;
 use Larapress\Profiles\Models\Domain;
 
@@ -78,7 +76,7 @@ class BankGatewayTransactionCRUDProvider implements ICRUDProvider
     public function getReportSources(): array
     {
         return [
-            GatewayTransactionWindowedReport::NAME => GatewayTransactionWindowedReport::class,
+            GatewayTransactionReport::NAME => GatewayTransactionReport::class,
         ];
     }
 

@@ -6,7 +6,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Larapress\ECommerce\Services\Banking\BankGatewayTransactionEvent;
 use Larapress\Reports\Services\Reports\IMetricsService;
 
-class GatewayTransactionSendReport implements ShouldQueue
+class GatewayTransactionListener implements ShouldQueue
 {
     const KEY = 'bank.gateway';
 

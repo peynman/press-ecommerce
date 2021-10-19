@@ -14,8 +14,8 @@ use Larapress\CRUD\Services\CRUD\ICRUDService;
 use Larapress\CRUD\Services\CRUD\ICRUDVerb;
 use Larapress\ECommerce\Controllers\WalletTransactionController;
 use Larapress\ECommerce\Models\WalletTransaction;
+use Larapress\ECommerce\Services\Wallet\Reports\WalletTransactionReport;
 use Larapress\ECommerce\Services\Wallet\WalletTransactionEvent;
-use Larapress\ECommerce\Services\Wallet\WalletTransactionReport;
 use Larapress\Profiles\IProfileUser;
 use Larapress\Reports\Models\MetricCounter;
 
@@ -71,7 +71,7 @@ class WalletTransactionCRUDProvider implements ICRUDProvider
     public function getReportSources(): array
     {
         return [
-            new WalletTransactionReport(),
+            WalletTransactionReport::NAME => WalletTransactionReport::class,
         ];
     }
 

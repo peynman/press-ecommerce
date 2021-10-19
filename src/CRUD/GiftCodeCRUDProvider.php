@@ -10,6 +10,7 @@ use Larapress\CRUD\Services\CRUD\ICRUDProvider;
 use Larapress\CRUD\Services\CRUD\ICRUDVerb;
 use Larapress\ECommerce\Controllers\GiftCodeController;
 use Larapress\ECommerce\Models\GiftCode;
+use Larapress\ECommerce\Services\Cart\Reports\GiftCodeReport;
 use Larapress\Profiles\IProfileUser;
 
 class GiftCodeCRUDProvider implements ICRUDProvider
@@ -53,6 +54,18 @@ class GiftCodeCRUDProvider implements ICRUDProvider
                 'uses' => '\\'.GiftCodeController::class.'@duplicateGiftCode',
                 'url' => config('larapress.ecommerce.routes.gift_codes.name').'/duplicate',
             ]
+        ];
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return array
+     */
+    public function getReportSources(): array
+    {
+        return [
+            GiftCodeReport::NAME => GiftCodeReport::class,
         ];
     }
 

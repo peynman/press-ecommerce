@@ -37,6 +37,7 @@ class ProductCategory extends Model
         'name',
         'flags',
         'data',
+        'deleted_at',
     ];
 
     protected $casts = [

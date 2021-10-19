@@ -14,8 +14,7 @@ use Larapress\CRUD\Services\RBAC\IPermissionsMetadata;
 use Larapress\ECommerce\Controllers\ProductController;
 use Larapress\ECommerce\Models\Product;
 use Larapress\ECommerce\IECommerceUser;
-use Larapress\ECommerce\Services\Product\Reports\ProductPurchasedSalesReport;
-use Larapress\ECommerce\Services\Product\Reports\ProductPurchasedCountReport;
+use Larapress\ECommerce\Services\Product\Reports\ProductSalesReports;
 use Larapress\FileShare\Services\FileUpload\IFileUploadService;
 
 class ProductCRUDProvider implements
@@ -48,6 +47,11 @@ class ProductCRUDProvider implements
         'categories',
     ];
 
+    /**
+     * Undocumented function
+     *
+     * @return array
+     */
     public function getPermissionVerbs(): array
     {
         return [
@@ -56,11 +60,23 @@ class ProductCRUDProvider implements
             ICRUDVerb::CREATE,
             ICRUDVerb::EDIT,
             ICRUDVerb::DELETE,
-            ICRUDVerb::CREATE.'.duplicate' => [
+            ICRUDVerb::CREATE . '.duplicate' => [
                 'methods' => ['POST'],
-                'uses' => '\\'.ProductController::class.'@duplicateProduct',
-                'url' => config('larapress.ecommerce.routes.gift_codes.name').'/clone',
+                'uses' => '\\' . ProductController::class . '@duplicateProduct',
+                'url' => config('larapress.ecommerce.routes.gift_codes.name') . '/clone',
             ]
+        ];
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return array
+     */
+    public function getReportSources(): array
+    {
+        return [
+            ProductSalesReports::NAME => ProductSalesReports::class,
         ];
     }
 
@@ -155,19 +171,6 @@ class ProductCRUDProvider implements
             'children' => function ($user) {
                 return true;
             },
-        ];
-    }
-
-    /**
-     * Undocumented function
-     *
-     * @return array
-     */
-    public function getReportSources(): array
-    {
-        return [
-            new ProductPurchasedCountReport(),
-            new ProductPurchasedSalesReport(),
         ];
     }
 

@@ -605,7 +605,7 @@ class CartService implements ICartService
      */
     protected function fireCartPurchaseEvents(IECommerceUser $user, ICart $cart, Carbon $purchaseTimestamp)
     {
-        CartPurchasedEvent::dispatch($cart, $purchaseTimestamp);
+        CartEvent::dispatch($cart, $purchaseTimestamp);
         CRUDUpdated::dispatch(Auth::user(), $cart, CartCRUDProvider::class, Carbon::now());
         /** @var IPurchasingCartService */
         $purchasingCartService = app(IPurchasingCartService::class);

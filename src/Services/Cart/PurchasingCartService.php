@@ -169,6 +169,10 @@ class PurchasingCartService implements IPurchasingCartService
             CartCRUDProvider::class,
             Carbon::now()
         );
+        CartEvent::dispatch(
+            $cart->id,
+            Carbon::now()
+        );
 
         return $cart;
     }
@@ -241,6 +245,10 @@ class PurchasingCartService implements IPurchasingCartService
             Auth::user(),
             $cart,
             CartCRUDProvider::class,
+            Carbon::now()
+        );
+        CartEvent::dispatch(
+            $cart->id,
             Carbon::now()
         );
 
@@ -332,6 +340,10 @@ class PurchasingCartService implements IPurchasingCartService
             CartCRUDProvider::class,
             Carbon::now()
         );
+        CartEvent::dispatch(
+            $cart->id,
+            Carbon::now()
+        );
 
         return $cart;
     }
@@ -379,7 +391,10 @@ class PurchasingCartService implements IPurchasingCartService
             CartCRUDProvider::class,
             Carbon::now()
         );
-
+        CartEvent::dispatch(
+            $cart->id,
+            Carbon::now()
+        );
 
         return $cart;
     }

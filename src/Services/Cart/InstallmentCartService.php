@@ -91,6 +91,10 @@ class InstallmentCartService implements IInstallmentCartService
                 ]);
 
                 CRUDUpdated::dispatch(Auth::user(), $cart, CartCRUDProvider::class, Carbon::now());
+                CartEvent::dispatch(
+                    $cart->id,
+                    Carbon::now()
+                );
             }
         }
     }
@@ -144,6 +148,11 @@ class InstallmentCartService implements IInstallmentCartService
             ]);
 
             CRUDUpdated::dispatch(Auth::user(), $cart, CartCRUDProvider::class, Carbon::now());
+            CartEvent::dispatch(
+                $cart->id,
+                Carbon::now()
+            );
+
             $carts[] = $cart;
         }
 
@@ -226,6 +235,10 @@ class InstallmentCartService implements IInstallmentCartService
         ]);
 
         CRUDUpdated::dispatch(Auth::user(), $cart, CartCRUDProvider::class, Carbon::now());
+        CartEvent::dispatch(
+            $cart->id,
+            Carbon::now()
+        );
 
         // detach all existing product/cart connections
         $cart->products()->sync([]);
@@ -297,6 +310,10 @@ class InstallmentCartService implements IInstallmentCartService
         ]);
 
         CRUDUpdated::dispatch(Auth::user(), $cart, CartCRUDProvider::class, Carbon::now());
+        CartEvent::dispatch(
+            $cart->id,
+            Carbon::now()
+        );
 
         $totalProductsInCart = $products->count();
         // detach all existing product/cart connections
@@ -343,6 +360,10 @@ class InstallmentCartService implements IInstallmentCartService
             Auth::user(),
             $cart,
             CartCRUDProvider::class,
+            Carbon::now()
+        );
+        CartEvent::dispatch(
+            $cart->id,
             Carbon::now()
         );
 

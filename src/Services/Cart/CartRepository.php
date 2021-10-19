@@ -24,9 +24,11 @@ class CartRepository implements CartICartRepository
 
         return new PaginatedResponse(
             Cart::query()
-            ->where('customer_id', $user->id)
-            ->whereIn('status', [Cart::STATUS_ACCESS_COMPLETE, Cart::STATUS_ACCESS_GRANTED])
-            ->paginate($limit, ['*'], 'page', $page)
+                ->with(['products'])
+                ->where('customer_id', $user->id)
+                ->whereIn('status', [Cart::STATUS_ACCESS_COMPLETE, Cart::STATUS_ACCESS_GRANTED])
+                ->orderBy('updated_at', 'desc')
+                ->paginate($limit, ['*'], 'page', $page)
         );
     }
 }

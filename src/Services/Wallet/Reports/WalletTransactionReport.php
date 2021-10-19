@@ -1,15 +1,15 @@
 <?php
 
-namespace Larapress\ECommerce\Services\Banking\Reports;
+namespace Larapress\ECommerce\Services\Wallet\Reports;
 
 use Larapress\CRUD\ICRUDUser;
 use Larapress\Reports\Services\Reports\ICRUDReportSource;
 use Larapress\Reports\Services\Reports\IMetricsService;
 use Larapress\Reports\Services\Reports\ReportQueryRequest;
 
-class GatewayTransactionWindowedReport implements ICRUDReportSource
+class WalletTransactionReport implements ICRUDReportSource
 {
-    const NAME = 'bank.gateway.windowed';
+    const NAME = 'ecommerce.wallet_transactions.windowed';
 
     public function __construct(public IMetricsService $metrics)
     {
@@ -30,19 +30,11 @@ class GatewayTransactionWindowedReport implements ICRUDReportSource
      *
      * @param ICRUDUser $user
      * @param ReportQueryRequest $request
+     *
      * @return array
      */
     public function getReport(ICRUDUser $user, ReportQueryRequest $request): array
     {
-        return $this->metrics->measurementQuery(
-            $user,
-            $request,
-            config('larapress.ecommerce.reports.group'),
-            config('larapress.ecommerce.reports.bank_gateway_transactions'),
-            $request->getAggregateFunction(),
-            $request->getAggregateWindow(),
-        )
-        ->get()
-        ->toArray();
+        return [];
     }
 }

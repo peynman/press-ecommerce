@@ -14,9 +14,9 @@ use Larapress\CRUD\Services\CRUD\ICRUDVerb;
 use Larapress\CRUD\Services\RBAC\IPermissionsMetadata;
 use Larapress\ECommerce\Models\Cart;
 use Larapress\ECommerce\Models\WalletTransaction;
-use Larapress\ECommerce\Services\Cart\CartPurchasedEvent;
-use Larapress\ECommerce\Services\Cart\CartPurchasedReport;
+use Larapress\ECommerce\Services\Cart\CartEvent;
 use Larapress\ECommerce\Services\Cart\ICartService;
+use Larapress\ECommerce\Services\Cart\Reports\CartReport;
 use Larapress\Profiles\IProfileUser;
 use Larapress\Reports\Models\MetricCounter;
 
@@ -148,7 +148,7 @@ class CartCRUDProvider implements
     public function getReportSources(): array
     {
         return [
-            new CartPurchasedReport(),
+            CartReport::NAME => CartReport::class,
         ];
     }
 
@@ -238,7 +238,7 @@ class CartCRUDProvider implements
             ]);
 
             if ($object->status == Cart::STATUS_ACCESS_GRANTED) {
-                CartPurchasedEvent::dispatch($object, Carbon::now());
+                CartEvent::dispatch($object, Carbon::now());
             }
         }
     }
@@ -278,7 +278,7 @@ class CartCRUDProvider implements
             ]);
 
             if ($object->status == Cart::STATUS_ACCESS_GRANTED) {
-                CartPurchasedEvent::dispatch($object, Carbon::now());
+                CartEvent::dispatch($object, Carbon::now());
             }
         }
     }
