@@ -12,11 +12,12 @@ class SortByPublishDesc implements IProductSort
      *
      * @param Builder $query
      *
-     * @return void
+     * @return Builder
      */
-    public function applySort(Builder $query)
+    public function applySort(Builder $query): Builder
     {
         $query->orderBy('publish_at', 'desc');
         $query->orderBy('created_at', 'desc');
+        return $query;
     }
 }

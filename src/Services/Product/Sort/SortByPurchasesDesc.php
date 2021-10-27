@@ -12,9 +12,10 @@ class SortByPurchasesDesc implements IProductSort
      *
      * @param Builder $query
      *
-     * @return void
+     * @return Builder
      */
-    public function applySort(Builder $query)
+    public function applySort(Builder $query): Builder
     {
+        return $query;
     }
 }

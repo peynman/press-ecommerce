@@ -12,11 +12,12 @@ class SortByPublishAsc implements IProductSort
      *
      * @param Builder $query
      *
-     * @return void
+     * @return Builder
      */
-    public function applySort(Builder $query)
+    public function applySort(Builder $query): Builder
     {
         $query->orderBy('publish_at', 'asc');
         $query->orderBy('created_at', 'asc');
+        return $query;
     }
 }

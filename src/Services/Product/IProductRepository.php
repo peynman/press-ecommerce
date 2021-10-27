@@ -123,4 +123,13 @@ interface IProductRepository
      * @return Product[]
      */
     public function getProductAncestorIds($product);
+
+    /**
+     * Undocumented function
+     *
+     * @param ProductCategory $product
+     *
+     * @return ProductCategory[]
+     */
+    public function getProductCategoryAncestorIds($cat);
 }

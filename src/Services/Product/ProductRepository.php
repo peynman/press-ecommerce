@@ -169,6 +169,32 @@ class ProductRepository implements IProductRepository
     /**
      * Undocumented function
      *
+     * @param ProductCategory $product
+     *
+     * @return ProductCategory[]
+     */
+    public function getProductCategoryAncestorIds($cat)
+    {
+        return Helpers::getCachedValue(
+            'larapress.ecommerce.category-ancestors.' . $cat->id,
+            ['category:' . $cat->id],
+            86400,
+            true,
+            function () use ($cat) {
+                $ancestors = [];
+                $parent = $cat->parent;
+                while (!is_null($parent)) {
+                    $ancestors[] = $parent->id;
+                    $parent = $parent->parent;
+                }
+                return $ancestors;
+            },
+        );
+    }
+
+    /**
+     * Undocumented function
+     *
      * @param IECommerceUser $user
      * @param int $productId
      * @param int $page
@@ -388,7 +414,7 @@ class ProductRepository implements IProductRepository
                 $sorterClass = $sorters[$sortBy];
                 /** @var IProductSort */
                 $sorter = new $sorterClass();
-                $sorter->applySort($query);
+                $query = $sorter->applySort($query);
             } else {
                 throw new AppException(AppException::ERR_INVALID_QUERY);
             }

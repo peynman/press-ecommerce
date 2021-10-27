@@ -12,10 +12,11 @@ class SortByPriceAsc implements IProductSort
      *
      * @param Builder $query
      *
-     * @return void
+     * @return Builder
      */
-    public function applySort(Builder $query)
+    public function applySort(Builder $query): Builder
     {
         $query->orderByRaw("CAST(JSON_UNQUOTE(JSON_EXTRACT(data, '$.fixedPrice.amount')) AS float) ASC");
+        return $query;
     }
 }
