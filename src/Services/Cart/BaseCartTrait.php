@@ -149,6 +149,23 @@ trait BaseCartTrait
     /**
      * Undocumented function
      *
+     * @return int
+     */
+    public function getTotalQuantity()
+    {
+        $quantity = 0;
+        $products = $this->products;
+        foreach ($products as $product) {
+            $details = new CartProductPurchaseDetails($product->pivot->data);
+            $quantity += $details->quantity;
+        }
+
+        return $quantity;
+    }
+
+    /**
+     * Undocumented function
+     *
      * @property int|Product $product
      * @return int
      */

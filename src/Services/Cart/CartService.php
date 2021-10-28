@@ -119,6 +119,7 @@ class CartService implements ICartService
             // calculate product purchase details as a snapshot
             $itemPrice = 0;
             $itemQuantity = isset($product->pivot->data['quantity']) ? $product->pivot->data['quantity'] : 1;
+            $itemExtra = isset($product->pivot->data['extra']) ?  $product->pivot->data['extra'] : null;
             if ($cart->isProductInPeriodicIds($product)) {
                 $itemPrice = $product->pricePeriodic($cart->currency) * $itemQuantity;
                 $detail->periodsAmount = $product->getPeriodicPurchaseAmount();
@@ -133,6 +134,7 @@ class CartService implements ICartService
             $detail->amount = $itemPrice;
             $detail->periodsOffPercent = !is_null($giftDetails) ? $giftDetails->percent : 0;
             $detail->quantity = $itemQuantity;
+            $detail->extra = $itemExtra;
 
             // calculate product gift usage
             if (!is_null($giftDetails) && (!$giftDetails->restrict_products || isset($giftDetails->products[$product->id]))) {
@@ -224,6 +226,7 @@ class CartService implements ICartService
             // calculate product purchase details as a snapshot
             $itemPrice = 0;
             $itemQuantity = isset($product->pivot->data['quantity']) ? $product->pivot->data['quantity'] : 1;
+            $itemExtra = isset($product->pivot->data['extra']) ?  $product->pivot->data['extra'] : null;
             if ($cart->isProductInPeriodicIds($product)) {
                 $itemPrice = $product->pricePeriodic($cart->currency) * $itemQuantity;
                 $detail->hasPeriods = true;
@@ -234,6 +237,7 @@ class CartService implements ICartService
             $detail->amount = $itemPrice;
             $detail->periodsOffPercent = 0;
             $detail->quantity = $itemQuantity;
+            $detail->extra = $itemExtra;
 
             // calculate product share in currency with cart amount
             $detail->currencyPaid = $cartRemainingAmounForProductShare / $cartProductsCount;

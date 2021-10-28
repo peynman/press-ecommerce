@@ -32,6 +32,13 @@ interface ICart
      *
      * @return int
      */
+    public function getTotalQuantity();
+
+    /**
+     * Undocumented function
+     *
+     * @return int
+     */
     public function hasPeriodicProducts();
 
     /**

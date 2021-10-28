@@ -48,18 +48,19 @@ class ImportProductTypes extends Command
         $types = json_decode(file_get_contents($filepath), true);
 
         foreach ($types as $type) {
-            ProductType::updateOrCreate([
-                'id' => $type['id'],
-                'name' => $type['name'],
-            ],[
-                'data' => $type['data'],
-                'author_id' => $type['author_id'],
-                'flags' => $type['flags'],
-                'created_at' => $type['created_at'],
-                'updated_at' => $type['updated_at'],
-                'deleted_at' => $type['deleted_at'],
-            ]);
-            $this->info('Type added with name: '.$type['name'].'.');
+            ProductType::withTrashed()
+                ->updateOrCreate([
+                    'id' => $type['id'],
+                    'name' => $type['name'],
+                ], [
+                    'data' => $type['data'],
+                    'author_id' => $type['author_id'],
+                    'flags' => $type['flags'],
+                    'created_at' => $type['created_at'],
+                    'updated_at' => $type['updated_at'],
+                    'deleted_at' => $type['deleted_at'],
+                ]);
+            $this->info('Type added with name: ' . $type['name'] . '.');
         }
 
         $this->info('Product types imported.');

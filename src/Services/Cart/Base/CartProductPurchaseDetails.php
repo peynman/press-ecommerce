@@ -20,6 +20,10 @@ class CartProductPurchaseDetails extends CastableClassArray
     /** @var float */
     public $offAmount;
 
+    // extra purchase info
+    /** @var array */
+    public $extra;
+
     // product paid amount in currency from cart
     /** @var float */
     public $currencyPaid;
