@@ -59,6 +59,6 @@ class PostePishtazDeliveryAgent implements IDeliveryAgentClient
      */
     public function canDeliveryForAddress(PhysicalAddress $address)
     {
-        return $address->province_code === 6 && in_array($address->city_code, [0, 4, 5, 6]);
+        return true;
     }
 }
