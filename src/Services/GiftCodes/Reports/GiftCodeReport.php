@@ -1,6 +1,6 @@
 <?php
 
-namespace Larapress\ECommerce\Services\Cart\Reports;
+namespace Larapress\ECommerce\Services\GiftCodes\Reports;
 
 use Larapress\CRUD\ICRUDUser;
 use Larapress\Reports\Services\Reports\ICRUDReportSource;
