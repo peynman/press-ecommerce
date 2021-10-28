@@ -4,7 +4,9 @@ namespace Larapress\ECommerce\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Larapress\ECommerce\Commands\CreateLocalStorageFolders;
+use Larapress\ECommerce\Commands\ExportBankGateways;
 use Larapress\ECommerce\Commands\ExportProductTypes;
+use Larapress\ECommerce\Commands\ImportBankGateways;
 use Larapress\ECommerce\Commands\ImportProductTypes;
 use Larapress\ECommerce\Services\Banking\BankingService;
 use Larapress\ECommerce\Services\Banking\IBankingService;
@@ -87,6 +89,8 @@ class PackageServiceProvider extends ServiceProvider
                 CreateLocalStorageFolders::class,
                 ExportProductTypes::class,
                 ImportProductTypes::class,
+                ExportBankGateways::class,
+                ImportBankGateways::class,
             ]);
         }
     }
