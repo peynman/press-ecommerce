@@ -44,7 +44,7 @@ class PurchasingCartController extends CRUDController
 
         Route::post(
             '/me/current-cart/apply/gift-code',
-            '\\' . self::class . '@checkPurchasingCartGiftCode'
+            '\\' . self::class . '@applyPurchasingCartGiftCode'
         )->name(config('larapress.ecommerce.routes.carts.name') . '.any.purchasing.gift-code');
 
         Route::post(
@@ -60,15 +60,15 @@ class PurchasingCartController extends CRUDController
      *
      * @return Response
      */
-    public function checkPurchasingCartGiftCode(IGiftCodeService $service, IPurchasingCartService $pService, CartGiftCodeRequest $request)
+    public function applyPurchasingCartGiftCode(IPurchasingCartService $service, CartGiftCodeRequest $request)
     {
         /** @var IECommerceUser $user */
         $user = Auth::user();
-        return response()->json((array)$service->getGiftUsageDetailsForCart(
-            $user,
-            $pService->getPurchasingCart($user, $request->getCurrency()),
+        return $service->updateCartGiftCodeData(
             $request->getGiftCode(),
-        ));
+            $user,
+            $request->getCurrency()
+        );
     }
 
     /**

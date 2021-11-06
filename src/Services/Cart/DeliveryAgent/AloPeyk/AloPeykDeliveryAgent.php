@@ -37,7 +37,7 @@ class AloPeykDeliveryAgent implements IDeliveryAgentClient {
      */
     public function getEstimatedPrice(PhysicalAddress $address, int $currency)
     {
-        return 10000;
+        return 25000;
     }
 
     /**
@@ -59,6 +59,6 @@ class AloPeykDeliveryAgent implements IDeliveryAgentClient {
      */
     public function canDeliveryForAddress(PhysicalAddress $address)
     {
-        return $address->province_code === 7 && in_array($address->city_code, [0, 4, 5, 6]);
+        return $address->province_code === 7 && in_array($address->city_code, [10, 11]);
     }
 }

@@ -9,7 +9,7 @@ use Larapress\Profiles\Models\PhysicalAddress;
 class PostePishtazDeliveryAgent implements IDeliveryAgentClient
 {
     /**
-     * Undocumented function
+     * Undocumented functions
      *
      * @return string
      */
@@ -37,7 +37,7 @@ class PostePishtazDeliveryAgent implements IDeliveryAgentClient
      */
     public function getEstimatedPrice(PhysicalAddress $address, int $currency)
     {
-        return 25000;
+        return 0;
     }
 
     /**

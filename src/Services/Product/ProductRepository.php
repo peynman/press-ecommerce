@@ -15,6 +15,7 @@ use Larapress\ECommerce\IECommerceUser;
 use Larapress\ECommerce\Models\ProductReview;
 use Larapress\ECommerce\Services\Cart\ICartService;
 use Illuminate\Database\Eloquent\Builder;
+use Larapress\CRUD\Services\Persian\PersianText;
 
 class ProductRepository implements IProductRepository
 {
@@ -288,6 +289,36 @@ class ProductRepository implements IProductRepository
         return $product;
     }
 
+    /**
+     * Undocumented function
+     *
+     * @param IECommerceUser|null $user
+     * @param string $term
+     * @param integer $page
+     * @param integer $limit
+     * @param array $categories
+     * @param array $types
+     * @param boolean $exclude
+     *
+     * @return PaginatedResponse
+     */
+    public function searchProductsPaginated(
+        $user,
+        string $term,
+        $page = 1,
+        $limit = null,
+        $inCategories = [],
+        $withTypes = [],
+        $sortBy = null,
+        $notIntCatgories = [],
+        $withoutTypes = []
+    ) {
+        $query = $this->getProductsPaginatedQuery($user, $page, $inCategories, $withTypes, $notIntCatgories, $withoutTypes, false, $sortBy);
+        $query->whereRaw("LOWER(JSON_UNQUOTE(JSON_EXTRACT(data, '$.title'))) LIKE LOWER('%".PersianText::standard($term)."%')");
+        $limit = PaginatedResponse::safeLimit($limit);
+        $r = new PaginatedResponse($query->paginate($limit));
+        return $r;
+    }
     /**
      * Undocumented function
      *

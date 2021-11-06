@@ -54,6 +54,7 @@ class Product extends Model implements ICartItem
         'priority',
         'publish_at',
         'expires_at',
+        'deleted_at',
     ];
 
     public $dates = [

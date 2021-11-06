@@ -37,7 +37,7 @@ class PostePishtazUserDeliveryAgent implements IDeliveryAgentClient
      */
     public function getEstimatedPrice(PhysicalAddress $address, int $currency)
     {
-        return 25000;
+        return 0;
     }
 
     /**
@@ -59,6 +59,6 @@ class PostePishtazUserDeliveryAgent implements IDeliveryAgentClient
      */
     public function canDeliveryForAddress(PhysicalAddress $address)
     {
-        return true;
+        return false;
     }
 }

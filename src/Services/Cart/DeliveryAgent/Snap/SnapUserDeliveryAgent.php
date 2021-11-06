@@ -59,6 +59,6 @@ class SnapUserDeliveryAgent implements IDeliveryAgentClient
      */
     public function canDeliveryForAddress(PhysicalAddress $address)
     {
-        return true;
+        return $address->province_code === 7 && in_array($address->city_code, [10, 11]);
     }
 }

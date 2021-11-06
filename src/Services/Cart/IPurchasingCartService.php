@@ -37,6 +37,17 @@ interface IPurchasingCartService
     /**
      * Undocumented function
      *
+     * @param string $code
+     * @param IECommerceUser $user
+     * @param integer $currency
+     *
+     * @return Cart
+     */
+    public function updateCartGiftCodeData(string $code, IECommerceUser $user, int $currency);
+
+    /**
+     * Undocumented function
+     *
      * @param Request $request
      * @param IECommerceUser $user
      * @param int $currency

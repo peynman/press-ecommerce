@@ -40,6 +40,14 @@ class BankGatewayCRUDProvider implements ICRUDProvider
         'updated_at',
         'deleted_at',
     ];
+    public $filterFields = [
+        'created_from' => 'after:created_at',
+        'created_to' => 'before:created_at',
+        'updated_from' => 'after:upated_at',
+        'updated_to' => 'before:updated_at',
+        'deleted_from' => 'after:deleted_at',
+        'deleted_to' => 'before:deleted_at',
+    ];
 
     /**
      * Undocumented function

@@ -43,6 +43,31 @@ interface IProductRepository
      * Undocumented function
      *
      * @param IECommerceUser|null $user
+     * @param string $term
+     * @param integer $page
+     * @param integer $limit
+     * @param array $categories
+     * @param array $types
+     * @param boolean $exclude
+     *
+     * @return PaginatedResponse
+     */
+    public function searchProductsPaginated(
+        $user,
+        string $term,
+        $page = 1,
+        $limit = null,
+        $inCategories = [],
+        $withTypes = [],
+        $sortBy = null,
+        $notIntCatgories = [],
+        $withoutTypes = []
+    );
+
+    /**
+     * Undocumented function
+     *
+     * @param IECommerceUser|null $user
      * @param integer $page
      * @param integer $limit
      * @param array $categories

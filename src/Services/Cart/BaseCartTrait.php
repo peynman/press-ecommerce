@@ -666,6 +666,17 @@ trait BaseCartTrait
         ]);
     }
 
+    /**
+     * Undocumented function
+     *
+     * @return void
+     */
+    public function removeGiftCodeUsage()
+    {
+        $this->data = array_merge($this->data, [
+            'gift_code' => null,
+        ]);
+    }
 
     /**
      * Undocumented function

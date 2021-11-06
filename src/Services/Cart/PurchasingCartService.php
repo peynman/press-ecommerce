@@ -4,6 +4,7 @@ namespace Larapress\ECommerce\Services\Cart;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Larapress\CRUD\Events\CRUDUpdated;
@@ -149,12 +150,60 @@ class PurchasingCartService implements IPurchasingCartService
             } else {
                 throw new AppException(AppException::ERR_INVALID_PARAMS);
             }
+        } else {
+            $cart->setDeliveryPrice(0);
+            $cart->setDeliveryAgentName(null);
         }
 
         /** @var IDeliveryAgent */
         $agent = app(IDeliveryAgent::class);
         $avAgents = $agent->getAvailableAgentsForCart($cart);
         $cart->setAvailableDeliveryAgents($avAgents);
+        $cart->removeGiftCodeUsage();
+
+        // update amount based on products and gift code
+        $cart->amount = $this->cartService->calculateCartAmountFromDataAndProducts($cart);
+        // save cart updates
+        $cart->update();
+
+        $this->resetPurchasingCache($user->id);
+        $cart = $this->getPurchasingCart($user, $currency);
+        CRUDUpdated::dispatch(
+            Auth::user(),
+            $cart,
+            CartCRUDProvider::class,
+            Carbon::now()
+        );
+        CartEvent::dispatch(
+            $cart->id,
+            Carbon::now()
+        );
+
+        return $cart;
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param string $code
+     * @param IECommerceUser $user
+     * @param integer $currency
+     *
+     * @return Cart
+     */
+    public function updateCartGiftCodeData(string $code, IECommerceUser $user, int $currency)
+    {
+        /** @var Cart */
+        $cart = $this->getPurchasingCart($user, $currency);
+        $giftDetails = $this->giftService->getGiftUsageDetailsForCart(
+            $user,
+            $cart,
+            $code,
+        );
+
+        if (!is_null($giftDetails)) {
+            $cart->setGiftCodeUsage($giftDetails);
+        }
 
         // update amount based on products and gift code
         $cart->amount = $this->cartService->calculateCartAmountFromDataAndProducts($cart);
@@ -327,6 +376,8 @@ class PurchasingCartService implements IPurchasingCartService
             ],
         ]);
 
+        $cart->removeGiftCodeUsage();
+
         $cart->load('products');
         $cart->amount = $this->cartService->calculateCartAmountFromDataAndProducts($cart);
         $cart->update();
@@ -377,6 +428,7 @@ class PurchasingCartService implements IPurchasingCartService
         }
 
         $existingPivot->pivot->delete();
+        $cart->removeGiftCodeUsage();
 
         $cart->load('products');
         $cart->amount = $this->cartService->calculateCartAmountFromDataAndProducts($cart);

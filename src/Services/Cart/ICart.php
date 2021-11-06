@@ -208,6 +208,13 @@ interface ICart
     /**
      * Undocumented function
      *
+     * @return void
+     */
+    public function removeGiftCodeUsage();
+
+    /**
+     * Undocumented function
+     *
      * @param CartCustomInstallmentPeriod[] $customInstallments
      *
      * @return void
