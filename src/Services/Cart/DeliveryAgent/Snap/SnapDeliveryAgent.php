@@ -37,7 +37,7 @@ class SnapDeliveryAgent implements IDeliveryAgentClient
      */
     public function getEstimatedPrice(PhysicalAddress $address, int $currency)
     {
-        return 0;
+        return 40000;
     }
 
     /**
