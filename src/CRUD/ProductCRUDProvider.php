@@ -15,7 +15,9 @@ use Larapress\ECommerce\Controllers\ProductController;
 use Larapress\ECommerce\Models\Product;
 use Larapress\ECommerce\IECommerceUser;
 use Larapress\ECommerce\Services\Product\Reports\ProductSalesReports;
+use Larapress\FileShare\Models\FileUpload;
 use Larapress\FileShare\Services\FileUpload\IFileUploadService;
+use Larapress\Profiles\IProfileUser;
 
 class ProductCRUDProvider implements
     ICRUDProvider,
@@ -222,11 +224,21 @@ class ProductCRUDProvider implements
      */
     public function onBeforeCreate(array $args): array
     {
-        $args['author_id'] = Auth::user()->id;
+        /** @var IProfileUser */
+        $user = Auth::user();
+        $args['author_id'] = $user->id;
 
         /** @var IFileUploadService */
         $service = app(IFileUploadService::class);
-        $data = $service->replaceBase64WithFilePathValuesRecursuve($args['data'], null, 'public', 'product-images');
+        $data = $service->replaceBase64WithFilePathValuesRecursive(
+            $user,
+            'product-'.$args['name'].'-image',
+            $args['data'],
+            null,
+            FileUpload::ACCESS_PUBLIC,
+            config('larapress.fileshare.default_public_disk'),
+            'images/product-images',
+        );
 
         // make sure types json object is stored as object and not array
         if (isset($data['types'])) {
@@ -249,9 +261,19 @@ class ProductCRUDProvider implements
      */
     public function onBeforeUpdate(array $args): array
     {
+        /** @var IProfileUser */
+        $user = Auth::user();
         /** @var IFileUploadService */
         $service = app(IFileUploadService::class);
-        $data = $service->replaceBase64WithFilePathValuesRecursuve($args['data'], null, 'public', 'product-images');
+        $data = $service->replaceBase64WithFilePathValuesRecursive(
+            $user,
+            'product-'.$args['name'].'-image',
+            $args['data'],
+            null,
+            FileUpload::ACCESS_PUBLIC,
+            config('larapress.fileshare.default_public_disk'),
+            'images/product-images',
+        );
 
         // make sure types json object is stored as object and not array
         if (isset($data['types'])) {

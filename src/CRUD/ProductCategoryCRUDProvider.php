@@ -9,7 +9,9 @@ use Larapress\CRUD\Services\CRUD\Traits\CRUDProviderTrait;
 use Larapress\CRUD\Services\CRUD\ICRUDProvider;
 use Larapress\CRUD\Services\CRUD\ICRUDVerb;
 use Larapress\ECommerce\Models\ProductCategory;
+use Larapress\FileShare\Models\FileUpload;
 use Larapress\FileShare\Services\FileUpload\IFileUploadService;
+use Larapress\Profiles\IProfileUser;
 use Larapress\Profiles\Services\FormEntry\IFormEntryService;
 
 class ProductCategoryCRUDProvider implements ICRUDProvider
@@ -85,11 +87,21 @@ class ProductCategoryCRUDProvider implements ICRUDProvider
      */
     public function onBeforeCreate(array $args): array
     {
-        $args['author_id'] = Auth::user()->id;
+        /** @var IProfileUser */
+        $user = Auth::user();
+        $args['author_id'] = $user->id;
 
         /** @var IFileUploadService */
         $service = app(IFileUploadService::class);
-        $data = $service->replaceBase64WithFilePathValuesRecursuve($args['data'], null);
+        $data = $service->replaceBase64WithFilePathValuesRecursive(
+            $user,
+            'product-category-'.$args['name'].'-image',
+            $args['data'],
+            null,
+            FileUpload::ACCESS_PUBLIC,
+            config('larapress.fileshare.default_public_disk'),
+            'images',
+        );
         $args['data'] = $data;
 
         return $args;
@@ -104,9 +116,19 @@ class ProductCategoryCRUDProvider implements ICRUDProvider
      */
     public function onBeforeUpdate(array $args): array
     {
+        /** @var IProfileUser */
+        $user = Auth::user();
         /** @var IFileUploadService */
         $service = app(IFileUploadService::class);
-        $data = $service->replaceBase64WithFilePathValuesRecursuve($args['data'], null);
+        $data = $service->replaceBase64WithFilePathValuesRecursive(
+            $user,
+            'product-category-'.$args['name'].'-image',
+            $args['data'],
+            null,
+            FileUpload::ACCESS_PUBLIC,
+            config('larapress.fileshare.default_public_disk'),
+            'images',
+        );;
 
         $args['data'] = $data;
 
