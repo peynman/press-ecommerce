@@ -314,7 +314,11 @@ class ProductRepository implements IProductRepository
         $withoutTypes = []
     ) {
         $query = $this->getProductsPaginatedQuery($user, $page, $inCategories, $withTypes, $notIntCatgories, $withoutTypes, false, $sortBy);
-        $query->whereRaw("LOWER(JSON_UNQUOTE(JSON_EXTRACT(data, '$.title'))) LIKE LOWER('%".PersianText::standard($term)."%')");
+        if (is_numeric($term)) {
+            $query->where('id', $term);
+        } else {
+            $query->whereRaw("LOWER(JSON_UNQUOTE(JSON_EXTRACT(data, '$.title'))) LIKE LOWER('%".PersianText::standard($term)."%')");
+        }
         $limit = PaginatedResponse::safeLimit($limit);
         $r = new PaginatedResponse($query->paginate($limit));
         return $r;
