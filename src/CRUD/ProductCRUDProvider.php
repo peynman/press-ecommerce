@@ -65,7 +65,12 @@ class ProductCRUDProvider implements
             ICRUDVerb::CREATE . '.duplicate' => [
                 'methods' => ['POST'],
                 'uses' => '\\' . ProductController::class . '@duplicateProduct',
-                'url' => config('larapress.ecommerce.routes.gift_codes.name') . '/clone',
+                'url' => config('larapress.ecommerce.routes.products.name') . '/clone',
+            ],
+            ICRUDVerb::EDIT . '.modify-categories' => [
+                'methods' => ['POST'],
+                'uses' => '\\' . ProductController::class . '@modifyProductCategory',
+                'url' => config('larapress.ecommerce.routes.products.name') . '/modify-categories'
             ]
         ];
     }
@@ -232,7 +237,7 @@ class ProductCRUDProvider implements
         $service = app(IFileUploadService::class);
         $data = $service->replaceBase64WithFilePathValuesRecursive(
             $user,
-            'product-'.$args['name'].'-image',
+            'product-' . $args['name'] . '-image',
             $args['data'],
             null,
             FileUpload::ACCESS_PUBLIC,
@@ -267,7 +272,7 @@ class ProductCRUDProvider implements
         $service = app(IFileUploadService::class);
         $data = $service->replaceBase64WithFilePathValuesRecursive(
             $user,
-            'product-'.$args['name'].'-image',
+            'product-' . $args['name'] . '-image',
             $args['data'],
             null,
             FileUpload::ACCESS_PUBLIC,

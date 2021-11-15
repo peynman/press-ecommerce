@@ -19,6 +19,17 @@ interface IProductService
     /**
      * Undocumented function
      *
+     * @param array $productIds
+     * @param array $categoryIds
+     * @param string $mode
+     *
+     * @return Product[]
+     */
+    public function modifyProductCategory(array $productIds, array $categoryIds, string $mode);
+
+    /**
+     * Undocumented function
+     *
      * @param IECommerceUser $user
      * @param int|Product $product
      * @param int|FileUpload $link

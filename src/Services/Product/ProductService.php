@@ -5,6 +5,7 @@ namespace Larapress\ECommerce\Services\Product;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Larapress\CRUD\Events\CRUDCreated;
 use Larapress\CRUD\Exceptions\AppException;
 use Larapress\CRUD\Extend\Helpers;
@@ -14,11 +15,8 @@ use Larapress\FileShare\Models\FileUpload;
 use Larapress\ECommerce\Models\Product;
 use Larapress\ECommerce\Models\ProductType;
 use Larapress\ECommerce\Services\Cart\ICartService;
-use Larapress\ECommerce\Services\Product\Reports\ProductPurchasedCountReport;
-use Larapress\ECommerce\Services\Product\Reports\ProductPurchasedSalesReport;
+use Larapress\ECommerce\Services\Product\Requests\ProductCategoryModifyRequest;
 use Larapress\ECommerce\Services\Product\Requests\ProductCloneRequest;
-use Larapress\Reports\Services\Reports\IMetricsService;
-use Larapress\Profiles\IProfileUser;
 
 class ProductService implements IProductService
 {
@@ -62,68 +60,53 @@ class ProductService implements IProductService
     /**
      * Undocumented function
      *
-     * @param int $product_id
-     * @return array
+     * @param array $productIds
+     * @param array $categoryIds
+     * @param string $mode
+     *
+     * @return Product[]
      */
-    public function getProductSales($product_id)
+    public function modifyProductCategory(array $productIds, array $categoryIds, string $mode)
     {
-        return Helpers::getCachedValue(
-            'larapress.ecommerce.product.' . $product_id . '.sales',
-            ['product.sales:' . $product_id],
-            3600,
-            false,
-            function () use ($product_id) {
-                /** @var IMetricsService */
-                $service = app(IMetricsService::class);
-
-                /** @var IProfileUser */
-                $user = Auth::user();
-                $domains = [];
-                if (!$user->hasRole(config('larapress.profiles.security.roles.super_role'))) {
-                    $domains = $user->getAffiliateDomainIds();
+        switch ($mode) {
+            case ProductCategoryModifyRequest::MODE_SYNC_CATEGORY:
+                DB::table('product_category_pivot')
+                    ->whereIn('product_id', $productIds)
+                    ->delete();
+                $inserts = [];
+                foreach ($productIds as $productId) {
+                    foreach ($categoryIds as $categoryId) {
+                        $inserts[] = [
+                            'product_id' => $productId,
+                            'product_category_id' => $categoryId,
+                        ];
+                    }
                 }
+                DB::table('product_category_pivot')->insert($inserts);
+                break;
+            case ProductCategoryModifyRequest::MODE_REMOVE_CATEGORY:
+                DB::table('product_category_pivot')
+                    ->whereIn('product_id', $productIds)
+                    ->whereIn('product_category_id', $categoryIds)
+                    ->delete();
+                break;
+            case ProductCategoryModifyRequest::MODE_ADD_CATEGORY:
+                $inserts = [];
+                foreach ($productIds as $productId) {
+                    foreach ($categoryIds as $categoryId) {
+                        $inserts[] = [
+                            'product_id' => $productId,
+                            'product_category_id' => $categoryId,
+                        ];
+                    }
+                }
+                DB::table('product_category_pivot')->insert($inserts);
+                break;
+        }
 
-                $virtual = $service->sumMeasurement(
-                    'product.' . $product_id . '.sales.1.amount',
-                    ProductPurchasedSalesReport::MEASUREMENT_TYPE,
-                    null,
-                    $domains
-                );
-                $real = $service->sumMeasurement(
-                    'product.' . $product_id . '.sales.2.amount',
-                    ProductPurchasedSalesReport::MEASUREMENT_TYPE,
-                    null,
-                    $domains
-                );
-
-                $periodic = $service->sumMeasurement(
-                    'product.' . $product_id . '.sales_periodic',
-                    ProductPurchasedCountReport::MEASUREMENT_TYPE,
-                    null,
-                    $domains
-                );
-                $fixed = $service->sumMeasurement(
-                    'product.' . $product_id . '.sales_fixed',
-                    ProductPurchasedCountReport::MEASUREMENT_TYPE,
-                    null,
-                    $domains
-                );
-                $periodic_payment = $service->sumMeasurement(
-                    'product.' . $product_id . '.periodic_payment',
-                    ProductPurchasedCountReport::MEASUREMENT_TYPE,
-                    null,
-                    $domains
-                );
-
-                return [
-                    'real' => $real,
-                    'virtual' => $virtual,
-                    'periodic' => $periodic,
-                    'fixed' => $fixed,
-                    'periodic_payment' => $periodic_payment
-                ];
-            }
-        );
+        return Product::with('categories')
+            ->whereIn('id', $productIds)
+            ->get();
     }
 
     /**
