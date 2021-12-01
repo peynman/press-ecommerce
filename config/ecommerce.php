@@ -140,6 +140,7 @@ return [
         \Larapress\ECommerce\CRUD\ProductCRUDProvider::class,
         \Larapress\ECommerce\CRUD\ProductCategoryCRUDProvider::class,
         \Larapress\ECommerce\CRUD\ProductTypeCRUDProvider::class,
+        \Larapress\ECommerce\CRUD\ProductReviewCRUDProvider::class,
         \Larapress\ECommerce\CRUD\BankGatewayCRUDProvider::class,
         \Larapress\ECommerce\CRUD\BankGatewayTransactionCRUDProvider::class,
         \Larapress\ECommerce\CRUD\WalletTransactionCRUDProvider::class,
