@@ -709,8 +709,7 @@ class CartService implements ICartService
                 }
 
                 // include owned products by user group
-                if ($user->hasRole(config('larapress.ecommerce.products.product_owner_role_ids'))
-                ) {
+                if ($user->hasRole(config('larapress.ecommerce.products.product_owner_role_ids'))) {
                     $ids = array_merge($ids, $user->getOwenedProductsIds());
                 }
 
@@ -812,7 +811,7 @@ class CartService implements ICartService
     public function getLockedItemIds(IECommerceUser $user)
     {
         return Helpers::getCachedValue(
-            'larapress.ecommerce.user.'.$user->id.'.locked_products',
+            'larapress.ecommerce.user.' . $user->id . '.locked_products',
             ['purchased-cart:' . $user->id],
             3600,
             true,
@@ -887,6 +886,31 @@ class CartService implements ICartService
         $amount = max(0, $amount);
 
         return $amount;
+    }
+
+
+    /**
+     * Undocumented function
+     *
+     * @param ICart $cart
+     * @param Carbon|string|null $postingTimestamp
+     * @return ICart
+     */
+    public function markCartPosted(ICart $cart, $postingTimestamp = null)
+    {
+        $data = $cart->data;
+        if (is_null($postingTimestamp)) {
+            $data['posted_at'] = Carbon::now()->format(config('larapress.crud.datetime-format'));
+        } else if (is_string($postingTimestamp)) {
+            $data['posted_at'] = $postingTimestamp;
+        } else {
+            $data['posted_at'] = $postingTimestamp->format(config('larapress.crud.datetime-format'));
+        }
+        /** @var Model $cart */
+        $cart->update([
+            'data' => $data,
+        ]);
+        return $cart;
     }
 
 

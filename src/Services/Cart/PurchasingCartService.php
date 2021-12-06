@@ -241,7 +241,7 @@ class PurchasingCartService implements IPurchasingCartService
         $cart = $this->getPurchasingCart($user, $currency);
 
         $productsData = new Collection($request->getProducts());
-        $products = Product::whereIn('id', $productsData->pluck('id'))->get();
+        $products = Product::with('categories')->whereIn('id', $productsData->pluck('id'))->get();
 
         // check if periodics requested are periodic purchasable
         $periodicIds = $request->getPeriodicIds();
@@ -257,6 +257,7 @@ class PurchasingCartService implements IPurchasingCartService
         foreach ($productsData as $productData) {
             $product = $products->get($productData['id']);
             $itemPrice = in_array($product->id, $periodicIds) ? $product->pricePeriodic($currency) : $product->price($currency);
+
             $cart->products()->attach($product->id, [
                 'data' => [
                     'amount' => $itemPrice,

@@ -12,6 +12,7 @@ use Larapress\CRUD\Services\CRUD\Traits\CRUDProviderTrait;
 use Larapress\CRUD\Services\CRUD\ICRUDProvider;
 use Larapress\CRUD\Services\CRUD\ICRUDVerb;
 use Larapress\CRUD\Services\RBAC\IPermissionsMetadata;
+use Larapress\ECommerce\Controllers\CartController;
 use Larapress\ECommerce\Models\Cart;
 use Larapress\ECommerce\Models\WalletTransaction;
 use Larapress\ECommerce\Services\Cart\CartEvent;
@@ -30,13 +31,6 @@ class CartCRUDProvider implements
     public $model_in_config = 'larapress.ecommerce.routes.carts.model';
     public $compositions_in_config = 'larapress.ecommerce.routes.carts.compositions';
 
-    public $verbs = [
-        ICRUDVerb::VIEW,
-        ICRUDVerb::SHOW,
-        ICRUDVerb::CREATE,
-        ICRUDVerb::EDIT,
-        ICRUDVerb::DELETE,
-    ];
     public $createValidations = [
         'customer_id' => 'required|numeric|exists:users,id',
         'amount' => 'required|numeric',
@@ -82,6 +76,27 @@ class CartCRUDProvider implements
             'customer' => config('larapress.crud.user.provider'),
             'domain' => config('larapress.profiles.routes.domains.provider'),
             'products' => config('larapress.ecommerce.routes.products.provider'),
+        ];
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return array
+     */
+    public function getPermissionVerbs(): array
+    {
+        return [
+            ICRUDVerb::VIEW,
+            ICRUDVerb::SHOW,
+            ICRUDVerb::CREATE,
+            ICRUDVerb::EDIT,
+            ICRUDVerb::DELETE,
+            ICRUDVerb::EDIT . '.mark-posted' => [
+                'methods' => ['POST', 'PUT'],
+                'uses' => '\\' . CartController::class . '@markCartPosted',
+                'url' => config('larapress.ecommerce.routes.carts.name') . '/{id}/mark-posted'
+            ]
         ];
     }
 

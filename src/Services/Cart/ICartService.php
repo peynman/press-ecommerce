@@ -23,6 +23,15 @@ interface ICartService
     /**
      * Undocumented function
      *
+     * @param ICart $cart
+     * @param Carbon|string|null $postingTimestamp
+     * @return ICart
+     */
+    public function markCartPosted(ICart $cart, $postingTimestamp = null);
+
+    /**
+     * Undocumented function
+     *
      * @param Request $request
      * @param IECommerceUser $user
      * @param array $ids

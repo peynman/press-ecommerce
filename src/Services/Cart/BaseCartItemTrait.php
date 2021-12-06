@@ -18,7 +18,13 @@ trait BaseCartItemTrait
         }
 
         if (is_numeric($this->data['fixedPrice']['amount'])) {
-            return floatval($this->data['fixedPrice']['amount']);
+            $fixedPriceAmount = floatval($this->data['fixedPrice']['amount']);
+            $offCat = $this->getMaxOffPercentInCategories();
+            if ($offCat > 0) {
+                return $fixedPriceAmount * (1 - $offCat / 100);
+            }
+
+            return $fixedPriceAmount;
         }
 
         return 0;
@@ -246,5 +252,24 @@ trait BaseCartItemTrait
             $this->data['periodicPrice'] = [];
         }
         $this->data['periodicPrice']['periodCount'] = $count;
+    }
+
+    /**
+     * get maximum price off in percentage based on categories the product is in
+     *
+     * @return float
+     */
+    public function getMaxOffPercentInCategories() {
+        $cats = $this->categories;
+        $offPercent = 0;
+        foreach ($cats as $category) {
+            if (isset($category->data['offPercent'])) {
+                $op = intval($category->data['offPercent']);
+                if ($op > $offPercent && $op > 0 && $op < 100) {
+                    $offPercent = $op;
+                }
+            }
+        }
+        return $offPercent;
     }
 }
