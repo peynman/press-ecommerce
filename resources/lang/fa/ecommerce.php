@@ -27,5 +27,10 @@ return [
             'success' => 'نظر شما ارسال شد',
             'success_preview' => 'نظر شما ارسال شد و پس از تایید در سایت نمایش داده خواهد شد',
         ],
-    ]
+    ],
+
+    'sms' => [
+        'cart_purchased' => ':fullname',
+        'cart_posted' => ':fullname، سبد خرید شما با شناسه :cartId به آدرس شما ارسال شد.',
+    ],
 ];

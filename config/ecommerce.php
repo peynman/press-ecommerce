@@ -58,6 +58,14 @@ return [
         'product_owner_role_ids' => [9, 10],
     ],
 
+    // cart sms notifications
+    'sms' => [
+        // sms gateway id for cart purchase success
+        'cart_success_gateway_id' => null,
+        // sms gateway id for cart posted
+        'cart_posted_gateway_id' => null,
+    ],
+
     // product reviews management
     'product_reviews' => [
         // signed in users can only post reviews

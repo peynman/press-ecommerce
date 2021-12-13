@@ -23,6 +23,8 @@ use Larapress\ECommerce\Services\Cart\Base\CartInstallmentPurchaseDetails;
 use Larapress\ECommerce\Services\Cart\Base\CartProductPurchaseDetails;
 use Larapress\ECommerce\Services\Product\IProductRepository;
 use Illuminate\Support\Collection;
+use Larapress\Notifications\Models\SMSMessage;
+use Larapress\Notifications\Services\SMSService\Jobs\SendSMS;
 
 class CartService implements ICartService
 {
@@ -906,6 +908,31 @@ class CartService implements ICartService
         } else {
             $data['posted_at'] = $postingTimestamp->format(config('larapress.crud.datetime-format'));
         }
+
+        if (!is_null(config('larapress.ecommerce.sms.cart_posted_gateway_id'))) {
+            $firstname = $cart->customer->form_profile_default?->data['values']['firstname'] ?? null;
+            $lastname = $cart->customer->form_profile_default?->data['values']['lastname'] ?? null;
+
+            $message = trans('larapress::ecommerce.sms.cart_posted', [
+                'fullname' => $firstname . ' ' . $lastname,
+                'cartId' => $cart->id,
+            ]);
+            $smsMessage = SMSMessage::create([
+                'author_id' => config('larapress.giv.author_id'),
+                'sms_gateway_id' => config('larapress.giv.sms_gate_cart_sync'),
+                'from' => trans('larapress::giv.sms.from'),
+                'to' => $cart->customer->phones[0]->number,
+                'message' => $message,
+                'flags' => 0,
+                'status' => SMSMessage::STATUS_CREATED,
+                'data' => [
+                    'desc' => 'ecommerce-cart-posted',
+                    'cart_id' => $cart->id,
+                ]
+            ]);
+            SendSMS::dispatch($smsMessage);
+        }
+
         /** @var Model $cart */
         $cart->update([
             'data' => $data,
