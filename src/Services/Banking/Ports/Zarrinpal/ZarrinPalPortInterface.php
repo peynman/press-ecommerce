@@ -92,7 +92,7 @@ class ZarrinPalPortInterface implements IBankPortInterface
                 'status' => BankGatewayTransaction::STATUS_FORWARDED,
                 'reference_code' => $result['Authority'],
             ]);
-            CRUDUpdated::dispatch(Auth::user(), $transaction, BankGatewayTransactionCRUDProvider::class, Carbon::now());
+            CRUDUpdated::dispatch($transaction->customer_id, $transaction, BankGatewayTransactionCRUDProvider::class, Carbon::now());
 
             return $zarinpal->redirect($result["StartPay"]);
         }
@@ -134,7 +134,7 @@ class ZarrinPalPortInterface implements IBankPortInterface
                 'status' => BankGatewayTransaction::STATUS_SUCCESS,
                 'data' => $data,
             ]);
-            CRUDUpdated::dispatch(Auth::user(), $transaction, BankGatewayTransactionCRUDProvider::class, Carbon::now());
+            CRUDUpdated::dispatch($transaction->customer_id, $transaction, BankGatewayTransactionCRUDProvider::class, Carbon::now());
 
             return $transaction;
         } else {
@@ -146,7 +146,7 @@ class ZarrinPalPortInterface implements IBankPortInterface
                 'status' => BankGatewayTransaction::STATUS_FAILED,
                 'data' => $data,
             ]);
-            CRUDUpdated::dispatch(Auth::user(), $transaction, BankGatewayTransactionCRUDProvider::class, Carbon::now());
+            CRUDUpdated::dispatch($transaction->customer_id, $transaction, BankGatewayTransactionCRUDProvider::class, Carbon::now());
 
             return $transaction;
         }

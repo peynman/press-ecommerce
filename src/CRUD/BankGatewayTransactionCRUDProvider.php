@@ -10,6 +10,7 @@ use Larapress\CRUD\Services\CRUD\ICRUDVerb;
 use Larapress\ECommerce\Services\Banking\Reports\GatewayTransactionReport;
 use Larapress\Profiles\IProfileUser;
 use Larapress\Profiles\Models\Domain;
+use Larapress\Reports\Services\Reports\ReportsVerb;
 
 class BankGatewayTransactionCRUDProvider implements ICRUDProvider
 {
@@ -19,11 +20,6 @@ class BankGatewayTransactionCRUDProvider implements ICRUDProvider
     public $model_in_config = 'larapress.ecommerce.routes.bank_gateway_transactions.model';
     public $compositions_in_config = 'larapress.ecommerce.routes.bank_gateway_transactions.compositions';
 
-    public $verbs = [
-        ICRUDVerb::VIEW,
-        ICRUDVerb::SHOW,
-        ICRUDVerb::DELETE,
-    ];
     public $searchColumns = [
         'has:customer.phones.number',
         'tracking_code',
@@ -52,6 +48,20 @@ class BankGatewayTransactionCRUDProvider implements ICRUDProvider
         'domain' => 'in:domain_id',
         'status' => 'equals:status',
     ];
+
+    /**
+     * Undocumented function
+     *
+     * @return array
+     */
+    public function getPermissionVerbs(): array
+    {
+        return [
+            ICRUDVerb::VIEW,
+            ICRUDVerb::SHOW,
+            ReportsVerb::REPORTS => ReportsVerb::controllerVerb(config($this->name_in_config)),
+        ];
+    }
 
     /**
      * Undocumented function

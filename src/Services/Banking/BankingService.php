@@ -258,7 +258,7 @@ class BankingService implements IBankingService
                 'data' => $data,
             ]);
             BankGatewayTransactionEvent::dispatch($transaction, $request->ip(), Carbon::now());
-            CRUDUpdated::dispatch(Auth::user(), $transaction, BankGatewayTransactionCRUDProvider::class, Carbon::now());
+            CRUDUpdated::dispatch($transaction->customer_id, $transaction, BankGatewayTransactionCRUDProvider::class, Carbon::now());
 
             return $onFailed($request, $cart, $e->getMessage());
         }

@@ -325,7 +325,6 @@ class CartCRUDProvider implements
      */
     protected function normalizeCartInputData(array $args): array
     {
-
         // normalize flags
         if (isset($args['flags']) && !is_null($args['flags']) && is_numeric($args['flags'])) {
             $args['flags'] = $args['flags'] | Cart::FLAGS_ADMIN;
