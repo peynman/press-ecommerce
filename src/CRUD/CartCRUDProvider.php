@@ -20,6 +20,7 @@ use Larapress\ECommerce\Services\Cart\ICartService;
 use Larapress\ECommerce\Services\Cart\Reports\CartReport;
 use Larapress\Profiles\IProfileUser;
 use Larapress\Reports\Models\MetricCounter;
+use Larapress\Reports\Services\Reports\ReportsVerb;
 
 class CartCRUDProvider implements
     ICRUDProvider,
@@ -96,7 +97,8 @@ class CartCRUDProvider implements
                 'methods' => ['POST', 'PUT'],
                 'uses' => '\\' . CartController::class . '@markCartPosted',
                 'url' => config('larapress.ecommerce.routes.carts.name') . '/{id}/mark-posted'
-            ]
+            ],
+            ReportsVerb::REPORTS => ReportsVerb::controllerVerb(config($this->name_in_config)),
         ];
     }
 
