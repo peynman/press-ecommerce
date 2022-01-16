@@ -97,7 +97,7 @@ class ProductCRUDProvider implements
     public function getUpdateRules(Request $request): array
     {
         $createValidations = $this->getCreateRules($request);
-        $createValidations['name'] .= ',' . $request->route('id');
+        $createValidations['name'] .= ',' . $request->route('id') . ',id,deleted_at,NULL';
         return $createValidations;
     }
 
