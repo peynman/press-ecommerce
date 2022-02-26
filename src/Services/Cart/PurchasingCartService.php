@@ -4,16 +4,15 @@ namespace Larapress\ECommerce\Services\Cart;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Larapress\CRUD\Events\CRUDUpdated;
 use Larapress\CRUD\Exceptions\AppException;
+use Larapress\CRUD\Extend\ChainOfResponsibility;
 use Larapress\CRUD\Extend\Helpers;
 use Larapress\ECommerce\CRUD\CartCRUDProvider;
 use Larapress\ECommerce\IECommerceUser;
 use Larapress\ECommerce\Models\Cart;
-use Larapress\ECommerce\Models\GiftCodeUse;
 use Larapress\ECommerce\Models\Product;
 use Larapress\ECommerce\Repositories\IProductRepository;
 use Larapress\ECommerce\Services\Cart\DeliveryAgent\IDeliveryAgent;
@@ -22,7 +21,6 @@ use Larapress\ECommerce\Services\Cart\Requests\CartUpdateRequest;
 use Larapress\ECommerce\Services\GiftCodes\IGiftCodeService;
 use Larapress\ECommerce\Services\Cart\DeliveryAgent\IDeliveryAgentClient;
 use Larapress\ECommerce\Services\Cart\Requests\CartValidateRequest;
-use Larapress\ECommerce\Services\Cart\Base\CartGiftDetails;
 
 class PurchasingCartService implements IPurchasingCartService
 {
@@ -48,47 +46,21 @@ class PurchasingCartService implements IPurchasingCartService
      */
     public function validateCartBeforeForwardingToBank(CartValidateRequest $request, IECommerceUser $user, int $currency)
     {
+        $plugins = new ChainOfResponsibility(config('larapress.ecommerce.carts.plugins'));
         /** @var Cart $cart */
         $cart = $this->getPurchasingCart($user, $currency);
 
-        $addressId = $request->getDeliveryAddressId();
-        if (!is_null($addressId)) {
-            if ($cart->getDeliveryAddressId() !== $addressId) {
-                throw new AppException(AppException::ERR_INVALID_QUERY);
-            }
-        }
-
-        $agent = $request->getDeliveryAgentName();
-        if (!is_null($agent)) {
-            if ($cart->getDeliveryAgentName() !== $agent) {
-                throw new AppException(AppException::ERR_INVALID_QUERY);
-            }
-        }
-
-        $giftCode = $request->getGiftCode();
-        if (!is_null($giftCode)) {
-            /** @var CartGiftDetails */
-            $usage = $cart->getGiftCodeUsage();
-            if (!is_null($usage)) {
-                if ($usage->code !== $giftCode) {
-                    throw new AppException(AppException::ERR_INVALID_QUERY);
-                }
-            } else {
-                throw new AppException(AppException::ERR_INVALID_QUERY);
-            }
-        }
-
-        if ($request->getUseBalance() !== $cart->getUseBalance()) {
-            throw new AppException(AppException::ERR_INVALID_QUERY);
-        }
+        $plugins->handle('validateBeforeBankForwarding', $cart, $request);
 
         $reqProducts = Collection::make($request->getProducts());
         $reqProductIds = $reqProducts->pluck('id');
-        $periodicIds = $request->getPeriodicIds();
         $products = $cart->products;
         $productIds = $products->pluck('id');
 
         if ($productIds->count() !== count($reqProducts)) {
+            throw new AppException(AppException::ERR_INVALID_QUERY);
+        }
+        if ($request->getUseBalance() !== $cart->getUseBalance()) {
             throw new AppException(AppException::ERR_INVALID_QUERY);
         }
 
@@ -96,7 +68,7 @@ class PurchasingCartService implements IPurchasingCartService
             if (!$reqProductIds->contains($product->id)) {
                 throw new AppException(AppException::ERR_INVALID_QUERY);
             } else {
-                $reqProd = $reqProducts->first(function ($p) use($product) {
+                $reqProdPivot = $reqProducts->first(function ($p) use ($product) {
                     if (isset($p['data'])) {
                         return $p['id'] === $product->id && $p['data'] == $product->pivot?->data['extra'];
                     } else {
@@ -104,80 +76,9 @@ class PurchasingCartService implements IPurchasingCartService
                     }
                 });
 
-                if (is_null($reqProd) || in_array($reqProd['id'], $periodicIds) !== $cart->isProductInPeriodicIds($reqProd['id'])) {
-                    throw new AppException(AppException::ERR_INVALID_QUERY);
-                }
-
-                if ($reqProd['quantity'] !== $product->pivot?->data['quantity']) {
-                    throw new AppException(AppException::ERR_INVALID_QUERY);
-                }
+                $plugins->handle('validateProductDataInCart', $cart, $reqProdPivot, $product, $request);
             }
         }
-
-        return $cart;
-    }
-
-    /**
-     * Undocumented function
-     *
-     * @param CartUpdateRequest $request
-     * @param IECommerceUser $user
-     * @param integer $currency
-     *
-     * @return mixed
-     */
-    public function updateCartDeliveryData(CartUpdateRequest $request, IECommerceUser $user, int $currency)
-    {
-        /** @var Cart $cart */
-        $cart = $this->getPurchasingCart($user, $currency);
-
-        $cart->setDeliveryAddress($request->getDeliveryAddressId());
-        $cart->setDeliveryPreferredTimestamp($request->getDeliveryTimestamp());
-
-        if (!is_null($request->getDeliveryAgentName()) && !is_null($request->getDeliveryAddressId())) {
-            $agentClass = config('larapress.ecommerce.delivery_agents.' . $request->getDeliveryAgentName());
-            if (!class_exists($agentClass)) {
-                throw new AppException(AppException::ERR_OBJ_NOT_READY);
-            }
-
-            $address = $cart->getDeliveryAddress();
-            /** @var IDeliveryAgentClient */
-            $agent = new $agentClass();
-            if ($agent->canDeliveryForAddress($address)) {
-                $price = $agent->getEstimatedPrice($address, $currency);
-                $cart->setDeliveryPrice($price);
-                $cart->setDeliveryAgentName($request->getDeliveryAgentName());
-            } else {
-                throw new AppException(AppException::ERR_INVALID_PARAMS);
-            }
-        } else {
-            $cart->setDeliveryPrice(0);
-            $cart->setDeliveryAgentName(null);
-        }
-
-        /** @var IDeliveryAgent */
-        $agent = app(IDeliveryAgent::class);
-        $avAgents = $agent->getAvailableAgentsForCart($cart);
-        $cart->setAvailableDeliveryAgents($avAgents);
-        $cart->removeGiftCodeUsage();
-
-        // update amount based on products and gift code
-        $cart->amount = $this->cartService->calculateCartAmountFromDataAndProducts($cart);
-        // save cart updates
-        $cart->update();
-
-        $this->resetPurchasingCache($user->id);
-        $cart = $this->getPurchasingCart($user, $currency);
-        CRUDUpdated::dispatch(
-            Auth::user(),
-            $cart,
-            CartCRUDProvider::class,
-            Carbon::now()
-        );
-        CartEvent::dispatch(
-            $cart->id,
-            Carbon::now()
-        );
 
         return $cart;
     }

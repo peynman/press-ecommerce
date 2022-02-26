@@ -33,13 +33,17 @@ return [
         'default_gateway' => null,
     ],
 
-    // delivery agents
-    'delivery_agents' => [
-        'alopeyk' => \Larapress\ECommerce\Services\Cart\DeliveryAgent\AloPeyk\AloPeykDeliveryAgent::class,
-        'alopeyk_user' => \Larapress\ECommerce\Services\Cart\DeliveryAgent\AloPeyk\AloPeykUserDeliveryAgent::class,
-        'poste_pishtaz' => \Larapress\ECommerce\Services\Cart\DeliveryAgent\PostePishtaz\PostePishtazDeliveryAgent::class,
-        'poste_pishtaz_user' => \Larapress\ECommerce\Services\Cart\DeliveryAgent\PostePishtaz\PostePishtazUserDeliveryAgent::class,
-        'snap_user' => \Larapress\ECommerce\Services\Cart\DeliveryAgent\Snap\SnapUserDeliveryAgent::class,
+    // cart purchasing options
+    'carts' => [
+        // ecommerce plugins
+        'plugins' => [
+            \Larapress\ECommerce\Services\GiftCodes\CartGiftCodePlugin::class,
+        ],
+
+        // cart content modify request rules
+        'cart_modify_request' => \Larapress\ECommerce\Services\Cart\Requests\CartContentModifyRequest::class,
+        // cart verify request rules
+        'cart_verify_request' => \Larapress\ECommerce\Services\Cart\Requests\CartValidateRequest::class,
     ],
 
     // product management
@@ -58,14 +62,6 @@ return [
         'product_owner_role_ids' => [9, 10],
     ],
 
-    // cart sms notifications
-    'sms' => [
-        // sms gateway id for cart purchase success
-        'cart_success_gateway_id' => null,
-        // sms gateway id for cart posted
-        'cart_posted_gateway_id' => null,
-    ],
-
     // product reviews management
     'product_reviews' => [
         // signed in users can only post reviews
@@ -79,6 +75,14 @@ return [
 
         // number of reviews loaded per page
         'reviews_per_page' => 5,
+    ],
+
+    // cart sms notifications
+    'sms' => [
+        // sms gateway id for cart purchase success
+        'cart_success_gateway_id' => null,
+        // sms gateway id for cart posted
+        'cart_posted_gateway_id' => null,
     ],
 
     // ecommerce metric reports
