@@ -15,11 +15,9 @@ use Larapress\ECommerce\IECommerceUser;
 use Larapress\ECommerce\Models\Cart;
 use Larapress\ECommerce\Models\Product;
 use Larapress\ECommerce\Repositories\IProductRepository;
-use Larapress\ECommerce\Services\Cart\DeliveryAgent\IDeliveryAgent;
 use Larapress\ECommerce\Services\Cart\Requests\CartContentModifyRequest;
 use Larapress\ECommerce\Services\Cart\Requests\CartUpdateRequest;
 use Larapress\ECommerce\Services\GiftCodes\IGiftCodeService;
-use Larapress\ECommerce\Services\Cart\DeliveryAgent\IDeliveryAgentClient;
 use Larapress\ECommerce\Services\Cart\Requests\CartValidateRequest;
 
 class PurchasingCartService implements IPurchasingCartService
@@ -304,13 +302,19 @@ class PurchasingCartService implements IPurchasingCartService
     /**
      * Undocumented function
      *
-     * @param Request $request
-     * @param ICartItem $cartItem
+     * @param CartContentModifyRequest $request
+     * @param IECommerceUser $user
+     * @param ICartItem $product
+     * @param integer $currency
      *
      * @return ICart
      */
-    public function removeItemFromPurchasingCart(CartContentModifyRequest $request, IECommerceUser $user, ICartItem $product, int $currency)
-    {
+    public function removeItemFromPurchasingCart(
+        CartContentModifyRequest $request,
+        IECommerceUser $user,
+        ICartItem $product,
+        int $currency
+    ) {
         /** @var Cart */
         $cart = $this->getPurchasingCart($user, $currency);
 

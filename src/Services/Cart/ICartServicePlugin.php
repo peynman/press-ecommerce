@@ -3,8 +3,8 @@
 namespace Larapress\ECommerce\Services\Cart;
 
 use Closure;
+use Illuminate\Http\Request;
 use Larapress\ECommerce\Models\Product;
-use Larapress\ECommerce\Services\Cart\Requests\CartContentModifyRequest;
 use Larapress\ECommerce\Services\Cart\Requests\CartValidateRequest;
 
 interface ICartServicePlugin
@@ -13,23 +13,23 @@ interface ICartServicePlugin
      * Undocumented function
      *
      * @param ICart $cart
-     * @param CartContentModifyRequest $request
+     * @param Request $request
      * @param Closure $next
      *
      * @return mixed
      */
-    public function beforeContentModify(ICart $cart, CartContentModifyRequest $request, Closure $next);
+    public function beforeContentModify(ICart $cart, Request $request, Closure $next);
 
     /**
      * Undocumented function
      *
      * @param ICart $cart
-     * @param CartContentModifyRequest $request
+     * @param Request $request
      * @param Closure $next
      *
      * @return mixed
      */
-    public function afterContentModify(ICart $cart, CartContentModifyRequest $request, Closure $next);
+    public function afterContentModify(ICart $cart, Request $request, Closure $next);
 
     /**
      * Undocumented function
@@ -55,12 +55,12 @@ interface ICartServicePlugin
      * Undocumented function
      *
      * @param ICart $cart
-     * @param CartValidateRequest $request
+     * @param Request $request
      * @param Closure $next
      *
      * @return mixed
      */
-    public function validateBeforeBankForwarding(ICart $cart, CartValidateRequest $request, Closure $next);
+    public function validateBeforeBankForwarding(ICart $cart, Request $request, Closure $next);
 
     /**
      * Undocumented function

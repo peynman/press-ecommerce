@@ -26,17 +26,6 @@ interface IPurchasingCartService
     /**
      * Undocumented function
      *
-     * @param CartUpdateRequest $request
-     * @param IECommerceUser $user
-     * @param integer $currency
-     *
-     * @return ICart
-     */
-    public function updateCartDeliveryData(CartUpdateRequest $request, IECommerceUser $user, int $currency);
-
-    /**
-     * Undocumented function
-     *
      * @param string $code
      * @param IECommerceUser $user
      * @param integer $currency

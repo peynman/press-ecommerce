@@ -91,7 +91,8 @@ return [
         // metric types
         'bank_gateway_transactions' => 1,
         'carts' => 2,
-        'gift_codes' => 3,
+        'wallet_transactions' => 4,
+        'products' => 5,
     ],
 
     // crud resources in package
@@ -136,16 +137,6 @@ return [
             'model' => \Larapress\ECommerce\Models\WalletTransaction::class,
             'provider' => \Larapress\ECommerce\CRUD\WalletTransactionCRUDProvider::class,
         ],
-        'gift_codes' => [
-            'name' => 'gift-codes',
-            'model' => \Larapress\ECommerce\Models\GiftCode::class,
-            'provider' => \Larapress\ECommerce\CRUD\GiftCodeCRUDProvider::class,
-        ],
-        'gift_code_usage' => [
-            'name' => 'gift-code-usage',
-            'model' => \Larapress\ECommerce\Models\GiftCodeUse::class,
-            'provider' => \Larapress\ECommerce\CRUD\GiftCodeUsageCRUDProvider::class,
-        ],
     ],
 
     'permissions' => [
@@ -157,6 +148,5 @@ return [
         \Larapress\ECommerce\CRUD\BankGatewayTransactionCRUDProvider::class,
         \Larapress\ECommerce\CRUD\WalletTransactionCRUDProvider::class,
         \Larapress\ECommerce\CRUD\CartCRUDProvider::class,
-        \Larapress\ECommerce\CRUD\GiftCodeCRUDProvider::class,
     ],
 ];

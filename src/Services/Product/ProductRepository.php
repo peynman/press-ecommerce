@@ -316,6 +316,7 @@ class ProductRepository implements IProductRepository
         $query = $this->getProductsPaginatedQuery($user, $page, $inCategories, $withTypes, $notIntCatgories, $withoutTypes, false, $sortBy);
         if (is_numeric($term)) {
             $query->where('id', $term);
+            $query->orWhere('name', 'like', '%'.$term.'%');
         } else {
             $query->whereRaw("LOWER(JSON_UNQUOTE(JSON_EXTRACT(data, '$.title'))) LIKE LOWER('%".PersianText::standard($term)."%')");
         }
