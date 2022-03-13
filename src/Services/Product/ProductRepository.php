@@ -319,6 +319,7 @@ class ProductRepository implements IProductRepository
         } else {
             $query->whereRaw("LOWER(JSON_UNQUOTE(JSON_EXTRACT(data, '$.title'))) LIKE LOWER('%".PersianText::standard($term)."%')");
         }
+        $query->orWhere('name', 'LIKE', '%'.PersianText::standard($term).'%');
         $limit = PaginatedResponse::safeLimit($limit);
         $r = new PaginatedResponse($query->paginate($limit));
         return $r;
