@@ -12,6 +12,7 @@ use Larapress\ECommerce\Models\Cart;
 use Larapress\ECommerce\Models\GiftCode;
 use Larapress\CRUD\BaseFlags;
 use Larapress\ECommerce\Models\GiftCodeUse;
+use Larapress\ECommerce\Models\Product;
 use Larapress\ECommerce\Services\Cart\Base\CartGiftDetails;
 
 class GiftCodeService implements IGiftCodeService
@@ -95,12 +96,6 @@ class GiftCodeService implements IGiftCodeService
         $products = $cart->products;
         $amount = 0;
 
-        if (isset($code->data['min_items']) && $code->data['min_items'] > 0) {
-            if ($code->data['min_items'] > count($products)) {
-                throw new AppException(AppException::ERR_NOT_ENOUGHT_ITEMS_IN_CART);
-            }
-        }
-
         foreach ($products as $prod) {
             if ($cart->isProductInPeriodicIds($prod)) {
                 $itemPrice = $prod->pricePeriodic($cart->currency);
@@ -119,39 +114,53 @@ class GiftCodeService implements IGiftCodeService
 
         $fixed_only = isset($code->data['fixed_only']) && $code->data['fixed_only'];
         $restrict_products = isset($code->data['products']) && !is_null($code->data['products']) && count($code->data['products']) > 0;
+        $resitrct_categories = isset($code->data['product_categories']) && !is_null($code->data['product_categories']) && count($code->data['product_categories']) > 0;
+        $divide_off_between = isset($code->data['divide_gift_between']) && $code->data['divide_gift_between'];
+        $whitelist_products = [];
+        $offProductsCount = 0;
 
-        if ($code->data['gift_same_amount']) {
-            $offProductIds = [];
-            if (isset($code->data['products'])) { // fixed amount gift on specific product ids
-                $avCodeProducts = array_keys($code->data['products']);
-                $offAmount = 0;
-                $offProductsCount = 0;
-                // find how many products can be gifted
-                foreach ($avCodeProducts as $avId) {
-                    foreach ($products as $item) {
-                        if ($item->id === $avId) {
-                            $offProductsCount += 1;
-                        }
-                    }
-                }
-                // if there are any giftable products, devide gift between them
-                if ($offProductsCount > 0) {
-                    $offAmount = floatval($code->amount);
-                    foreach ($avCodeProducts as $avId) {
-                        foreach ($products as $item) {
-                            if ($item->id === $avId) {
-                                $offProductIds[$item->id] = $offAmount / $offProductsCount;
-                            }
-                        }
-                    }
-                }
-            } else { // fixed amount gift with no restrictions
-                $offAmount = floatval($code->amount);
-                $offProductsCount = count($products);
-                foreach ($products as $item) {
-                    $offProductIds[$item->id] = $offAmount / $offProductsCount;
+
+        if (isset($code->data['min_items']) && $code->data['min_items'] > 0) {
+            if ($code->data['min_items'] > count($products)) {
+                throw new AppException(AppException::ERR_NOT_ENOUGHT_ITEMS_IN_CART);
+            }
+        }
+
+        // find list of whitelisted product ids based on id or category id
+        if ($restrict_products) {
+            $whitelist_products = $code->data['products'];
+        }
+        if ($resitrct_categories) {
+            $cats = Product::whereHas('categories', function($q) use($code) {
+                return $q->whereIn($code->data['product_categories']);
+            })->select('id')->get('id');
+            $whitelist_products = array_merge($whitelist_products ?? [], $cats);
+        }
+        if (count($whitelist_products) > 0) {
+            // find how many products can be gifted
+            foreach ($products as $item) {
+                if (in_array($item->id, $whitelist_products)) {
+                    $offProductsCount += 1;
                 }
             }
+        } else {
+            $offProductsCount = count($cart->products);
+        }
+
+        // fixed amount discount
+        if ($code->data['gift_same_amount']) {
+            $offProductIds = [];
+            $offAmount = 0;
+            // if there are any giftable products, devide gift between them
+            if ($offProductsCount > 0) {
+                $offAmount = floatval($code->amount);
+                foreach ($products as $item) {
+                    if (in_array($item->id, $whitelist_products)) {
+                        $offProductIds[$item->id] = $offAmount / $offProductsCount;
+                    }
+                }
+            }
+
             return new CartGiftDetails([
                 'code_id' => $code->id,
                 'amount' => $offAmount,
@@ -165,25 +174,14 @@ class GiftCodeService implements IGiftCodeService
         $percent = floatval($code->data['value']) / 100.0;
         $offProductIds = [];
         if ($percent <= 1) { // valid gift percentage
-            if ($restrict_products) { // gift code has restrictions on product ids
-                $avCodeProducts = $code->data['products']; // availabel product ids for this gift code
-                $offAmount = 0;
-                foreach ($avCodeProducts as $avId) {
-                    foreach ($products as $item) {
-                        if ($item->id === $avId) { // this product is in cart and avaialbel for gift code
-                            if (!$fixed_only || !$cart->isProductInPeriodicIds($item)) { // is gift code for all || this product is not in the periodic list
-                                $itemPrice = $cart->isProductInPeriodicIds($item) ? $item->pricePeriodic($cart->currency) : $item->price($cart->currency);
-                                $itemPriceOff = floor($percent * $itemPrice);
-                                $offAmount += $itemPriceOff;
-                                $offProductIds[$item->id] = $itemPriceOff;
-                            }
-                        }
-                    }
-                }
-            } else { // no gift code usage restriction on product id
-                $offAmount = 0;
-                foreach ($products as $item) {
-                    if (!$fixed_only || !$cart->isProductInPeriodicIds($item)) {
+            if ($divide_off_between) {
+                $percent = $percent / $offProductsCount;
+            }
+
+            $offAmount = 0;
+            foreach ($products as $item) {
+                if (count($whitelist_products) === 0 || in_array($item->id, $whitelist_products)) {
+                    if (!$fixed_only || !$cart->isProductInPeriodicIds($item)) { // is gift code for all || this product is not in the periodic list
                         $itemPrice = $cart->isProductInPeriodicIds($item) ? $item->pricePeriodic($cart->currency) : $item->price($cart->currency);
                         $itemPriceOff = floor($percent * $itemPrice);
                         $offAmount += $itemPriceOff;
@@ -191,6 +189,8 @@ class GiftCodeService implements IGiftCodeService
                     }
                 }
             }
+
+            // if we exceed the maximum amount of gift allowed, then return extra gift amount equally between products
             if ($code->amount < $offAmount) {
                 $offAmountExtra = $offAmount - $code->amount;
                 $prodShareOff = $offAmountExtra / count($offProductIds);

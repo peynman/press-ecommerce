@@ -4,7 +4,6 @@ namespace Larapress\ECommerce\Services\Cart;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Larapress\CRUD\Events\CRUDUpdated;
@@ -13,7 +12,6 @@ use Larapress\CRUD\Extend\Helpers;
 use Larapress\ECommerce\CRUD\CartCRUDProvider;
 use Larapress\ECommerce\IECommerceUser;
 use Larapress\ECommerce\Models\Cart;
-use Larapress\ECommerce\Models\GiftCodeUse;
 use Larapress\ECommerce\Models\Product;
 use Larapress\ECommerce\Repositories\IProductRepository;
 use Larapress\ECommerce\Services\Cart\DeliveryAgent\IDeliveryAgent;
