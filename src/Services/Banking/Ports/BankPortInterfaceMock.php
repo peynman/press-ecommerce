@@ -81,4 +81,17 @@ class BankPortInterfaceMock implements IBankPortInterface
 
         return $transaction;
     }
+
+
+    /**
+     * Undocumented function
+     *
+     * @param array $config
+     *
+     * @return boolean
+     */
+    public function isValidGatewayConfig(array $config)
+    {
+        return true;
+    }
 }

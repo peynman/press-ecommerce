@@ -3,7 +3,9 @@
 namespace Larapress\ECommerce\Commands;
 
 use Illuminate\Console\Command;
+use Larapress\CRUD\Extend\ChainOfResponsibility;
 use Larapress\ECommerce\Models\ProductType;
+use Larapress\ECommerce\Services\Cart\CartPluginsChain;
 
 use function PHPUnit\Framework\directoryExists;
 

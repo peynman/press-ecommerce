@@ -37,13 +37,10 @@ return [
     'carts' => [
         // ecommerce plugins
         'plugins' => [
-            \Larapress\ECommerce\Services\GiftCodes\CartGiftCodePlugin::class,
+            \Larapress\GiftCode\Services\GiftCodes\CartPlugin\CartGiftCodePlugin::class,
+            \Larapress\Inventory\Services\CartInventory\CartInventoryPlugin::class,
+            \Larapress\Subscription\Services\CartSubscription\CartSubscriptionPlugin::class
         ],
-
-        // cart content modify request rules
-        'cart_modify_request' => \Larapress\ECommerce\Services\Cart\Requests\CartContentModifyRequest::class,
-        // cart verify request rules
-        'cart_verify_request' => \Larapress\ECommerce\Services\Cart\Requests\CartValidateRequest::class,
     ],
 
     // product management

@@ -4,6 +4,8 @@ namespace Larapress\ECommerce\Services\Cart\Requests;
 
 use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
+use Larapress\CRUD\Extend\ChainOfResponsibility;
+use Larapress\ECommerce\Services\Cart\CartPluginsChain;
 
 class CartValidateRequest extends FormRequest
 {
@@ -25,19 +27,15 @@ class CartValidateRequest extends FormRequest
      */
     public function rules()
     {
-        return [
+        $plugins = new CartPluginsChain();
+        return $plugins->getCartUpdateRules([
             'currency' => 'required|numeric',
-            'products.*.id' => 'required|exists:products,id',
+            'products.*.id' => 'nullable|exists:products,id',
             'products.*.quantity' => 'nullable|numeric',
             'products.*.data' => 'nullable|json_object',
-            'periods.*' => 'nullable|exists:products,id',
-            'gateway' => 'reuired|exists:bank_gateways,id',
-            'gift_code' => 'nullable|exists:gift_codes,code',
+            'gateway' => 'nullabel|exists:bank_gateways,id',
             'use_balance' => 'nullable|boolean',
-            'delivery_address' => 'nullable|numeric|exists:physical_addresses,id',
-            'delivery_timestamp' => 'nullable|datetime_zoned',
-            'delivery_agent' => 'nullable|string|in:'.implode(',', array_keys(config('larapress.ecommerce.delivery_agents'))),
-        ];
+        ]);
     }
 
     /**

@@ -951,4 +951,14 @@ class CartService implements ICartService
     {
         Helpers::forgetCachedValues(['purchased-cart:' . $userId]);
     }
+
+
+    /**
+     * Undocumented function
+     *
+     * @return ICartServicePlugin[]
+     */
+    public function getPlugins() {
+
+    }
 }

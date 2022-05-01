@@ -109,4 +109,11 @@ interface ICartService
      * @return void
      */
     public function resetPurchasedCache($userId);
+
+    /**
+     * Undocumented function
+     *
+     * @return ICartServicePlugin[]
+     */
+    public function getPlugins();
 }

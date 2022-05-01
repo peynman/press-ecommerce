@@ -15,22 +15,17 @@ use Larapress\ECommerce\IECommerceUser;
 use Larapress\ECommerce\Models\Cart;
 use Larapress\ECommerce\Models\Product;
 use Larapress\ECommerce\Repositories\IProductRepository;
+use Larapress\ECommerce\Services\Cart\Base\CartProductDetails;
 use Larapress\ECommerce\Services\Cart\Requests\CartContentModifyRequest;
 use Larapress\ECommerce\Services\Cart\Requests\CartUpdateRequest;
-use Larapress\ECommerce\Services\GiftCodes\IGiftCodeService;
 use Larapress\ECommerce\Services\Cart\Requests\CartValidateRequest;
 
 class PurchasingCartService implements IPurchasingCartService
 {
-
-    /** @var IGiftCodeService */
-    protected $giftService;
-    /** @var ICartService */
-    protected $cartService;
-    public function __construct(ICartService $cartService, IGiftCodeService $giftService)
+    public function __construct(
+        protected ICartService $cartService
+    )
     {
-        $this->cartService = $cartService;
-        $this->giftService = $giftService;
     }
 
     /**
@@ -44,14 +39,13 @@ class PurchasingCartService implements IPurchasingCartService
      */
     public function validateCartBeforeForwardingToBank(CartValidateRequest $request, IECommerceUser $user, int $currency)
     {
-        $plugins = new ChainOfResponsibility(config('larapress.ecommerce.carts.plugins'));
+        $plugins = new CartPluginsChain();
+
         /** @var Cart $cart */
         $cart = $this->getPurchasingCart($user, $currency);
 
-        $plugins->handle('validateBeforeBankForwarding', $cart, $request);
-
         $reqProducts = Collection::make($request->getProducts());
-        $reqProductIds = $reqProducts->pluck('id');
+        /** @var Product[]|Collection */
         $products = $cart->products;
         $productIds = $products->pluck('id');
 
@@ -63,64 +57,17 @@ class PurchasingCartService implements IPurchasingCartService
         }
 
         foreach ($products as $product) {
-            if (!$reqProductIds->contains($product->id)) {
+            $cartProdDetails = new CartProductDetails($product->pivot?->data);
+            $reqProdPivot = $reqProducts->first(function ($p) use ($product, $cartProdDetails) {
+                return $p['id'] === $product->id && $cartProdDetails->extra == $p['data'];
+            });
+            if (is_null($reqProdPivot)) {
                 throw new AppException(AppException::ERR_INVALID_QUERY);
-            } else {
-                $reqProdPivot = $reqProducts->first(function ($p) use ($product) {
-                    if (isset($p['data'])) {
-                        return $p['id'] === $product->id && $p['data'] == $product->pivot?->data['extra'];
-                    } else {
-                        return $p['id'] === $product->id;
-                    }
-                });
-
-                $plugins->handle('validateProductDataInCart', $cart, $reqProdPivot, $product, $request);
             }
+            $plugins->validateProductDataInCart($cart, $reqProdPivot, $product, $request);
         }
 
-        return $cart;
-    }
-
-    /**
-     * Undocumented function
-     *
-     * @param string $code
-     * @param IECommerceUser $user
-     * @param integer $currency
-     *
-     * @return Cart
-     */
-    public function updateCartGiftCodeData(string $code, IECommerceUser $user, int $currency)
-    {
-        /** @var Cart */
-        $cart = $this->getPurchasingCart($user, $currency);
-        $giftDetails = $this->giftService->getGiftUsageDetailsForCart(
-            $user,
-            $cart,
-            $code,
-        );
-
-        if (!is_null($giftDetails)) {
-            $cart->setGiftCodeUsage($giftDetails);
-        }
-
-        // update amount based on products and gift code
-        $cart->amount = $this->cartService->calculateCartAmountFromDataAndProducts($cart);
-        // save cart updates
-        $cart->update();
-
-        $this->resetPurchasingCache($user->id);
-        $cart = $this->getPurchasingCart($user, $currency);
-        CRUDUpdated::dispatch(
-            Auth::user(),
-            $cart,
-            CartCRUDProvider::class,
-            Carbon::now()
-        );
-        CartEvent::dispatch(
-            $cart->id,
-            Carbon::now()
-        );
+        $plugins->validateBeforeBankForwarding($cart, $request);
 
         return $cart;
     }
@@ -136,19 +83,12 @@ class PurchasingCartService implements IPurchasingCartService
      */
     public function updatePurchasingCart(CartUpdateRequest $request, IECommerceUser $user, int $currency)
     {
+        $plugins = new CartPluginsChain();
+
         /** @var Cart $cart */
         $cart = $this->getPurchasingCart($user, $currency);
 
-        $productsData = new Collection($request->getProducts());
-        $products = Product::with('categories')->whereIn('id', $productsData->pluck('id'))->get();
-
-        // check if periodics requested are periodic purchasable
-        $periodicIds = $request->getPeriodicIds();
-        foreach ($products as $product) {
-            if (!$product->isPeriodicSaleAvailable() && in_array($product->id, $periodicIds)) {
-                throw new AppException(AppException::ERR_INVALID_PARAMS);
-            }
-        }
+        $plugins->beforeContentModify($cart, $request);
 
         // update cart data
         $cart->products()->sync([]);
@@ -166,7 +106,6 @@ class PurchasingCartService implements IPurchasingCartService
                 ],
             ]);
         }
-        $cart->setPeriodicProductIds($periodicIds);
         $cart->setUseBalance($request->getUseBalance());
         $cart->load('products');
 
@@ -222,6 +161,7 @@ class PurchasingCartService implements IPurchasingCartService
 
         $quantity = $product->isQuantized() ? $request->getQuantity() : 1;
         $products = $cart->products;
+
         $existingPivot = null;
         $existingItemsIds = [];
         foreach ($products as $existingProd) {
