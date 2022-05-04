@@ -46,7 +46,17 @@ class PromotionService implements IPromotionService
             if ($resitrct_categories) {
                 $catProducts = Product::whereHas('categories', function ($q) use ($code) {
                     return $q->whereIn('id', $code->data['productCategories']);
-                })->select('id')->pluck('id')->toArray();
+                })
+                ->orWhereHas('categories.parent', function ($q) use ($code) {
+                    return $q->whereIn('id', $code->data['productCategories']);
+                })
+                ->orWhereHas('categories.parent.parent', function ($q) use ($code) {
+                    return $q->whereIn('id', $code->data['productCategories']);
+                })
+                ->orWhereHas('categories.parent.parent.parent', function ($q) use ($code) {
+                    return $q->whereIn('id', $code->data['productCategories']);
+                })
+                ->select('id')->pluck('id')->toArray();
                 $whitelist_products = array_merge($whitelist_products ?? [], $catProducts);
             }
 

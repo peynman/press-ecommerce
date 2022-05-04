@@ -22,9 +22,18 @@ class ProductCategoryFactory extends Factory {
     }
 
     public function author($userId) {
-        $this->state(function ($attrs) use ($userId) {
+        return $this->state(function ($attrs) use ($userId) {
             return [
                 'author_id' => $userId
+            ];
+        });
+    }
+
+
+    public function parent($parentId) {
+        return $this->state(function ($attrs) use ($parentId) {
+            return [
+                'parent_id' => $parentId
             ];
         });
     }

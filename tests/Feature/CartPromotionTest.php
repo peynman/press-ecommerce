@@ -26,7 +26,7 @@ class CartPromotionTest extends CustomerTestApplication
 
         $type = ProductType::factory()->create();
         $cat0 = ProductCategory::factory()->create();
-        $cat1 = ProductCategory::factory()->create();
+        $cat1 = ProductCategory::factory()->parent($cat0->id)->create();
         for ($i = 0; $i < 10; $i++) {
             $p = Product::factory()
                     ->addPrice((10-$i)*1000, config('larapress.ecommerce.banking.currency.id'))
@@ -34,8 +34,6 @@ class CartPromotionTest extends CustomerTestApplication
                     ->create();
             $p->types()->attach($type);
             if ($i < 5) {
-                $p->categories()->attach($cat0);
-            } else {
                 $p->categories()->attach($cat1);
             }
         }

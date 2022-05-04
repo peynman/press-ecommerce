@@ -10,7 +10,7 @@ use Larapress\CRUD\Services\CRUD\ICRUDProvider;
 use Larapress\CRUD\Services\CRUD\ICRUDVerb;
 use Larapress\ECommerce\Controllers\GiftCodeController;
 use Larapress\ECommerce\Models\GiftCode;
-use Larapress\ECommerce\Services\Cart\Reports\GiftCodeReport;
+use Larapress\ECommerce\Services\GiftCodes\Reports\GiftCodeReport;
 use Larapress\Profiles\IProfileUser;
 
 class GiftCodeCRUDProvider implements ICRUDProvider
@@ -103,6 +103,7 @@ class GiftCodeCRUDProvider implements ICRUDProvider
             'data.specific_ids.*' => 'nullable|exists:users,id',
             'data.multi_time_use' => 'nullable|boolean',
             'data.fixed_only' => 'nullable|boolean',
+            'flags' => 'nullable|numeric',
         ];
     }
 
@@ -127,6 +128,7 @@ class GiftCodeCRUDProvider implements ICRUDProvider
             'data.specific_ids.*' => 'nullable|exists:users,id',
             'data.multi_time_use' => 'nullable|boolean',
             'data.fixed_only' => 'nullable|boolean',
+            'flags' => 'nullable|numeric',
         ];
     }
 
@@ -171,7 +173,12 @@ class GiftCodeCRUDProvider implements ICRUDProvider
     {
         /** @var IProfileUser $user */
         $user = Auth::user();
+
         $args['author_id'] = $user->id;
+        if (is_null($args['flags'])) {
+            $args['flags'] = 0;
+        }
+
         return $args;
     }
 }
