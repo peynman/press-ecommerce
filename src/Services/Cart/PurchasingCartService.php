@@ -21,18 +21,15 @@ use Larapress\ECommerce\Services\GiftCodes\IGiftCodeService;
 use Larapress\ECommerce\Services\Cart\DeliveryAgent\IDeliveryAgentClient;
 use Larapress\ECommerce\Services\Cart\Requests\CartValidateRequest;
 use Larapress\ECommerce\Services\Cart\Base\CartGiftDetails;
+use Larapress\ECommerce\Services\Promotions\IPromotionService;
 
 class PurchasingCartService implements IPurchasingCartService
 {
-
-    /** @var IGiftCodeService */
-    protected $giftService;
-    /** @var ICartService */
-    protected $cartService;
-    public function __construct(ICartService $cartService, IGiftCodeService $giftService)
-    {
-        $this->cartService = $cartService;
-        $this->giftService = $giftService;
+    public function __construct(
+        protected ICartService $cartService,
+        protected IGiftCodeService $giftService,
+        protected IPromotionService $promoService,
+    ) {
     }
 
     /**
@@ -94,7 +91,7 @@ class PurchasingCartService implements IPurchasingCartService
             if (!$reqProductIds->contains($product->id)) {
                 throw new AppException(AppException::ERR_INVALID_QUERY);
             } else {
-                $reqProd = $reqProducts->first(function ($p) use($product) {
+                $reqProd = $reqProducts->first(function ($p) use ($product) {
                     if (isset($p['data'])) {
                         return $p['id'] === $product->id && $p['data'] == $product->pivot?->data['extra'];
                     } else {
@@ -160,6 +157,8 @@ class PurchasingCartService implements IPurchasingCartService
         $cart->removeGiftCodeUsage();
 
         // update amount based on products and gift code
+        $promots = $this->promoService->getAvailablePromotionsForCart($user, $cart);
+        $cart->setPromotions($promots);
         $cart->amount = $this->cartService->calculateCartAmountFromDataAndProducts($cart);
         // save cart updates
         $cart->update();
@@ -204,6 +203,8 @@ class PurchasingCartService implements IPurchasingCartService
         }
 
         // update amount based on products and gift code
+        $promots = $this->promoService->getAvailablePromotionsForCart($user, $cart);
+        $cart->setPromotions($promots);
         $cart->amount = $this->cartService->calculateCartAmountFromDataAndProducts($cart);
         // save cart updates
         $cart->update();
@@ -283,6 +284,8 @@ class PurchasingCartService implements IPurchasingCartService
         }
 
         // update amount based on products and gift code
+        $promots = $this->promoService->getAvailablePromotionsForCart($user, $cart);
+        $cart->setPromotions($promots);
         $cart->amount = $this->cartService->calculateCartAmountFromDataAndProducts($cart);
         // save cart updates
         $cart->update();
@@ -378,6 +381,8 @@ class PurchasingCartService implements IPurchasingCartService
         $cart->removeGiftCodeUsage();
 
         $cart->load('products');
+        $promots = $this->promoService->getAvailablePromotionsForCart($user, $cart);
+        $cart->setPromotions($promots);
         $cart->amount = $this->cartService->calculateCartAmountFromDataAndProducts($cart);
         $cart->update();
 
@@ -430,6 +435,8 @@ class PurchasingCartService implements IPurchasingCartService
         $cart->removeGiftCodeUsage();
 
         $cart->load('products');
+        $promots = $this->promoService->getAvailablePromotionsForCart($user, $cart);
+        $cart->setPromotions($promots);
         $cart->amount = $this->cartService->calculateCartAmountFromDataAndProducts($cart);
         $cart->update();
 

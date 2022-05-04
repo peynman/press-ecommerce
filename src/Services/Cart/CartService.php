@@ -123,7 +123,7 @@ class CartService implements ICartService
             $itemQuantity = isset($product->pivot->data['quantity']) ? $product->pivot->data['quantity'] : 1;
             $itemExtra = isset($product->pivot->data['extra']) ?  $product->pivot->data['extra'] : null;
             if ($cart->isProductInPeriodicIds($product)) {
-                $itemPrice = $product->pricePeriodic($cart->currency) * $itemQuantity;
+                $itemPrice = $product->pricePeriodic($cart->currency);
                 $detail->periodsAmount = $product->getPeriodicPurchaseAmount();
                 $detail->periodsDuration = $product->getPeriodicPurchaseDuration();
                 $detail->periodsEnds = $product->getPeriodicPurchaseEndDate();
@@ -131,11 +131,12 @@ class CartService implements ICartService
                 $detail->hasPeriods = true;
             } else {
                 $detail->hasPeriods = false;
-                $itemPrice = $product->price($cart->currency) * $itemQuantity;
+                $itemPrice = $product->price($cart->currency);
             }
-            $detail->amount = $itemPrice;
+            $detail->amount = $itemPrice * $itemQuantity;
             $detail->periodsOffPercent = !is_null($giftDetails) ? $giftDetails->percent : 0;
             $detail->quantity = $itemQuantity;
+            $detail->fee = $itemPrice;
             $detail->extra = $itemExtra;
 
             // calculate product gift usage
@@ -151,11 +152,17 @@ class CartService implements ICartService
                 $detail->periodsPaymentAmount = $cart->isProductInPeriodicIds($product) ? $detail->periodsAmount : 0;
             }
 
+            // calculate promotion usage
+            $promos = $cart->getPromotions();
+            foreach ($promos as $promo) {
+                $detail->offAmount += ($promo['products'][$product->id] ?? 0);
+            }
+
             // total periodic payments to be paid
             $detail->periodsTotalPayment = $detail->periodsPaymentAmount * $detail->periodsCount;
 
             // calculate product share in currency with cart amount
-            $productCurrencyPayAmount = $itemPrice - $detail->offAmount;
+            $productCurrencyPayAmount = max(0, $itemPrice - $detail->offAmount);
             $detail->currencyPaid = 0;
             if ($cartRemainingAmounForProductShare >= $productCurrencyPayAmount) {
                 $cartRemainingAmounForProductShare -= $productCurrencyPayAmount;
@@ -885,6 +892,12 @@ class CartService implements ICartService
         if (!is_null($giftDetails)) {
             $amount -= $giftDetails->amount;
         }
+
+        $promotions = $cart->getPromotions();
+        foreach ($promotions as $prod => $promo) {
+            $amount -= $promo->amount;
+        }
+
         $amount = max(0, $amount);
 
         return $amount;

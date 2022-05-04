@@ -42,8 +42,8 @@ class CreateProductsTable extends Migration
                 'products_full_index'
             );
 
-            $table->foreign('author_id')->references('id')->on('users');
-            $table->foreign('parent_id')->references('id')->on('products');
+            $table->foreign('author_id')->references('id')->on('users')->onUpdate('cascade')->onDelete('cascade');;
+            $table->foreign('parent_id')->references('id')->on('products')->onUpdate('cascade')->onDelete('cascade');
         });
     }
 
@@ -54,6 +54,6 @@ class CreateProductsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('products');
+       Schema::dropIfExists('products');
     }
 }

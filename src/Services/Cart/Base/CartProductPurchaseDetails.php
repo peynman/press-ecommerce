@@ -7,7 +7,7 @@ use Larapress\CRUD\Extend\CastableClassArray;
 
 class CartProductPurchaseDetails extends CastableClassArray
 {
-    // product price tag when purchased (total or first period)
+    // product price tag when purchased (total or first period) times qunatity
     /** @var float */
     public $amount;
     // product periods price tag when purchased
@@ -19,6 +19,9 @@ class CartProductPurchaseDetails extends CastableClassArray
     // product off amount from gift
     /** @var float */
     public $offAmount;
+    // product price tag when purchased
+    /** @var float */
+    public $fee;
 
     // extra purchase info
     /** @var array */
@@ -64,6 +67,7 @@ class CartProductPurchaseDetails extends CastableClassArray
 
     protected $TYPE_CASTS = [
         'amount' => 'float',
+        'fee' => 'float',
         'periodsAmount' => 'float',
         'quantity' => 'int',
         'offAmount' => 'float',

@@ -64,7 +64,7 @@ class GiftCodeService implements IGiftCodeService
         /** @var GiftCode */
         $code = GiftCode::query()
             ->where('code', $code)
-            ->whereRaw('(flags & '.GiftCode::FLAGS_EXPIRED.') = 0')
+            ->whereRaw('(flags & '.(GiftCode::FLAGS_EXPIRED|GiftCode::FLAGS_PASSIVE).') = 0')
             ->first();
         if (is_null($code)) {
             throw new AppException(AppException::ERR_INVALID_PARAMS);
@@ -83,7 +83,7 @@ class GiftCodeService implements IGiftCodeService
             throw new AppException(AppException::ERR_INVALID_PARAMS);
         }
 
-        $avUsersIds = isset($code->data['specific_ids']) ? explode(",", $code->data['specific_ids']) : null;
+        $avUsersIds = isset($code->data['customers']) ? explode(",", $code->data['customers']) : null;
         if (!is_null($avUsersIds) && !in_array($user->id, $avUsersIds)) {
             throw new AppException(AppException::ERR_INVALID_PARAMS);
         }
@@ -114,8 +114,7 @@ class GiftCodeService implements IGiftCodeService
 
         $fixed_only = isset($code->data['fixed_only']) && $code->data['fixed_only'];
         $restrict_products = isset($code->data['products']) && !is_null($code->data['products']) && count($code->data['products']) > 0;
-        $resitrct_categories = isset($code->data['product_categories']) && !is_null($code->data['product_categories']) && count($code->data['product_categories']) > 0;
-        $divide_off_between = isset($code->data['divide_gift_between']) && $code->data['divide_gift_between'];
+        $resitrct_categories = isset($code->data['productCategories']) && !is_null($code->data['productCategories']) && count($code->data['productCategories']) > 0;
         $whitelist_products = [];
         $offProductsCount = 0;
 
@@ -132,7 +131,7 @@ class GiftCodeService implements IGiftCodeService
         }
         if ($resitrct_categories) {
             $cats = Product::whereHas('categories', function($q) use($code) {
-                return $q->whereIn($code->data['product_categories']);
+                return $q->whereIn('id', $code->data['productCategories']);
             })->select('id')->get('id');
             $whitelist_products = array_merge($whitelist_products ?? [], $cats);
         }
@@ -148,7 +147,7 @@ class GiftCodeService implements IGiftCodeService
         }
 
         // fixed amount discount
-        if ($code->data['gift_same_amount']) {
+        if ($code->data['gift_fix_amount']) {
             $offProductIds = [];
             $offAmount = 0;
             // if there are any giftable products, devide gift between them
@@ -174,20 +173,19 @@ class GiftCodeService implements IGiftCodeService
         $percent = floatval($code->data['value']) / 100.0;
         $offProductIds = [];
         if ($percent <= 1) { // valid gift percentage
-            if ($divide_off_between) {
-                $percent = $percent / $offProductsCount;
-            }
-
             $offAmount = 0;
             foreach ($products as $item) {
-                if (count($whitelist_products) === 0 || in_array($item->id, $whitelist_products)) {
-                    if (!$fixed_only || !$cart->isProductInPeriodicIds($item)) { // is gift code for all || this product is not in the periodic list
-                        $itemPrice = $cart->isProductInPeriodicIds($item) ? $item->pricePeriodic($cart->currency) : $item->price($cart->currency);
-                        $itemPriceOff = floor($percent * $itemPrice);
-                        $offAmount += $itemPriceOff;
-                        $offProductIds[$item->id] = $itemPriceOff;
-                    }
+                if (count($whitelist_products) > 0 && !in_array($item->id, $whitelist_products)) {
+                    continue; // prod not in whitelist of this gift code
                 }
+                if ($fixed_only && $cart->isProductInPeriodicIds($item)) {
+                    continue; // is gift code for all || this product is not in the periodic list
+                }
+
+                $itemPrice = $cart->isProductInPeriodicIds($item) ? $item->pricePeriodic($cart->currency) : $item->price($cart->currency);
+                $itemPriceOff = floor($percent * $itemPrice);
+                $offAmount += $itemPriceOff;
+                $offProductIds[$item->id] = $itemPriceOff;
             }
 
             // if we exceed the maximum amount of gift allowed, then return extra gift amount equally between products
@@ -231,10 +229,13 @@ class GiftCodeService implements IGiftCodeService
             'code_id' => $gift->id
         ]);
 
-        if (isset($gift->data['expire_on_use']) && $gift->data['expire_on_use']) {
-            $gift->update([
-                'flags' => GiftCode::FLAGS_EXPIRED,
-            ]);
+        if (isset($gift->data['expire_on_use_count']) && intval($gift->data['expire_on_use_count']) > 0) {
+            $count = GiftCodeUse::where('code_id', $gift->id)->count();
+            if ($count >= intval($gift->data['expire_on_use_count'])) {
+                $gift->update([
+                    'flags' => GiftCode::FLAGS_EXPIRED,
+                ]);
+            }
         }
     }
 }

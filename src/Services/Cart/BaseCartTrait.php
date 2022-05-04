@@ -653,6 +653,39 @@ trait BaseCartTrait
     /**
      * Undocumented function
      *
+     * @param [type] $promotions
+     * @return void
+     */
+    public function setPromotions($promotions) {
+        if (is_null($this->data)) {
+            $this->data = [];
+        }
+        $this->data = array_merge($this->data, [
+            'promotions' => $promotions,
+        ]);
+    }
+
+
+    /**
+     * Undocumented function
+     *
+     * @return void
+     */
+    public function getPromotions() {
+        if (isset($this->data['promotions']) && is_array($this->data['promotions'])) {
+            $promots = [];
+            foreach ($this->data['promotions'] as $promotion) {
+                $promots[] = new CartGiftDetails($promotion);
+            }
+            return $promots;
+        }
+
+        return [];
+    }
+
+    /**
+     * Undocumented function
+     *
      * @param CartGiftDetails $details
      * @return void
      */

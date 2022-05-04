@@ -26,7 +26,8 @@ class GiftCode extends Model
 {
     use HasFactory;
 
-    const FLAGS_EXPIRED = 2;
+    const FLAGS_EXPIRED = 1;
+    const FLAGS_PASSIVE = 2;
 
     use SoftDeletes;
 

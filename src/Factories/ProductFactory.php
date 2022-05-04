@@ -113,12 +113,10 @@ class ProductFactory extends Factory
         return $this->state(function ($attrs) use ($amount, $currency, $priority) {
             return [
                 'data' => array_merge($attrs['data'], [
-                    'pricing' => [
-                        [
-                            'amount' => $amount,
-                            'currency' => $currency,
-                            'priority' => $priority,
-                        ],
+                    'fixedPrice' => [
+                        'amount' => $amount,
+                        'currency' => $currency,
+                        'offAmount' => null,
                     ]
                 ])
             ];

@@ -7,6 +7,7 @@ use Larapress\ECommerce\Models\Product;
 use Larapress\ECommerce\Services\Cart\Base\CartGiftDetails;
 use Larapress\ECommerce\Services\Cart\Base\CartCustomInstallmentPeriod;
 use Larapress\Profiles\Models\PhysicalAddress;
+use Illuminate\Support\Collection;
 
 interface ICart
 {
@@ -307,6 +308,21 @@ interface ICart
     /**
      * Undocumented function
      *
+     * @param CartGiftDetails[] $promots
+     * @return void
+     */
+    public function setPromotions(array $promots);
+
+    /**
+     * Undocumented function
+     *
+     * @return CartGiftDetails[]
+     */
+    public function getPromotions();
+
+    /**
+     * Undocumented function
+     *
      * @param string $url
      *
      * @return void
@@ -367,7 +383,7 @@ interface ICart
     /**
      * Undocumented function
      *
-     * @return ICartItem
+     * @return ICartItem[]|Collection
      */
     public function getCartItems();
 }

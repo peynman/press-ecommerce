@@ -35,6 +35,8 @@ use Larapress\ECommerce\Services\Wallet\IWalletService;
 use Larapress\ECommerce\Services\Wallet\IWalletTransactionRepository;
 use Larapress\ECommerce\Services\Wallet\WalletService;
 use Larapress\ECommerce\Services\Wallet\WalletTransactionRepository;
+use Larapress\ECommerce\Services\Promotions\IPromotionService;
+use Larapress\ECommerce\Services\Promotions\PromotionService;
 
 class PackageServiceProvider extends ServiceProvider
 {
@@ -58,6 +60,7 @@ class PackageServiceProvider extends ServiceProvider
         $this->app->bind(IWalletTransactionRepository::class, WalletTransactionRepository::class);
         $this->app->bind(IBankGatewayRepository::class, BankGatewayRepository::class);
         $this->app->bind(IDeliveryAgent::class, DeliveryAgent::class);
+        $this->app->bind(IPromotionService::class, PromotionService::class);
 
         $this->app->register(EventServiceProvider::class);
     }

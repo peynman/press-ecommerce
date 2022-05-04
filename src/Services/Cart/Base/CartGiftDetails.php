@@ -20,6 +20,8 @@ class CartGiftDetails extends CastableClassArray
     public $percent;
     /** @var boolean */
     public $restrict_products;
+    /** @var string */
+    public $mode;
 
     protected $TYPE_CASTS = [
         'code_id' => 'int',
@@ -28,5 +30,6 @@ class CartGiftDetails extends CastableClassArray
         'fixed_only' => 'bool',
         'percent' => 'float',
         'restrict_products' => 'bool',
+        'mode' => 'string',
     ];
 }
