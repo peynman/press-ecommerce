@@ -147,7 +147,7 @@ class GiftCodeService implements IGiftCodeService
         }
 
         // fixed amount discount
-        if ($code->data['gift_fix_amount']) {
+        if (isset($code->data['gift_fix_amount']) && $code->data['gift_fix_amount']) {
             $offProductIds = [];
             $offAmount = 0;
             // if there are any giftable products, devide gift between them
