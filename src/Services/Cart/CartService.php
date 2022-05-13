@@ -107,7 +107,7 @@ class CartService implements ICartService
                 $giftDetails->code,
             );
             $cart->setGiftCodeUsage($giftDetails);
-            $giftCode = GiftCode::find($giftDetails->id);
+            $giftCode = GiftCode::find($giftDetails->code_id);
             $this->giftService->markGiftCodeUsageForCart($user, $cart, $giftCode);
         }
 
