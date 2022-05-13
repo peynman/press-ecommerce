@@ -77,7 +77,7 @@ class GiftCodeService implements IGiftCodeService
             }
         }
 
-        $multiUsePerUser = isset($code->data['multi_time_use']) && $code->data['multi_time_use'] ? true : false;
+        $multiUsePerUser = isset($code->data['multi_time_use']) && $code->data['multi_time_use'] ? $code->data['multi_time_use'] : false;
         $use_case_for_user = GiftCodeUse::where('code_id', $code->id)->where('user_id', $user->id)->first();
         if (!is_null($use_case_for_user) && !$multiUsePerUser) {
             throw new AppException(AppException::ERR_INVALID_PARAMS);
@@ -94,8 +94,7 @@ class GiftCodeService implements IGiftCodeService
 
         /** @var ICartItem[] $products */
         $products = $cart->products;
-        $amount = 0;
-
+        $productsPriceAmount = 0;
         foreach ($products as $prod) {
             if ($cart->isProductInPeriodicIds($prod)) {
                 $itemPrice = $prod->pricePeriodic($cart->currency);
@@ -103,11 +102,11 @@ class GiftCodeService implements IGiftCodeService
                 $itemPrice = $prod->price($cart->currency);
             }
 
-            $amount += ($itemPrice );
+            $itemQuantity = isset($prod->pivot->data['quantity']) ? $prod->pivot->data['quantity'] : 1;
+            $productsPriceAmount += ($itemPrice * $itemQuantity);
         }
-
         if (isset($code->data['min_amount']) && $code->data['min_amount'] > 0) {
-            if ($code->data['min_amount'] > $amount) {
+            if ($code->data['min_amount'] > $productsPriceAmount) {
                 throw new AppException(AppException::ERR_NOT_ENOUGHT_AMOUNT_IN_CART);
             }
         }
@@ -183,9 +182,10 @@ class GiftCodeService implements IGiftCodeService
                 }
 
                 $itemPrice = $cart->isProductInPeriodicIds($item) ? $item->pricePeriodic($cart->currency) : $item->price($cart->currency);
+                $itemQuantity = isset($item->pivot->data['quantity']) ? $item->pivot->data['quantity'] : 1;
                 $itemPriceOff = floor($percent * $itemPrice);
-                $offAmount += $itemPriceOff;
-                $offProductIds[$item->id] = $itemPriceOff;
+                $offAmount += $itemPriceOff * $itemQuantity;
+                $offProductIds[$item->id] = $offAmount;
             }
 
             // if we exceed the maximum amount of gift allowed, then return extra gift amount equally between products
