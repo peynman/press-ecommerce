@@ -151,7 +151,7 @@ class CartCRUDProvider implements
             'created_at' => 'created_at',
             'updated_at' => 'updated_at',
             'deleted_at' => 'deleted_at',
-            'period_start' => function ($query, string $dir) {
+            'period_start' => function ($user, $query, string $dir) {
                 $query->orderBy('data->period_start', $dir);
             }
         ];
