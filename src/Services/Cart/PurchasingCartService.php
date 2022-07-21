@@ -488,6 +488,7 @@ class PurchasingCartService implements IPurchasingCartService
                     ->where('flags', '&', Cart::FLAGS_USER_CART) // is a user cart
                     ->whereRaw('(flags & ' . Cart::FLGAS_FORWARDED_TO_BANK . ') = 0') // has never been forwarded to bank page
                     ->where('status', '=', Cart::STATUS_UNVERIFIED)
+                    ->orderBy('id', 'DESC')
                     ->first();
 
                 if (is_null($cart) ||
