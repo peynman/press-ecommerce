@@ -27,7 +27,7 @@ class DeliveryAgent implements IDeliveryAgent
         foreach ($agents as $agentName => $class) {
             /** @var IDeliveryAgentClient */
             $agent = new $class();
-            if ($agent->canDeliveryForAddress($address)) {
+            if ($agent->canDeliveryForAddress($cart, $address)) {
                 $avAgents[] = $agentName;
             }
         }
