@@ -492,7 +492,7 @@ class PurchasingCartService implements IPurchasingCartService
 
                 if (is_null($cart) ||
                     (config('larapress.ecommerce.carts.reset_purchasing_after') &&
-                    Carbon::now()->diffInHours($cart->updated_at) >= config('larapress.ecommerce.carts.reset_purchasing_after'))
+                    $cart->updated_at->diffInHours(Carbon::now()) >= config('larapress.ecommerce.carts.reset_purchasing_after'))
                 ) {
                     $cart = Cart::create([
                         'amount' => 0,
