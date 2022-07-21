@@ -490,8 +490,10 @@ class PurchasingCartService implements IPurchasingCartService
                     ->where('status', '=', Cart::STATUS_UNVERIFIED)
                     ->first();
 
-
-                if (is_null($cart)) {
+                if (is_null($cart) ||
+                    (config('larapress.ecommerce.carts.reset_purchasing_after') &&
+                    Carbon::now()->diffInHours($cart->updated_at) >= config('larapress.ecommerce.carts.reset_purchasing_after'))
+                ) {
                     $cart = Cart::create([
                         'amount' => 0,
                         'currency' => $currency,

@@ -33,6 +33,12 @@ return [
         'default_gateway' => null,
     ],
 
+    // purchasing cart options
+    'carts' => [
+        // reset purchasing cart after 72 hours
+        'reset_purchasing_after' => 72,
+    ],
+
     // delivery agents
     'delivery_agents' => [
         'alopeyk' => \Larapress\ECommerce\Services\Cart\DeliveryAgent\AloPeyk\AloPeykDeliveryAgent::class,
