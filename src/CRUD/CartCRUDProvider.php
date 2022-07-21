@@ -152,7 +152,7 @@ class CartCRUDProvider implements
             'updated_at' => 'updated_at',
             'deleted_at' => 'deleted_at',
             'period_start' => function ($user, &$query, string $dir) {
-                $query->orderBy('data->period_start', $dir);
+                $query->orderByRaw('CAST(JSON_UNQUOTE(JSON_EXTRACT(data, "$.period_start")) AS DATETIME) '.$dir);
             }
         ];
     }
