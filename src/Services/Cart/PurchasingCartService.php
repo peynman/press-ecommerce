@@ -138,8 +138,8 @@ class PurchasingCartService implements IPurchasingCartService
             $address = $cart->getDeliveryAddress();
             /** @var IDeliveryAgentClient */
             $agent = new $agentClass();
-            if ($agent->canDeliveryForAddress($address)) {
-                $price = $agent->getEstimatedPrice($address, $currency);
+            if ($agent->canDeliveryForAddress($cart, $address)) {
+                $price = $agent->getEstimatedPrice($cart, $address, $currency);
                 $cart->setDeliveryPrice($price);
                 $cart->setDeliveryAgentName($request->getDeliveryAgentName());
             } else {

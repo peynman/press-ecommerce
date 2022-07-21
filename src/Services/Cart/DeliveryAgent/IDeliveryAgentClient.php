@@ -21,7 +21,7 @@ interface IDeliveryAgentClient
      *
      * @return int
      */
-    public function getEstimatedDuration(PhysicalAddress $address);
+    public function getEstimatedDuration(ICart $cart, PhysicalAddress $address);
 
     /**
      * Undocumented function
@@ -30,7 +30,7 @@ interface IDeliveryAgentClient
      *
      * @return float
      */
-    public function getEstimatedPrice(PhysicalAddress $address, int $currency);
+    public function getEstimatedPrice(ICart $cart, PhysicalAddress $address, int $currency);
 
     /**
      * Undocumented function
@@ -47,5 +47,5 @@ interface IDeliveryAgentClient
      * @param PhysicalAddress $address
      * @return boolean
      */
-    public function canDeliveryForAddress(PhysicalAddress $address);
+    public function canDeliveryForAddress(ICart $cart, PhysicalAddress $address);
 }
