@@ -37,7 +37,11 @@ trait BaseECommerceUser
         return $this->hasOne(
             Cart::class,
             'customer_id',
-        )->whereIn('status', [Cart::STATUS_UNVERIFIED]);
+        )
+        ->whereIn('status', [Cart::STATUS_UNVERIFIED])
+        ->where('flags', '&', Cart::FLAGS_USER_CART) // is a user cart
+        ->whereRaw('(flags & ' . Cart::FLGAS_FORWARDED_TO_BANK . ') = 0') // has never been forwarded to bank page
+        ->orderBy('id', 'DESC');
     }
 
     /**
