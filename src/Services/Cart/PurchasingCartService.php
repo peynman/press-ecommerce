@@ -195,7 +195,7 @@ class PurchasingCartService implements IPurchasingCartService
         $giftDetails = $this->giftService->getGiftUsageDetailsForCart(
             $user,
             $cart,
-            $code,
+            strtolower($code),
         );
 
         if (!is_null($giftDetails)) {

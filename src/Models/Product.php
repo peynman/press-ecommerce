@@ -14,6 +14,8 @@ use Larapress\ECommerce\Services\Product\Relations\ProductSalesCountRelation;
 use Larapress\Profiles\IProfileUser;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 /**
  * @property int                  $id
@@ -48,7 +50,6 @@ class Product extends Model implements ICartItem
         'author_id',
         'parent_id',
         'name',
-        'group',
         'data',
         'flags',
         'priority',
@@ -68,14 +69,6 @@ class Product extends Model implements ICartItem
     ];
 
     public $appends = [];
-
-    public $hidden = [
-        'sales_real_amount',
-        'sales_virtual_amount',
-        'sales_fixed',
-        'sales_periodic',
-        'sales_periodic_payment',
-    ];
 
     /**
      * Undocumented function
@@ -131,6 +124,49 @@ class Product extends Model implements ICartItem
             'product_id',
             'id'
         );
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     */
+    public function rating()
+    {
+        return $this->hasOne(
+            ProductReview::class,
+            'product_id',
+            'id'
+        )
+            ->where('stars', '>', 0)
+            ->select('product_id', DB::raw('avg(stars) as rating'), DB::raw('count(stars) as rates_count'))
+            ->groupBy('product_id');
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function likes()
+    {
+        return $this->reviews()->whereJsonContains('data->reaction', 'liked');
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     */
+    public function liked()
+    {
+        return $this->hasOne(
+            ProductReview::class,
+            'product_id',
+            'id'
+        )
+            ->whereJsonContains('data->reaction', 'liked')
+            ->where('author_id', Auth::id());
     }
 
     /**

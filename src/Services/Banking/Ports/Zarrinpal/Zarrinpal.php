@@ -21,7 +21,7 @@ class Zarrinpal
 
     private function soap_check()
     {
-        return (extension_loaded('soap')) ? true : false;
+        return false; //(extension_loaded('soap')) ? true : false;
     }
 
     private function error_message($code, $desc, $cb, $request = false)

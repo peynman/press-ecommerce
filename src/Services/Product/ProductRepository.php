@@ -247,7 +247,12 @@ class ProductRepository implements IProductRepository
 
             'children.children.types',
             'children.children.categories',
-        ])->find($product_id);
+
+            'rating',
+            'liked',
+        ])
+        ->withCount(['likes'])
+        ->find($product_id);
 
         if (is_null($product)) {
             throw new AppException(AppException::ERR_OBJECT_NOT_FOUND);
@@ -405,7 +410,12 @@ class ProductRepository implements IProductRepository
             }
         );
 
-        $query = Product::query()->with(['categories', 'types']);
+        $query = Product::query()->with([
+            'categories',
+            'types',
+            'liked',
+            'rating',
+        ]);
         if (count($inCategories) > 0) {
             $query->whereHas('categories', function ($q) use ($inCategories) {
                 $q->whereIn('id', $inCategories);
