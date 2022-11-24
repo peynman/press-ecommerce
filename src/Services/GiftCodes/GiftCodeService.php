@@ -114,9 +114,9 @@ class GiftCodeService implements IGiftCodeService
         $fixed_only = isset($code->data['fixed_only']) && $code->data['fixed_only'];
         $restrict_products = isset($code->data['products']) && !is_null($code->data['products']) && count($code->data['products']) > 0;
         $resitrct_categories = isset($code->data['productCategories']) && !is_null($code->data['productCategories']) && count($code->data['productCategories']) > 0;
+        $resitrct_not_categories = isset($code->data['productNotInCategories']) && !is_null($code->data['productNotInCategories']) && count($code->data['productNotInCategories']) > 0;
         $whitelist_products = [];
         $offProductsCount = 0;
-
 
         if (isset($code->data['min_items']) && $code->data['min_items'] > 0) {
             if ($code->data['min_items'] > count($products)) {
@@ -131,6 +131,12 @@ class GiftCodeService implements IGiftCodeService
         if ($resitrct_categories) {
             $cats = Product::whereHas('categories', function($q) use($code) {
                 return $q->whereIn('id', $code->data['productCategories']);
+            })->select('id')->get('id');
+            $whitelist_products = array_merge($whitelist_products ?? [], $cats);
+        }
+        if ($resitrct_not_categories) {
+            $cats = Product::doesntHave('categories', function($q) use($code) {
+                return $q->whereIn('id', $code->data['productNotInCategories']);
             })->select('id')->get('id');
             $whitelist_products = array_merge($whitelist_products ?? [], $cats);
         }
