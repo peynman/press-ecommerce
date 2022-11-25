@@ -64,7 +64,7 @@ class GiftCodeService implements IGiftCodeService
         /** @var GiftCode */
         $code = GiftCode::query()
             ->where('code', $code)
-            ->whereRaw('(flags & '.(GiftCode::FLAGS_EXPIRED|GiftCode::FLAGS_PASSIVE).') = 0')
+            ->whereRaw('(flags & ' . (GiftCode::FLAGS_EXPIRED | GiftCode::FLAGS_PASSIVE) . ') = 0')
             ->first();
         if (is_null($code)) {
             throw new AppException(AppException::ERR_INVALID_PARAMS);
@@ -116,6 +116,7 @@ class GiftCodeService implements IGiftCodeService
         $resitrct_categories = isset($code->data['productCategories']) && !is_null($code->data['productCategories']) && count($code->data['productCategories']) > 0;
         $resitrct_not_categories = isset($code->data['productNotInCategories']) && !is_null($code->data['productNotInCategories']) && count($code->data['productNotInCategories']) > 0;
         $whitelist_products = [];
+        $blacklist_products = [];
         $offProductsCount = 0;
 
         if (isset($code->data['min_items']) && $code->data['min_items'] > 0) {
@@ -129,21 +130,21 @@ class GiftCodeService implements IGiftCodeService
             $whitelist_products = $code->data['products'];
         }
         if ($resitrct_categories) {
-            $cats = Product::whereHas('categories', function($q) use($code) {
+            $cats = Product::whereHas('categories', function ($q) use ($code) {
                 return $q->whereIn('id', $code->data['productCategories']);
             })->select('id')->get('id');
             $whitelist_products = array_merge($whitelist_products ?? [], $cats);
         }
         if ($resitrct_not_categories) {
-            $cats = Product::doesntHave('categories', function($q) use($code) {
+            $cats = Product::whereHas('categories', function ($q) use ($code) {
                 return $q->whereIn('id', $code->data['productNotInCategories']);
             })->select('id')->get('id');
-            $whitelist_products = array_merge($whitelist_products ?? [], $cats);
+            $blacklist_products = array_merge($blacklist_products ?? [], $cats);
         }
-        if (count($whitelist_products) > 0) {
+        if (count($whitelist_products) > 0 || count($blacklist_products) > 0) {
             // find how many products can be gifted
             foreach ($products as $item) {
-                if (in_array($item->id, $whitelist_products)) {
+                if (in_array($item->id, $whitelist_products) && !in_array($item->id, $blacklist_products)) {
                     $offProductsCount += 1;
                 }
             }
@@ -159,7 +160,10 @@ class GiftCodeService implements IGiftCodeService
             if ($offProductsCount > 0) {
                 $offAmount = floatval($code->amount);
                 foreach ($products as $item) {
-                    if (in_array($item->id, $whitelist_products)) {
+                    if (
+                        in_array($item->id, $whitelist_products) &&
+                        !in_array($item->id, $blacklist_products)
+                    ) {
                         $offProductIds[$item->id] = $offAmount / $offProductsCount;
                     }
                 }
@@ -180,7 +184,10 @@ class GiftCodeService implements IGiftCodeService
         if ($percent <= 1) { // valid gift percentage
             $offAmount = 0;
             foreach ($products as $item) {
-                if (count($whitelist_products) > 0 && !in_array($item->id, $whitelist_products)) {
+                if (
+                    (count($whitelist_products) > 0 && !in_array($item->id, $whitelist_products)) ||
+                    in_array($item->id, $blacklist_products)
+                ) {
                     continue; // prod not in whitelist of this gift code
                 }
                 if ($fixed_only && $cart->isProductInPeriodicIds($item)) {
